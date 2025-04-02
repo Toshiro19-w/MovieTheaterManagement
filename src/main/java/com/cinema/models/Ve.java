@@ -1,24 +1,25 @@
 package com.cinema.models;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class Ve {
-    private int maVe;
-    private int maSuatChieu;
-    private Integer maKhachHang;
-    private Integer maHoaDon;
+    private int maVe; //tự tăng
+    private int maSuatChieu; //tự tăng
+    private Integer maKhachHang; //tự tăng
+    private Integer maHoaDon; //tự tăng
     private String soGhe;
-    private double giaVe;
+    private BigDecimal giaVe;
     private TrangThaiVe trangThai;
     private LocalDate ngayDat;
 
-    //JOIN
+    //JOIN chỉ cho user
     private String tenPhim;
     private LocalDate ngayGioChieu;
     private String hoTenKhachHang;
     private String loaiPhong;
 
-    public Ve(int maVe, int maSuatChieu, Integer maKhachHang, Integer maHoaDon, String soGhe, double giaVe, TrangThaiVe trangThai, LocalDate ngayDat) {
+    public Ve(int maVe, int maSuatChieu, Integer maKhachHang, Integer maHoaDon, String soGhe, BigDecimal giaVe, TrangThaiVe trangThai, LocalDate ngayDat) {
         this.maVe = maVe;
         this.maSuatChieu = maSuatChieu;
         this.maKhachHang = maKhachHang;
@@ -71,11 +72,11 @@ public class Ve {
         this.soGhe = soGhe;
     }
 
-    public double getGiaVe() {
+    public BigDecimal getGiaVe() {
         return giaVe;
     }
 
-    public void setGiaVe(double giaVe) {
+    public void setGiaVe(BigDecimal giaVe) {
         this.giaVe = giaVe;
     }
 

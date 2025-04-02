@@ -1,15 +1,12 @@
 package com.cinema.repositories;
 
-import com.cinema.models.Phim;
 import com.cinema.models.TrangThaiVe;
 import com.cinema.models.Ve;
 import com.cinema.utils.DatabaseConnection;
 import java.sql.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class VeRepository implements IVeRepository {
     private final Connection conn;
@@ -20,172 +17,200 @@ public class VeRepository implements IVeRepository {
     }
 
     @Override
-    public List<Ve> findAll(int page, int pageSize) {
-        List<Ve> list = new ArrayList<>();
-        String sql = "SELECT * FROM Ve ORDER BY maVe OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+    public List<Ve> findAll() throws SQLException {
+        String sql = "SELECT * FROM Ve";
+        List<Ve> result = new ArrayList<>();
 
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, (page - 1) * pageSize);
-            stmt.setInt(2, pageSize);
+        try (PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet resultSet = stmt.executeQuery()) {
 
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                list.add(mapResultSetToVe(rs));
+            while (resultSet.next()) {
+                result.add(mapResultSetToVe(resultSet));
             }
-        } catch (SQLException e) {
-            handleException("Lỗi khi lấy danh sách vé", e);
+
+            return result;
         }
-        return list;
     }
 
     @Override
-    public List<Ve> findAll() {
-        return List.of();
-    }
-
-    @Override
-    public Optional<Ve> findById(int maVe) {
+    public Ve findByMaVe(int maVe) throws SQLException {
         String sql = "SELECT * FROM Ve WHERE maVe = ?";
-
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, maVe);
-
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return Optional.of(mapResultSetToVe(rs));
+            ResultSet resultSet = stmt.executeQuery();
+            if (resultSet.next()) {
+                return mapResultSetToVe(resultSet);
             }
-        } catch (SQLException e) {
-            handleException("Lỗi khi tìm vé theo ID", e);
-        }
-        return Optional.empty();
-    }
-
-    @Override
-    public List<Ve> findByMaSuatChieu(int maSuatChieu) {
-        return List.of();
-    }
-
-    @Override
-    public List<Ve> findByNgayDatBetween(LocalDateTime start, LocalDateTime end) {
-        return List.of();
-    }
-
-    @Override
-    public List<Ve> findByTrangThai(String trangThai) {
-        return List.of();
-    }
-
-    @Override
-    public List<Ve> findByMaKhachHang(int maKhachHang) {
-        return List.of();
-    }
-
-    @Override
-    public List<Ve> findByMaHoaDon(int maHoaDon) {
-        return List.of();
-    }
-
-    @Override
-    public Ve save(Ve ve) {
-        if (ve.getMaVe() == 0) {
-            return insert(ve);
-        } else {
-            return update(ve);
+            return null;
         }
     }
 
     @Override
-    public boolean deleteById(int maVe) {
-        String sql = "DELETE FROM Ve WHERE maVe = ?";
+    public List<Ve> findByMaSuatChieu(int maSuatChieu) throws SQLException {
+        String sql = "SELECT * FROM Ve WHERE maSuatChieu = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maSuatChieu);
+            ResultSet resultSet = stmt.executeQuery();
+            if (resultSet.next()) {
+                return (List<Ve>) mapResultSetToVe(resultSet);
+            }
+            return null;
+        }
+    }
+
+    @Override
+    public List<Ve> findByMaKhachHang(Integer maKhachHang, int page, int pageSize) throws SQLException {
+        String sql = "SELECT * FROM Ve WHERE maKhachHang = ? LIMIT ? OFFSET ?";
+        List<Ve> result = new ArrayList<>();
 
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, maVe);
-            return stmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            handleException("Lỗi khi xóa vé", e);
-            return false;
+            stmt.setInt(1, maKhachHang);
+            stmt.setInt(2, pageSize);
+            stmt.setInt(3, (page - 1) * pageSize);
+
+            ResultSet resultSet = stmt.executeQuery();
+
+            while (resultSet.next()) {
+                result.add(mapResultSetToVe(resultSet));
+            }
+
+            return result;
         }
     }
 
     @Override
-    public boolean updateTrangThai(int maVe, String trangThai) {
-        return false;
+    public List<Ve> findByMaHoaDon(Integer maHoaDon) throws SQLException {
+        String sql = "SELECT * FROM Ve WHERE maHoaDon = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maHoaDon);
+            ResultSet resultSet = stmt.executeQuery();
+            if (resultSet.next()) {
+                return (List<Ve>) mapResultSetToVe(resultSet);
+            }
+            return null;
+        }
     }
 
     @Override
-    public long countByTrangThai(String trangThai) {
-        return 0;
+    public List<Ve> findByTrangThai(TrangThaiVe trangThai, int page, int pageSize) throws SQLException {
+        String sql = "SELECT * FROM Ve WHERE trangThai = ? LIMIT ? OFFSET ?";
+        List<Ve> result = new ArrayList<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, trangThai.getValue());
+            stmt.setInt(2, pageSize);
+            stmt.setInt(3, (page - 1) * pageSize);
+
+            ResultSet resultSet = stmt.executeQuery();
+
+            while (resultSet.next()) {
+                result.add(mapResultSetToVe(resultSet));
+            }
+
+            return result;
+        }
     }
 
-    // ====================================================================
-    // Các phương thức private hỗ trợ
-    // ====================================================================
+    @Override
+    public List<Ve> findByNgayDat(LocalDate ngayDat) throws SQLException {
+        String sql = "SELECT * FROM Ve WHERE ngayDat = ?";
+        List<Ve> result = new ArrayList<>();
 
-    private Ve insert(Ve ve) {
-        String sql = "INSERT INTO Ve (maSuatChieu, maKhachHang, maHoaDon, soGhe, giaVe, trangThai, ngayDat) VALUES"
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setDate(1, Date.valueOf(ngayDat));
+            ResultSet resultSet = stmt.executeQuery();
 
+            while (resultSet.next()) {
+                result.add(mapResultSetToVe(resultSet));
+            }
+
+            return result;
+        }
+    }
+
+    @Override
+    public Ve findVeChiTietByMaVe(int maVe) throws SQLException {
+        String sql = "SELECT v.*, p.tenPhim, sc.ngayGioChieu, kh.hoTenKhachHang, pc.loaiPhong " +
+                "FROM Ve v " +
+                "JOIN SuatChieu sc ON v.maSuatChieu = sc.maSuatChieu " +
+                "JOIN Phim p ON sc.maPhim = p.maPhim " +
+                "LEFT JOIN KhachHang kh ON v.maKhachHang = kh.maKhachHang " +
+                "LEFT JOIN PhongChieu pc ON sc.maPhongChieu = pc.maPhongChieu " +
+                "WHERE v.maVe = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maVe);
+            ResultSet resultSet = stmt.executeQuery();
+            if (resultSet.next()) {
+                Ve ve = mapResultSetToVe(resultSet);
+                ve.setTenPhim(resultSet.getString("tenPhim"));
+                ve.setNgayGioChieu(resultSet.getTimestamp("ngayGioChieu").toLocalDateTime().toLocalDate());
+                ve.setHoTenKhachHang(resultSet.getString("hoTenKhachHang"));
+                ve.setLoaiPhong(resultSet.getString("loaiPhong"));
+                return ve;
+            }
+            return null;
+        }
+    }
+
+    @Override
+    public Ve save(Ve ve) throws SQLException {
+        String sql = "INSERT INTO Ve (maSuatChieu, maKhachHang, maHoaDon, soGhe, giaVe, trangThai, ngayDat) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            setVeParameters(stmt, ve);
+            stmt.setInt(1, ve.getMaSuatChieu());
+            stmt.setObject(2, ve.getMaKhachHang() == null ? null : ve.getMaKhachHang());
+            stmt.setObject(3, ve.getMaHoaDon() == null ? null : ve.getMaHoaDon());
+            stmt.setString(4, ve.getSoGhe());
+            stmt.setBigDecimal(5, ve.getGiaVe());
+            stmt.setString(6, ve.getTrangThai().toString());
+            stmt.setObject(7, ve.getNgayDat());
             stmt.executeUpdate();
-
-            try (ResultSet rs = stmt.getGeneratedKeys()) {
-                if (rs.next()) {
-                    ve.setMaVe(rs.getInt(1));
-                }
+            ResultSet generatedKeys = stmt.getGeneratedKeys();
+            if (generatedKeys.next()) {
+                ve.setMaVe(generatedKeys.getInt(1));
             }
             return ve;
-        } catch (SQLException e) {
-            handleException("Lỗi khi thêm phim mới", e);
-            throw new RuntimeException("Không thể thêm phim", e);
         }
     }
 
-    private Ve update(Ve ve) {
-        String sql = "UPDATE Phim SET tenPhim=?, maTheLoai=?, thoiLuong=?, "
-                + "ngayKhoiChieu=?, nuocSanXuat=?, dinhDang=?, moTa=?, daoDien=? "
-                + "WHERE maPhim=?";
-
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            setVeParameters(stmt, ve);
-            stmt.setInt(9, ve.getMaVe());
-
+    @Override
+    public Ve update(Ve ve) throws SQLException {
+        String sql = "UPDATE Ve SET maSuatChieu=?, maKhachHang=?, maHoaDon=?, soGhe=?, giaVe=?, trangThai=?, ngayDat=? WHERE maVe=?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setInt(1, ve.getMaSuatChieu());
+            stmt.setObject(2, ve.getMaKhachHang() == null ? null : ve.getMaKhachHang());
+            stmt.setObject(3, ve.getMaHoaDon() == null ? null : ve.getMaHoaDon());
+            stmt.setString(4, ve.getSoGhe());
+            stmt.setBigDecimal(5, ve.getGiaVe());
+            stmt.setString(6, ve.getTrangThai().toString());
+            stmt.setObject(7, ve.getNgayDat());
             stmt.executeUpdate();
+            ResultSet generatedKeys = stmt.getGeneratedKeys();
+            if (generatedKeys.next()) {
+                ve.setMaVe(generatedKeys.getInt(1));
+            }
             return ve;
-        } catch (SQLException e) {
-            handleException("Lỗi khi cập nhật phim", e);
-            throw new RuntimeException("Không thể cập nhật phim", e);
         }
     }
 
-    private void setVeParameters(PreparedStatement stmt, Ve ve) throws SQLException {
-        stmt.setInt(1, ve.getMaVe());
-        stmt.setInt(2, ve.getMaSuatChieu());
-        stmt.setInt(3, ve.getMaKhachHang());
-        stmt.setInt(4, ve.getMaHoaDon());
-        stmt.setString(5, ve.getSoGhe());
-        stmt.setDouble(6, ve.getGiaVe());
-        stmt.setObject(7, ve.getTrangThai());
+    @Override
+    public void delete(int maVe) throws SQLException {
+        String sql = "DELETE FROM Ve WHERE maVe = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maVe);
+            stmt.executeUpdate();
+        }
     }
 
-    private Ve mapResultSetToVe(ResultSet rs) throws SQLException {
-        return new Ve(
-                rs.getInt("maVe"),
-                rs.getInt("maSuatChieu"),
-                rs.getInt("maKhachHang"),
-                rs.getInt("maHoaDon"),
-                rs.getString("soGhe"),
-                rs.getDouble("giaVe"),
-                (TrangThaiVe.fromString(rs.getString("trangThai"))),
-                ngayDat = Optional.ofNullable(rs.getDate("ngayDat"))
-                .map(java.sql.Date::toLocalDate)
-                .orElse(null)
-        );
-    }
-
-    private void handleException(String message, SQLException e) {
-        System.err.println(message + ": " + e.getMessage());
-        // Có thể thêm ghi log vào file ở đây
-        e.printStackTrace();
+    private Ve mapResultSetToVe(ResultSet resultSet) throws SQLException {
+        Ve ve = new Ve();
+        ve.setMaVe(resultSet.getInt("maVe"));
+        ve.setMaSuatChieu(resultSet.getInt("maSuatChieu"));
+        ve.setMaKhachHang(resultSet.getObject("maKhachHang", Integer.class));
+        ve.setMaHoaDon(resultSet.getObject("maHoaDon", Integer.class));
+        ve.setSoGhe(resultSet.getString("soGhe"));
+        ve.setGiaVe(resultSet.getBigDecimal("giaVe"));
+        ve.setTrangThai(TrangThaiVe.fromString(resultSet.getString("trangThai")));
+        ve.setNgayDat(resultSet.getDate("ngayDat") != null ? resultSet.getDate("ngayDat").toLocalDate() : null);
+        return ve;
     }
 }

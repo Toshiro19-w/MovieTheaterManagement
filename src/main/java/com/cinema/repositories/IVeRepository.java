@@ -1,44 +1,28 @@
 package com.cinema.repositories;
 
+import com.cinema.models.TrangThaiVe;
 import com.cinema.models.Ve;
+
+import java.sql.Connection;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.List;
+
 public interface IVeRepository {
-    // Lấy tất cả vé phân trang
-    List<Ve> findAll(int page, int pageSize);
-
-    // Lấy tất cả vé không phân trang
-    List<Ve> findAll();
-
-    // Tìm vé theo mã vé
-    Optional<Ve> findById(int maVe);
-
-    // Tìm vé theo mã suất chiếu
-    List<Ve> findByMaSuatChieu(int maSuatChieu);
-
-    // Tìm vé theo khoảng thời gian đặt vé
-    List<Ve> findByNgayDatBetween(LocalDateTime start, LocalDateTime end);
-
-    // Tìm vé theo trạng thái
-    List<Ve> findByTrangThai(String trangThai);
-
-    // Tìm vé theo mã khách hàng
-    List<Ve> findByMaKhachHang(int maKhachHang);
-
-    // Tìm vé theo mã hóa đơn
-    List<Ve> findByMaHoaDon(int maHoaDon);
-
-    // Lưu/thêm mới vé
-    Ve save(Ve ve);
-
-    // Xóa vé theo mã vé
-    boolean deleteById(int maVe);
-
-    // Cập nhật trạng thái vé
-    boolean updateTrangThai(int maVe, String trangThai);
-
-    // Đếm số vé theo trạng thái
-    long countByTrangThai(String trangThai);
+    List<Ve> findAll() throws SQLException; // Thêm phương thức findAll()
+    Ve findByMaVe(int maVe) throws SQLException;
+    List<Ve> findByMaSuatChieu(int maSuatChieu) throws SQLException;
+    List<Ve> findByMaKhachHang(Integer maKhachHang, int page, int pageSize) throws SQLException;
+    List<Ve> findByMaHoaDon(Integer maHoaDon) throws SQLException;
+    List<Ve> findByTrangThai(TrangThaiVe trangThai, int page, int pageSize) throws SQLException;
+    List<Ve> findByNgayDat(LocalDate ngayDat) throws SQLException;
+    Ve findVeChiTietByMaVe(int maVe) throws SQLException;
+    Ve save(Ve ve) throws SQLException;
+    Ve update(Ve ve) throws SQLException;
+    void delete(int maVe) throws SQLException;
 }

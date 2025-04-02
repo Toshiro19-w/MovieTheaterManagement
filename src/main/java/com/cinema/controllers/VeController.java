@@ -1,10 +1,13 @@
 package com.cinema.controllers;
 
+import com.cinema.models.TrangThaiVe;
 import com.cinema.models.Ve;
 import com.cinema.services.VeService;
+import com.cinema.utils.ValidationUtils;
 
+import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 public class VeController {
     private final VeService veService;
@@ -13,84 +16,71 @@ public class VeController {
         this.veService = new VeService();
     }
 
-    public List<Ve> hienThiTatCaVe() {
-        List<Ve> danhSachPhim = veService.getAllVe(1, 10);
-        danhSachPhim.forEach(System.out::println);
-        return danhSachPhim;
-    }
-
-    public Ve save(Ve ve) {
+    public List<Ve> findAll() {
         try {
-            // Validate dữ liệu trước khi lưu
-            if (!validateVe(ve)) {
-                return null;
-            }
-
-            // Nếu vé đã có mã (đang update)
-            if (ve.getMaVe() > 0) {
-                // Kiểm tra vé có tồn tại không
-                Optional<Ve> existingVe = veService.getVeById(ve.getMaVe());
-                if (existingVe.isEmpty()) {
-                    System.out.println("Không tìm thấy vé có mã: " + ve.getMaVe());
-                    return null;
-                }
-            }
-
-            // Thực hiện lưu vé
-            Ve savedVe = veService.addOrUpdateVe(ve);
-
-            if (savedVe != null) {
-                System.out.println("Lưu vé thành công! Mã vé: " + savedVe.getMaVe());
-            } else {
-                System.out.println("Lưu vé thất bại!");
-            }
-
-            return savedVe;
-        } catch (Exception e) {
-            System.err.println("Lỗi khi lưu vé: " + e.getMessage());
-            e.printStackTrace();
+            return veService.findAll();
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi tìm vé: " + e.getMessage());
             return null;
         }
     }
 
-    private boolean validateVe(Ve ve) {
-        if (ve.getMaSuatChieu() <= 0) {
-            System.out.println("Mã suất chiếu không hợp lệ");
-            return false;
+    public Ve findVeById(int maVe) {
+        try {
+            return veService.findByMaVe(maVe);
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi tìm vé: " + e.getMessage());
+            return null;
         }
-
-        if (ve.getSoGhe() == null || ve.getSoGhe().trim().isEmpty()) {
-            System.out.println("Số ghế không được để trống");
-            return false;
-        }
-
-        if (ve.getGiaVe() < 0) {
-            System.out.println("Giá vé không hợp lệ");
-            return false;
-        }
-
-        if (ve.getTrangThai() == null || !List.of("available", "booked", "paid", "cancelled").contains(ve.getTrangThai())) { //lỗi ở dòng này
-            System.out.println("Trạng thái vé không hợp lệ");
-            return false;
-        }
-
-        return true;
     }
 
-    public void timPhimTheoId(int maPhim) {
-        Optional<Ve> phim = veService.getVeById(maPhim);
-        phim.ifPresentOrElse(
-                System.out::println,
-                () -> System.out.println("Không tìm thấy phim có mã: " + maPhim)
-        );
+    public List<Ve> findVeByMaSuatChieu(int maSuatChieu) {
+        try {
+            return veService.findByMaSuatChieu(maSuatChieu);
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi tìm vé theo mã suất chiếu: " + e.getMessage());
+            return null;
+        }
     }
 
-    public void xoaPhim(int maPhim) {
-        boolean deleted = veService.deletePhim(maPhim);
-        if (deleted) {
-            System.out.println("Xóa phim thành công!");
-        } else {
-            System.out.println("Không thể xóa phim.");
+    public List<Ve> findVeByMaKhachHang(int maKhachHang, int page, int pageSize) {
+        try {
+            return veService.findByMaKhachHang(maKhachHang, page, pageSize);
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi tìm vé theo mã khách hàng: " + e.getMessage());
+            return null;
         }
+    }
+
+    public Ve saveVe(Ve ve) {
+        try {
+            if (!ValidationUtils.validateVe(ve)) {
+                System.out.println("Dữ liệu vé không hợp lệ.");
+                return null;
+            }
+            return veService.save(ve);
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi lưu vé: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public Ve updateVe(Ve ve) {
+        try {
+            return veService.update(ve);
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi cập nhật vé: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public boolean deleteVe(int maVe) {
+        try {
+            veService.delete(maVe);
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi xóa vé: " + e.getMessage());
+        }
+        return false;
     }
 }
