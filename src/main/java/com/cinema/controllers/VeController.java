@@ -69,7 +69,7 @@ public class VeController {
             return false;
         }
 
-        if (ve.getTrangThai() == null || !List.of("available", "booked", "paid", "cancelled").contains(ve.getTrangThai())) {
+        if (ve.getTrangThai() == null || !List.of("available", "booked", "paid", "cancelled").contains(ve.getTrangThai())) { //lỗi ở dòng này
             System.out.println("Trạng thái vé không hợp lệ");
             return false;
         }
