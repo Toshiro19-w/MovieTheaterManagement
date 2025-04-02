@@ -1,5 +1,7 @@
 package com.cinema.repositories;
 
+import com.cinema.models.LoaiNguoiDung;
+import com.cinema.models.LoaiTaiKhoan;
 import com.cinema.models.TaiKhoan;
 import com.cinema.utils.DatabaseConnection;
 
@@ -27,7 +29,8 @@ public class TaiKhoanRepository implements ITaiKhoanRepository {
                 list.add(new TaiKhoan(
                         rs.getString("tenDangNhap"),
                         "",  // Không cần lấy mật khẩu
-                        rs.getString("loaiTaiKhoan")
+                        (LoaiTaiKhoan) rs.getObject("loaiTaiKhoan"),
+                        rs.getInt("maNguoiDung")
                 ));
             }
         } catch (SQLException e) {
@@ -71,7 +74,7 @@ public class TaiKhoanRepository implements ITaiKhoanRepository {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, tk.getTenDangNhap());
             stmt.setString(2, tk.getMatKhau());
-            stmt.setString(3, tk.getLoaiTaiKhoan());
+            stmt.setObject(3, tk.getLoaiTaiKhoan());
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

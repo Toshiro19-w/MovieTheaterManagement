@@ -1,18 +1,19 @@
 package com.cinema.models;
 
-public class KhachHang {
+public class KhachHang extends NguoiDung {
     private int maKhachHang;
-    private String hoTen;
-    private String soDienThoai;
-    private String email;
+    private int maNguoiDung;
     private int diemTichLuy;
 
-    public KhachHang(int maKhachHang, String hoTen, String soDienThoai, String email, int diemTichLuy) {
+    public KhachHang(int maNguoiDung, String hoTen, String soDienThoai, String email, LoaiNguoiDung loaiNguoiDung, int maKhachHang, int maNguoiDung1, int diemTichLuy) {
+        super(maNguoiDung, hoTen, soDienThoai, email, loaiNguoiDung);
         this.maKhachHang = maKhachHang;
-        this.hoTen = hoTen;
-        this.soDienThoai = soDienThoai;
-        this.email = email;
+        this.maNguoiDung = maNguoiDung1;
         this.diemTichLuy = diemTichLuy;
+    }
+
+    public KhachHang() {
+        super();
     }
 
     public int getMaKhachHang() {
@@ -23,28 +24,14 @@ public class KhachHang {
         this.maKhachHang = maKhachHang;
     }
 
-    public String getHoTen() {
-        return hoTen;
+    @Override
+    public int getMaNguoiDung() {
+        return maNguoiDung;
     }
 
-    public void setHoTen(String hoTen) {
-        this.hoTen = hoTen;
-    }
-
-    public String getSoDienThoai() {
-        return soDienThoai;
-    }
-
-    public void setSoDienThoai(String soDienThoai) {
-        this.soDienThoai = soDienThoai;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
+    @Override
+    public void setMaNguoiDung(int maNguoiDung) {
+        this.maNguoiDung = maNguoiDung;
     }
 
     public int getDiemTichLuy() {

@@ -1,7 +1,6 @@
 package com.cinema;
 
 import com.cinema.views.*;
-
 import javax.swing.*;
 
 public class App {

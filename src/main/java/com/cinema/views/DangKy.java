@@ -1,6 +1,8 @@
 package com.cinema.views;
 
 import javax.swing.*;
+
+import com.cinema.models.LoaiTaiKhoan;
 import com.cinema.models.TaiKhoan;
 import com.cinema.repositories.TaiKhoanRepository;
 import java.awt.*;
@@ -90,7 +92,7 @@ public class DangKy extends JFrame {
             return;
         }
 
-        TaiKhoan tk = new TaiKhoan(tenDangNhap, matKhau, "user");
+        TaiKhoan tk = new TaiKhoan(tenDangNhap, matKhau, LoaiTaiKhoan.user, 1);
         if (taiKhoanRepository.dangKyTaiKhoan(tk)) {
             JOptionPane.showMessageDialog(this, "Đăng ký thành công!");
             new PhimView().setVisible(true);

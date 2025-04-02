@@ -1,27 +1,24 @@
 package com.cinema.models;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public class Ve {
     private int maVe;
     private int maSuatChieu;
-    private Integer maKhachHang; // Có thể null
-    private Integer maHoaDon;    // Có thể null
+    private Integer maKhachHang;
+    private Integer maHoaDon;
     private String soGhe;
     private double giaVe;
-    private String trangThai;
-    
-    // Thông tin từ các bảng JOIN
-    private String tenPhim;
-    private LocalDateTime ngayGioChieu;
-    private String loaiPhong;
-    private String hoTenKhachHang;
-    
-    // Constructors
-    public Ve() {}
+    private TrangThaiVe trangThai;
+    private LocalDate ngayDat;
 
-    public Ve(int maVe, int maSuatChieu, Integer maKhachHang, Integer maHoaDon, 
-             String soGhe, double giaVe, String trangThai) {
+    //JOIN
+    private String tenPhim;
+    private LocalDate ngayGioChieu;
+    private String hoTenKhachHang;
+    private String loaiPhong;
+
+    public Ve(int maVe, int maSuatChieu, Integer maKhachHang, Integer maHoaDon, String soGhe, double giaVe, TrangThaiVe trangThai, LocalDate ngayDat) {
         this.maVe = maVe;
         this.maSuatChieu = maSuatChieu;
         this.maKhachHang = maKhachHang;
@@ -29,9 +26,11 @@ public class Ve {
         this.soGhe = soGhe;
         this.giaVe = giaVe;
         this.trangThai = trangThai;
+        this.ngayDat = ngayDat;
     }
 
-    // Getters và Setters
+    public Ve() {}
+
     public int getMaVe() {
         return maVe;
     }
@@ -80,11 +79,11 @@ public class Ve {
         this.giaVe = giaVe;
     }
 
-    public String getTrangThai() {
+    public TrangThaiVe getTrangThai() {
         return trangThai;
     }
 
-    public void setTrangThai(String trangThai) {
+    public void setTrangThai(TrangThaiVe trangThai) {
         this.trangThai = trangThai;
     }
 
@@ -96,20 +95,12 @@ public class Ve {
         this.tenPhim = tenPhim;
     }
 
-    public LocalDateTime getNgayGioChieu() {
+    public LocalDate getNgayGioChieu() {
         return ngayGioChieu;
     }
 
-    public void setNgayGioChieu(LocalDateTime ngayGioChieu) {
+    public void setNgayGioChieu(LocalDate ngayGioChieu) {
         this.ngayGioChieu = ngayGioChieu;
-    }
-
-    public String getLoaiPhong() {
-        return loaiPhong;
-    }
-
-    public void setLoaiPhong(String loaiPhong) {
-        this.loaiPhong = loaiPhong;
     }
 
     public String getHoTenKhachHang() {
@@ -120,20 +111,19 @@ public class Ve {
         this.hoTenKhachHang = hoTenKhachHang;
     }
 
-    @Override
-    public String toString() {
-        return "Ve{" +
-                "maVe=" + maVe +
-                ", maSuatChieu=" + maSuatChieu +
-                ", maKhachHang=" + maKhachHang +
-                ", maHoaDon=" + maHoaDon +
-                ", soGhe='" + soGhe + '\'' +
-                ", giaVe=" + giaVe +
-                ", trangThai='" + trangThai + '\'' +
-                ", tenPhim='" + tenPhim + '\'' +
-                ", ngayGioChieu=" + ngayGioChieu +
-                ", loaiPhong='" + loaiPhong + '\'' +
-                ", hoTenKhachHang='" + hoTenKhachHang + '\'' +
-                '}';
+    public String getLoaiPhong() {
+        return loaiPhong;
+    }
+
+    public void setLoaiPhong(String loaiPhong) {
+        this.loaiPhong = loaiPhong;
+    }
+
+    public LocalDate getNgayDat() {
+        return ngayDat;
+    }
+
+    public void setNgayDat(LocalDate ngayDat) {
+        this.ngayDat = ngayDat;
     }
 }

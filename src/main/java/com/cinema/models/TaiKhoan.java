@@ -3,12 +3,14 @@ package com.cinema.models;
 public class TaiKhoan {
     private String tenDangNhap;
     private String matKhau;
-    private String loaiTaiKhoan;
+    private LoaiTaiKhoan loaiTaiKhoan;
+    private int maNguoiDung;
 
-    public TaiKhoan(String tenDangNhap, String matKhau, String loaiTaiKhoan) {
+    public TaiKhoan(String tenDangNhap, String matKhau, LoaiTaiKhoan loaiTaiKhoan, int maNguoiDung) {
         this.tenDangNhap = tenDangNhap;
         this.matKhau = matKhau;
         this.loaiTaiKhoan = loaiTaiKhoan;
+        this.maNguoiDung = maNguoiDung;
     }
 
     public String getTenDangNhap() {
@@ -27,12 +29,20 @@ public class TaiKhoan {
         this.matKhau = matKhau;
     }
 
-    public String getLoaiTaiKhoan() {
+    public LoaiTaiKhoan getLoaiTaiKhoan() {
         return loaiTaiKhoan;
     }
 
-    public void setLoaiTaiKhoan(String loaiTaiKhoan) {
+    public void setLoaiTaiKhoan(LoaiTaiKhoan loaiTaiKhoan) {
         this.loaiTaiKhoan = loaiTaiKhoan;
+    }
+
+    public int getMaNguoiDung() {
+        return maNguoiDung;
+    }
+
+    public void setMaNguoiDung(int maNguoiDung) {
+        this.maNguoiDung = maNguoiDung;
     }
 }
 

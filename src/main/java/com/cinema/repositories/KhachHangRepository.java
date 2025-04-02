@@ -10,18 +10,22 @@ import java.util.List;
 public class KhachHangRepository implements IKhachHangRepository{
     public List<KhachHang> getAllKhachHang() {
         List<KhachHang> list = new ArrayList<>();
-        String query = "SELECT * FROM KhachHang";
+        String query = "SELECT \n" + "nd.maNguoiDung,\n" + "kh.maKhachHang,\n" + "nd.hoTen,\n" +
+                "nd.soDienThoai,\n" + "nd.email,\n" + "kh.diemTichLuy\n" +
+                "FROM \n" + "NguoiDung nd\n" +
+                "JOIN \n" + "KhachHang kh ON nd.maNguoiDung = kh.maNguoiDung\n" +
+                "WHERE \n" + "nd.loaiNguoiDung = 'KhachHang';";
         try (Connection conn = DatabaseConnection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
             while (rs.next()) {
-                list.add(new KhachHang(
-                        rs.getInt("maKhachHang"),
-                        rs.getString("hoTen"),
-                        rs.getString("soDienThoai"),
-                        rs.getString("email"),
-                        rs.getInt("diemTichLuy")
-                ));
+                KhachHang khachHang = new KhachHang();
+                khachHang.setMaNguoiDung(rs.getInt("maNguoiDung"));
+                khachHang.setMaKhachHang(rs.getInt("maKhachHang"));
+                khachHang.setHoTen(rs.getString("hoTen"));
+                khachHang.setSoDienThoai(rs.getString("soDienThoai"));
+                khachHang.setEmail(rs.getString("email"));
+                khachHang.setDiemTichLuy(rs.getInt("diemTichLuy"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
