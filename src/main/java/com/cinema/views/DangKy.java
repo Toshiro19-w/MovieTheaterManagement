@@ -95,7 +95,7 @@ public class DangKy extends JFrame {
         TaiKhoan tk = new TaiKhoan(tenDangNhap, matKhau, LoaiTaiKhoan.user, 1);
         if (taiKhoanRepository.dangKyTaiKhoan(tk)) {
             JOptionPane.showMessageDialog(this, "Đăng ký thành công!");
-            new PhimView().setVisible(true);
+            //new PhimView().setVisible(true);
             dispose();
         } else {
             JOptionPane.showMessageDialog(this, "Tên đăng nhập đã tồn tại!");

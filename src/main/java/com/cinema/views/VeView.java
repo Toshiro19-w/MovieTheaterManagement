@@ -3,24 +3,27 @@ package com.cinema.views;
 import com.cinema.controllers.VeController;
 import com.cinema.models.TrangThaiVe;
 import com.cinema.models.Ve;
+import com.cinema.services.VeService;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 
 public class VeView extends JFrame {
+    private Connection conn;
     private DefaultTableModel tableModel;
     private VeController veController;
     private JTextField searchField;
     private JTable table;
 
     public VeView() {
-        veController = new VeController();
+        veController = new VeController(new VeService(conn));
         initializeUI();
     }
 
@@ -78,7 +81,7 @@ public class VeView extends JFrame {
         tableModel.addRow(new Object[]{
                 ve.getMaVe(),
                 ve.getMaSuatChieu(),
-                ve.getMaKhachHang() != null ? ve.getMaKhachHang() : "Chưa đặt",
+                ve.getMaPhong() != null ? ve.getMaPhong() : "Chưa đặt",
                 ve.getMaHoaDon() != null ? ve.getMaHoaDon() : "Chưa thanh toán",
                 ve.getSoGhe(),
                 formatCurrency(ve.getGiaVe()),
@@ -103,7 +106,6 @@ public class VeView extends JFrame {
         veList.forEach(ve -> addVeToTable(ve, formatter));
     }
 
-    //Cần sửa
     private void addTicket() {
         String soGhe = JOptionPane.showInputDialog(this, "Nhập số ghế:");
         String giaVeStr = JOptionPane.showInputDialog(this, "Nhập giá vé:");
@@ -113,8 +115,7 @@ public class VeView extends JFrame {
         }
         try {
             BigDecimal giaVe = new BigDecimal(giaVeStr);
-            //Ve newVe = new Ve(null, soGhe, giaVe, TrangThaiVe.AVAILABLE, LocalDate.now());
-            //veController.saveVe(newVe);
+            //Ve newVe = new Ve(soGhe, giaVe, TrangThaiVe.AVAILABLE, LocalDate.now());
             JOptionPane.showMessageDialog(this, "Thêm vé thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
             loadTickets();
         } catch (Exception e) {

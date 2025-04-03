@@ -54,7 +54,7 @@ public class QuanLyView extends JFrame {
     }
 
     private void openQuanLyPhim(ActionEvent evt) {
-        openFrame(new PhimView());
+        //openFrame(new PhimView());
     }
 
     private void openQuanLyVe(ActionEvent evt) {

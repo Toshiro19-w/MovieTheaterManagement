@@ -1,44 +1,36 @@
 package com.cinema.services;
 
 import com.cinema.models.Phim;
-import com.cinema.repositories.IPhimRepository;
 import com.cinema.repositories.PhimRepository;
 
-import java.time.LocalDate;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 
 public class PhimService {
-    private final IPhimRepository phimRepo;
+    private final PhimRepository phimRepo;
 
-    public PhimService() {
-        this.phimRepo = new PhimRepository();
+    public PhimService(Connection conn) {
+        this.phimRepo = new PhimRepository(conn);
     }
 
-    public List<Phim> getAllPhim(int page, int pageSize) {
-        return phimRepo.findAll(page, pageSize);
+    public List<Phim> getAllPhim() throws SQLException {
+        return phimRepo.findAll();
     }
 
-    public Optional<Phim> getPhimById(int maPhim) {
+    public Phim getPhimById(int maPhim) throws SQLException {
         return phimRepo.findById(maPhim);
     }
 
-    public List<Phim> searchPhimByName(String keyword) {
-        return phimRepo.findByTenPhimContaining(keyword);
-    }
-
-    public List<Phim> getPhimByReleaseDateRange(LocalDate start, LocalDate end) {
-        return phimRepo.findByNgayKhoiChieuBetween(start, end);
-    }
-
-    public Phim addOrUpdatePhim(Phim phim) {
-        if (phim.getTenPhim().isBlank()) {
-            throw new IllegalArgumentException("Tên phim không được để trống");
-        }
+    public Phim addPhim(Phim phim) throws SQLException {
         return phimRepo.save(phim);
     }
 
-    public boolean deletePhim(int maPhim) {
-        return phimRepo.deleteById(maPhim);
+    public Phim updatePhim(Phim phim) throws SQLException {
+        return phimRepo.update(phim);
+    }
+
+    public void deletePhim(int maPhim) throws SQLException {
+        phimRepo.delete(maPhim);
     }
 }

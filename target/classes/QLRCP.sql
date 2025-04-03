@@ -1,88 +1,75 @@
-﻿DECLARE @sql NVARCHAR(MAX) = N'';
-
--- Xóa tất cả các ràng buộc FOREIGN KEY
-SELECT @sql += 'ALTER TABLE ' + QUOTENAME(TABLE_SCHEMA) + '.' + QUOTENAME(TABLE_NAME) + 
-               ' DROP CONSTRAINT ' + QUOTENAME(CONSTRAINT_NAME) + ';'
-FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
-WHERE CONSTRAINT_TYPE = 'FOREIGN KEY';
-
--- Thực thi lệnh xóa khóa ngoại
-EXEC sp_executesql @sql;
-
--- Xóa tất cả các bảng
-SET @sql = N'';
-SELECT @sql += 'DROP TABLE ' + QUOTENAME(TABLE_SCHEMA) + '.' + QUOTENAME(TABLE_NAME) + ';'
-FROM INFORMATION_SCHEMA.TABLES
-WHERE TABLE_TYPE = 'BASE TABLE';
-
-EXEC sp_executesql @sql;
-
--- Tạo bảng NguoiDung (bảng cha của KhachHang và NhanVien)
-CREATE TABLE NguoiDung (
-    maNguoiDung INT IDENTITY(1,1) PRIMARY KEY,
+﻿-- Tạo bảng NguoiDung (bảng cha của KhachHang và NhanVien)
+CREATE TABLE IF NOT EXISTS NguoiDung (
+    maNguoiDung INT AUTO_INCREMENT PRIMARY KEY,
     hoTen NVARCHAR(100) NOT NULL,
     soDienThoai VARCHAR(15) UNIQUE NOT NULL,
     email NVARCHAR(100) UNIQUE NOT NULL,
-    loaiNguoiDung NVARCHAR(20) CHECK (loaiNguoiDung IN ('KhachHang', 'NhanVien')) NOT NULL
+    loaiNguoiDung ENUM('KhachHang', 'NhanVien') NOT NULL
 );
 
 -- Tạo bảng KhachHang (thừa kế từ NguoiDung)
-CREATE TABLE KhachHang (
-    maKhachHang INT IDENTITY(1,1) PRIMARY KEY,
-    maNguoiDung INT UNIQUE,
+CREATE TABLE IF NOT EXISTS KhachHang (
+    maNguoiDung INT PRIMARY KEY,
     diemTichLuy INT DEFAULT 0 CHECK (diemTichLuy >= 0),
     FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung) ON DELETE CASCADE
 );
 
 -- Tạo bảng NhanVien (thừa kế từ NguoiDung)
-CREATE TABLE NhanVien (
-    maNhanVien INT IDENTITY(1,1) PRIMARY KEY,
-    maNguoiDung INT UNIQUE,
+CREATE TABLE IF NOT EXISTS NhanVien (
+    maNguoiDung INT PRIMARY KEY,
     chucVu NVARCHAR(50) NOT NULL,
     luong DECIMAL(10,2) CHECK (luong >= 0) NOT NULL,
     FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung) ON DELETE CASCADE
 );
 
 -- Tạo bảng TaiKhoan
-CREATE TABLE TaiKhoan (
+CREATE TABLE IF NOT EXISTS TaiKhoan (
     tenDangNhap NVARCHAR(50) PRIMARY KEY,
     matKhau NVARCHAR(255) NOT NULL,
-    loaiTaiKhoan NVARCHAR(10) CHECK (loaiTaiKhoan IN ('admin', 'user')) NOT NULL,
+    loaiTaiKhoan ENUM('admin', 'user') NOT NULL,
     maNguoiDung INT UNIQUE,
     FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung) ON DELETE CASCADE
 );
 
 -- Tạo bảng TheLoaiPhim
-CREATE TABLE TheLoaiPhim (
-    maTheLoai INT IDENTITY(1,1) PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS TheLoaiPhim (
+    maTheLoai INT AUTO_INCREMENT PRIMARY KEY,
     tenTheLoai NVARCHAR(50) UNIQUE NOT NULL
 );
 
 -- Tạo bảng Phim
-CREATE TABLE Phim (
-    maPhim INT IDENTITY(1,1) PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS Phim (
+    maPhim INT AUTO_INCREMENT PRIMARY KEY,
     tenPhim NVARCHAR(100) NOT NULL,
     maTheLoai INT NOT NULL,
     thoiLuong INT CHECK (thoiLuong > 0) NOT NULL,
     ngayKhoiChieu DATE NOT NULL,
     nuocSanXuat NVARCHAR(50) NOT NULL,
     dinhDang NVARCHAR(20) NOT NULL,
-    moTa NVARCHAR(255),
+    moTa TEXT,
     daoDien NVARCHAR(100) NOT NULL,
     FOREIGN KEY (maTheLoai) REFERENCES TheLoaiPhim(maTheLoai) ON DELETE CASCADE
 );
 
 -- Tạo bảng PhongChieu
-CREATE TABLE PhongChieu (
-    maPhong INT IDENTITY(1,1) PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS PhongChieu (
+    maPhong INT AUTO_INCREMENT PRIMARY KEY,
     tenPhong NVARCHAR(255) UNIQUE NOT NULL,
     soLuongGhe INT CHECK (soLuongGhe > 0) NOT NULL,
     loaiPhong NVARCHAR(50) NOT NULL
 );
 
--- Tạo bảng SuatChieu
-CREATE TABLE SuatChieu (
-    maSuatChieu INT IDENTITY(1,1) PRIMARY KEY,
+-- Tạo bảng Ghe (bảng mới để quản lý ghế trong phòng chiếu)
+CREATE TABLE IF NOT EXISTS Ghe (
+    maPhong INT NOT NULL,
+    soGhe NVARCHAR(5) NOT NULL,
+    PRIMARY KEY (maPhong, soGhe),
+    FOREIGN KEY (maPhong) REFERENCES PhongChieu(maPhong) ON DELETE CASCADE
+);
+
+-- Tạo bảng SuatChieu (thêm ràng buộc thời gian)
+CREATE TABLE IF NOT EXISTS SuatChieu (
+    maSuatChieu INT AUTO_INCREMENT PRIMARY KEY,
     maPhim INT NOT NULL,
     maPhong INT NOT NULL,
     ngayGioChieu DATETIME NOT NULL,
@@ -91,93 +78,129 @@ CREATE TABLE SuatChieu (
 );
 
 -- Tạo bảng HoaDon
-CREATE TABLE HoaDon (
-    maHoaDon INT IDENTITY(1,1) PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS HoaDon (
+    maHoaDon INT AUTO_INCREMENT PRIMARY KEY,
     maNhanVien INT,
     maKhachHang INT,
-    ngayLap DATETIME DEFAULT GETDATE(),
+    ngayLap DATETIME DEFAULT NOW(),
     tongTien DECIMAL(10,2) CHECK (tongTien >= 0) NOT NULL,
-    FOREIGN KEY (maNhanVien) REFERENCES NhanVien(maNhanVien) ON DELETE NO ACTION,
-    FOREIGN KEY (maKhachHang) REFERENCES KhachHang(maKhachHang) ON DELETE NO ACTION
+    FOREIGN KEY (maNhanVien) REFERENCES NhanVien(maNguoiDung) ON DELETE SET NULL,
+    FOREIGN KEY (maKhachHang) REFERENCES KhachHang(maNguoiDung) ON DELETE SET NULL
 );
 
 -- Tạo bảng Ve
-CREATE TABLE Ve (
-    maVe INT IDENTITY(1,1) PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS Ve (
+    maVe INT AUTO_INCREMENT PRIMARY KEY,
     maSuatChieu INT NOT NULL,
-    maKhachHang INT NULL,  -- NULL nếu vé chưa được đặt/chưa liên kết KH
-    maHoaDon INT NULL,     -- NULL nếu vé chưa thanh toán
+    maPhong INT NOT NULL,
     soGhe NVARCHAR(5) NOT NULL,
+    maHoaDon INT NULL,
     giaVe DECIMAL(10,2) CHECK (giaVe >= 0) NOT NULL,
-    trangThai NVARCHAR(20) DEFAULT 'available' CHECK (trangThai IN ('available', 'booked', 'paid', 'cancelled')) NOT NULL,
-    ngayDat DATETIME NULL, -- Thêm nếu cần lưu thời điểm đặt vé
+    trangThai ENUM('available', 'booked', 'paid', 'cancelled', 'pending') DEFAULT 'available' NOT NULL,
+    ngayDat DATETIME NULL,
     FOREIGN KEY (maSuatChieu) REFERENCES SuatChieu(maSuatChieu) ON DELETE CASCADE,
-    FOREIGN KEY (maKhachHang) REFERENCES KhachHang(maKhachHang) ON DELETE SET NULL,
-    FOREIGN KEY (maHoaDon) REFERENCES HoaDon(maHoaDon) ON DELETE SET NULL
+    FOREIGN KEY (maHoaDon) REFERENCES HoaDon(maHoaDon) ON DELETE SET NULL,
+    FOREIGN KEY (maPhong, soGhe) REFERENCES Ghe(maPhong, soGhe) ON DELETE NO ACTION,
+    CONSTRAINT UQ_SuatChieu_SoGhe UNIQUE (maSuatChieu, soGhe)
 );
 
 -- Tạo bảng ChiTietHoaDon
-CREATE TABLE ChiTietHoaDon (
+CREATE TABLE IF NOT EXISTS ChiTietHoaDon (
     maHoaDon INT NOT NULL,
     maVe INT NOT NULL,
-    giaVe DECIMAL(10,2) CHECK (giaVe >= 0) NOT NULL, -- Lưu giá vé tại thời điểm mua (phòng khi giá thay đổi)
     PRIMARY KEY (maHoaDon, maVe),
     FOREIGN KEY (maHoaDon) REFERENCES HoaDon(maHoaDon) ON DELETE CASCADE,
     FOREIGN KEY (maVe) REFERENCES Ve(maVe) ON DELETE CASCADE
 );
 
+-- Dữ liệu cho bảng NguoiDung
 INSERT INTO NguoiDung (hoTen, soDienThoai, email, loaiNguoiDung) VALUES
-('Nguyễn Văn A', '0987654321', 'nguyenvana@gmail.com', 'KhachHang'),
-('Trần Thị B', '0912345678', 'tranthib@gmail.com', 'KhachHang'),
-('Lê Hoàng C', '0909123456', 'lehoangc@gmail.com', 'NhanVien'),
-('Phạm Minh D', '0934567890', 'phamminhd@gmail.com', 'NhanVien');
+(N'Nguyễn Văn An', '0905123456', 'an.nguyen@email.com', 'KhachHang'),
+(N'Trần Thị Bình', '0915123456', 'binh.tran@email.com', 'KhachHang'),
+(N'Lê Văn Cường', '0925123456', 'cuong.le@email.com', 'NhanVien'),
+(N'Phạm Thị Duyên', '0935123456', 'duyen.pham@email.com', 'NhanVien');
 
+-- Dữ liệu cho bảng KhachHang
 INSERT INTO KhachHang (maNguoiDung, diemTichLuy) VALUES
 (1, 100),
 (2, 50);
 
+-- Dữ liệu cho bảng NhanVien
 INSERT INTO NhanVien (maNguoiDung, chucVu, luong) VALUES
-(3, 'Thu Ngân', 8000000),
-(4, 'Quản Lý', 12000000);
+(3, 'Quản lý', 10000000),
+(4, 'Thu ngân', 6000000);
 
+-- Dữ liệu cho bảng TaiKhoan
 INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maNguoiDung) VALUES
-('khach1', 'password123', 'user', 1),
-('khach2', 'password456', 'user', 2),
-('nv1', 'admin123', 'admin', 3),
-('nv2', 'admin456', 'admin', 4);
+('nva', '123456', 'user', 1),
+('ttb', '654321', 'user', 2),
+('lvc', 'password', 'admin', 3),
+('ptd', 'pass123', 'admin', 4);
 
+-- Dữ liệu cho bảng TheLoaiPhim
 INSERT INTO TheLoaiPhim (tenTheLoai) VALUES
-('Hành Động'),
-('Tình Cảm'),
-('Kinh Dị'),
-('Hài Hước');
+('Hành động'),
+('Hài hước'),
+('Kinh dị'),
+('Tình cảm'),
+('Khoa học viễn tưởng');
 
+-- Dữ liệu cho bảng Phim
 INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien) VALUES
-('Fast & Furious 9', 1, 130, '2023-05-10', 'Mỹ', 'IMAX', 'Phim hành động hấp dẫn về đua xe.', 'Justin Lin'),
-('Titanic', 2, 195, '1997-12-19', 'Mỹ', '2D', 'Câu chuyện tình lãng mạn trên tàu Titanic.', 'James Cameron'),
-('Annabelle', 3, 100, '2014-10-03', 'Mỹ', '2D', 'Búp bê ma quái.', 'John R. Leonetti'),
-('Deadpool', 4, 108, '2016-02-12', 'Mỹ', 'IMAX', 'Siêu anh hùng lầy lội.', 'Tim Miller');
+('John Wick 4', 1, 169, '2023-03-24', 'Mỹ', '2D', 'Phim hành động', 'Chad Stahelski'),
+('Fast X', 1, 141, '2023-05-19', 'Mỹ', '3D', 'Phim hành động đua xe', 'Louis Leterrier'),
+('Siêu Lừa Gặp Siêu Lầy', 2, 107, '2023-03-10', 'Việt Nam', '2D', 'Phim hài hước', 'Lý Hải'),
+('Lật Mặt 6: Tấm Vé Định Mệnh', 2, 120, '2023-04-28', 'Việt Nam', '2D', 'Phim hài hành động', 'Lý Hải'),
+('The Flash', 5, 144, '2023-06-16', 'Mỹ', 'IMAX', 'Phim khoa học viễn tưởng', 'Andy Muschietti');
 
+-- Dữ liệu cho bảng PhongChieu
 INSERT INTO PhongChieu (tenPhong, soLuongGhe, loaiPhong) VALUES
-('Phòng 1', 50, 'Thường'),
-('Phòng 2', 80, 'VIP'),
-('Phòng 3', 60, 'Thường');
+('Phòng 1', 50, '2D'),
+('Phòng 2', 100, '3D'),
+('Phòng 3', 75, 'IMAX');
 
+-- Dữ liệu cho bảng Ghe
+INSERT INTO Ghe (maPhong, soGhe) VALUES
+(1, 'A1'), (1, 'A2'), (1, 'A3'), (1, 'B1'), (1, 'B2'),
+(2, 'A1'), (2, 'A2'), (2, 'A3'), (2, 'B1'), (2, 'B2'), (2, 'C1'), (2, 'C2'),
+(3, 'A1'), (3, 'A2'), (3, 'A3'), (3, 'B1'), (3, 'B2'), (3,'C1'), (3,'C2'), (3, 'D1');
+
+-- Dữ liệu cho bảng SuatChieu
 INSERT INTO SuatChieu (maPhim, maPhong, ngayGioChieu) VALUES
-(1, 1, '2025-04-05 14:00:00'),
-(2, 2, '2025-04-05 18:00:00'),
-(3, 3, '2025-04-06 20:00:00'),
-(4, 1, '2025-04-06 22:00:00');
+(1, 1, '2023-11-20 10:00:00'),
+(2, 2, '2023-11-20 14:00:00'),
+(3, 1, '2023-11-20 16:00:00'),
+(4, 3, '2023-11-20 19:00:00'),
+(5, 2, '2023-11-20 21:00:00');
 
-INSERT INTO HoaDon (maNhanVien, maKhachHang, ngayLap, tongTien) VALUES
-(1, 1, '2025-04-02', 150000),
-(2, 2, '2025-04-02', 120000);
+-- Dữ liệu cho bảng HoaDon
+INSERT INTO HoaDon (maNhanVien, maKhachHang, tongTien) VALUES
+(3, 1, 200000),
+(4, 2, 150000);
 
-INSERT INTO Ve (maSuatChieu, maKhachHang, maHoaDon, soGhe, giaVe, trangThai, ngayDat) VALUES
-(1, 1, 1, 'A1', 75000, 'paid', '2025-04-02'),
-(2, 2, 2, 'B5', 60000, 'paid', '2025-04-02'),
-(3, NULL, NULL, 'C3', 50000, 'available', NULL);
+-- Dữ liệu cho bảng Vechitiethoadon
+INSERT INTO Ve (maSuatChieu, maPhong, soGhe, maHoaDon, giaVe, trangThai, ngayDat) VALUES
+(1, 1, 'A1', 1, 100000, 'paid', '2023-11-19 10:00:00'),
+(2, 2, 'B2', 1, 100000, 'paid', '2023-11-19 10:00:00'),
+(3, 1, 'B2', 2, 75000, 'paid', '2023-11-19 11:00:00'),
+(4, 3, 'C1', 2, 75000, 'paid', '2023-11-19 11:00:00');
 
-INSERT INTO ChiTietHoaDon (maHoaDon, maVe, giaVe) VALUES
-(1, 1, 75000),
-(2, 2, 60000);
+-- Dữ liệu cho bảng ChiTietHoaDon
+INSERT INTO ChiTietHoaDon (maHoaDon, maVe) VALUES
+(1, 1),
+(1, 2),
+(2, 3),
+(2, 4);
+
+SELECT * FROM NguoiDung;
+SELECT * FROM KhachHang;
+SELECT * FROM NhanVien;
+SELECT * FROM TaiKhoan;
+SELECT * FROM TheLoaiPhim;
+SELECT * FROM Phim;
+SELECT * FROM PhongChieu;
+SELECT * FROM Ghe;
+SELECT * FROM SuatChieu;
+SELECT * FROM HoaDon;
+SELECT * FROM Ve;
+SELECT * FROM ChiTietHoaDon;

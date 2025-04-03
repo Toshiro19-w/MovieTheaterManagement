@@ -2,16 +2,17 @@ package com.cinema.models;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class Ve {
-    private int maVe; //tự tăng
-    private int maSuatChieu; //tự tăng
-    private Integer maKhachHang; //tự tăng
-    private Integer maHoaDon; //tự tăng
+    private int maVe;
+    private int maSuatChieu;
+    private Integer maPhong;
     private String soGhe;
+    private Integer maHoaDon;
     private BigDecimal giaVe;
     private TrangThaiVe trangThai;
-    private LocalDate ngayDat;
+    private LocalDateTime ngayDat;
 
     //JOIN chỉ cho user
     private String tenPhim;
@@ -19,15 +20,35 @@ public class Ve {
     private String hoTenKhachHang;
     private String loaiPhong;
 
-    public Ve(int maVe, int maSuatChieu, Integer maKhachHang, Integer maHoaDon, String soGhe, BigDecimal giaVe, TrangThaiVe trangThai, LocalDate ngayDat) {
+    public Ve(int maVe, int maSuatChieu, Integer maPhong,
+              String soGhe, Integer maHoaDon, BigDecimal giaVe,
+              TrangThaiVe trangThai, LocalDateTime ngayDat) {
         this.maVe = maVe;
         this.maSuatChieu = maSuatChieu;
-        this.maKhachHang = maKhachHang;
-        this.maHoaDon = maHoaDon;
+        this.maPhong = maPhong;
         this.soGhe = soGhe;
+        this.maHoaDon = maHoaDon;
         this.giaVe = giaVe;
         this.trangThai = trangThai;
         this.ngayDat = ngayDat;
+    }
+
+    public Ve(int maVe, int maSuatChieu, Integer maPhong,
+              String soGhe, Integer maHoaDon, BigDecimal giaVe,
+              TrangThaiVe trangThai, LocalDateTime ngayDat, String tenPhim, LocalDate ngayGioChieu,
+              String hoTenKhachHang, String loaiPhong) {
+        this.maVe = maVe;
+        this.maSuatChieu = maSuatChieu;
+        this.maPhong = maPhong;
+        this.soGhe = soGhe;
+        this.maHoaDon = maHoaDon;
+        this.giaVe = giaVe;
+        this.trangThai = trangThai;
+        this.ngayDat = ngayDat;
+        this.tenPhim = tenPhim;
+        this.ngayGioChieu = ngayGioChieu;
+        this.hoTenKhachHang = hoTenKhachHang;
+        this.loaiPhong = loaiPhong;
     }
 
     public Ve() {}
@@ -48,12 +69,12 @@ public class Ve {
         this.maSuatChieu = maSuatChieu;
     }
 
-    public Integer getMaKhachHang() {
-        return maKhachHang;
+    public Integer getMaPhong() {
+        return maPhong;
     }
 
-    public void setMaKhachHang(Integer maKhachHang) {
-        this.maKhachHang = maKhachHang;
+    public void setMaPhong(Integer maPhong) {
+        this.maPhong = maPhong;
     }
 
     public Integer getMaHoaDon() {
@@ -120,11 +141,11 @@ public class Ve {
         this.loaiPhong = loaiPhong;
     }
 
-    public LocalDate getNgayDat() {
+    public LocalDateTime getNgayDat() {
         return ngayDat;
     }
 
-    public void setNgayDat(LocalDate ngayDat) {
+    public void setNgayDat(LocalDateTime ngayDat) {
         this.ngayDat = ngayDat;
     }
 }

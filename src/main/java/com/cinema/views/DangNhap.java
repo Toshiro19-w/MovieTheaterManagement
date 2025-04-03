@@ -86,7 +86,7 @@ public class DangNhap extends JFrame {
     }
 
     private void openMainScreen() {
-        new PhimView().setVisible(true);
+        //new PhimView().setVisible(true);
         this.dispose();
     }
 }
