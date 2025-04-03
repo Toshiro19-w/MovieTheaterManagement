@@ -3,6 +3,7 @@ package com.cinema.repositories;
 import com.cinema.models.Phim;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +28,39 @@ public class PhimRepository extends BaseRepository<Phim> {
                         rs.getString("dinhDang"),
                         rs.getString("moTa"),
                         rs.getString("daoDien")));
+            }
+        }
+        return list;
+    }
+
+    public List<Phim> findAllDetail() throws SQLException {
+        List<Phim> list = new ArrayList<>();
+        String sql = "SELECT \n" + "p.maPhim,\n" + "p.tenPhim,\n" + "tl.tenTheLoai,\n" + "p.thoiLuong,\n" + "p.ngayKhoiChieu,\n" +
+                "p.nuocSanXuat,\n" + "p.dinhDang,\n" + "p.moTa,\n" + "p.daoDien,\n" + "COUNT(sc.maSuatChieu) AS soSuatChieu\n" +
+                "FROM \n" + "Phim p\n" +
+                "JOIN \n" + "TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai\n" +
+                "LEFT JOIN \n" + "SuatChieu sc ON p.maPhim = sc.maPhim\n" +
+                "GROUP BY \n" + "p.maPhim, p.tenPhim, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu, \n" +
+                "p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien\n" +
+                "ORDER BY \n" + "p.ngayKhoiChieu DESC, p.tenPhim;";
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                LocalDate ngayKhoiChieu = null;
+                if (rs.getDate("ngayKhoiChieu") != null) {
+                    ngayKhoiChieu = rs.getDate("ngayKhoiChieu").toLocalDate();
+                }
+                list.add(new Phim(
+                        rs.getInt("maPhim"),
+                        rs.getString("tenPhim"),
+                        rs.getString("tenTheLoai"),
+                        rs.getInt("thoiLuong"),
+                        ngayKhoiChieu,
+                        rs.getString("nuocSanXuat"),
+                        rs.getString("dinhDang"),
+                        rs.getString("moTa"),
+                        rs.getString("daoDien"),
+                        rs.getInt("soSuatChieu")
+                ));
             }
         }
         return list;

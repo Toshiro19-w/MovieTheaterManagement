@@ -57,7 +57,7 @@ public class DangKy extends JFrame {
         btnDangNhap.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                new DangNhap().setVisible(true);
+                new LoginView().setVisible(true);
                 dispose();
             }
         });

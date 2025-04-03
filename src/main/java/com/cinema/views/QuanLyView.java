@@ -1,90 +1,61 @@
 package com.cinema.views;
 
+import com.formdev.flatlaf.FlatLightLaf;
+
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 
 public class QuanLyView extends JFrame {
-    private JPanel mainPanel;
-    private JMenuBar menuBar;
-    private JMenu menuQuanLy, menuBaoCao;
-    private JMenuItem menuItemPhim, menuItemVe, menuItemNhanVien, menuItemSuatChieu, menuItemKhachHang, menuItemDoanhThu;
+    private JPanel mainContentPanel;
+    private CardLayout cardLayout;
 
     public QuanLyView() {
-        initUI();
-    }
+        try {
+            UIManager.setLookAndFeel(new FlatLightLaf());
+        } catch (Exception ex) {
+            System.err.println("Failed to initialize FlatLaf");
+        }
 
-    private void initUI() {
         setTitle("Hệ thống quản lý rạp chiếu phim");
-        setSize(800, 600);
+        setSize(1200, 700);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        mainPanel = new JPanel(new GridLayout(1, 0));
-        add(mainPanel);
+        // Header
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        JLabel logoLabel = new JLabel("Cinema Management");
+        headerPanel.add(logoLabel, BorderLayout.WEST);
 
-        menuBar = new JMenuBar();
+        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        String[] sections = {"Phim", "Suất chiếu", "Vé", "Hóa đơn", "Nhân viên", "Báo cáo"};
+        for (String section : sections) {
+            JButton button = new JButton(section);
+            button.addActionListener(e -> cardLayout.show(mainContentPanel, section));
+            navPanel.add(button);
+        }
+        headerPanel.add(navPanel, BorderLayout.CENTER);
 
-        menuQuanLy = new JMenu("Quản Lý");
-        menuItemPhim = createMenuItem("Quản lý phim", this::openQuanLyPhim);
-        menuItemVe = createMenuItem("Quản lý vé", this::openQuanLyVe);
-        menuItemNhanVien = createMenuItem("Quản lý nhân viên", this::openQuanLyNhanVien);
-        menuItemSuatChieu = createMenuItem("Quản lý suất chiếu", this::openQuanLySuatChieu);
-        menuItemKhachHang = createMenuItem("Quản lý khách hàng", this::openQuanLyKhachHang);
+        JPanel userPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JLabel usernameLabel = new JLabel("Username");
+        JButton logoutButton = new JButton("Đăng xuất");
+        userPanel.add(usernameLabel);
+        userPanel.add(logoutButton);
+        headerPanel.add(userPanel, BorderLayout.EAST);
 
-        menuQuanLy.add(menuItemPhim);
-        menuQuanLy.add(menuItemVe);
-        menuQuanLy.add(menuItemNhanVien);
-        menuQuanLy.add(menuItemSuatChieu);
-        menuQuanLy.add(menuItemKhachHang);
-        menuBar.add(menuQuanLy);
+        // Main content
+        cardLayout = new CardLayout();
+        mainContentPanel = new JPanel(cardLayout);
+        mainContentPanel.add(new PhimView(), "Phim");
+        //mainContentPanel.add(new SuatChieuView(), "Suất chiếu");
+        // Add other views
 
-        menuBaoCao = new JMenu("Báo cáo");
-        menuItemDoanhThu = createMenuItem("Doanh thu", this::openBaoCaoDoanhThu);
-        menuBaoCao.add(menuItemDoanhThu);
-        menuBar.add(menuBaoCao);
+        add(headerPanel, BorderLayout.NORTH);
+        add(mainContentPanel, BorderLayout.CENTER);
 
-        setJMenuBar(menuBar);
-    }
-
-    private JMenuItem createMenuItem(String title, java.awt.event.ActionListener action) {
-        JMenuItem menuItem = new JMenuItem(title);
-        menuItem.addActionListener(action);
-        return menuItem;
-    }
-
-    private void openQuanLyPhim(ActionEvent evt) {
-        //openFrame(new PhimView());
-    }
-
-    private void openQuanLyVe(ActionEvent evt) {
-        //openFrame(new QuanLyVeFrame());
-    }
-
-    private void openQuanLyNhanVien(ActionEvent evt) {
-        //openFrame(new QuanLyNhanVienFrame());
-    }
-
-    private void openQuanLySuatChieu(ActionEvent evt) {
-        //openFrame(new QuanLySuatChieuFrame());
-    }
-
-    private void openQuanLyKhachHang(ActionEvent evt) {
-        //openFrame(new QuanLyKhachHangFrame());
-    }
-
-    private void openBaoCaoDoanhThu(ActionEvent evt) {
-        //openFrame(new BaoCaoDoanhThuFrame());
-    }
-
-    private void openFrame(JFrame frame) {
-        frame.setVisible(true);
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        this.dispose();
+        setVisible(true);
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new QuanLyView().setVisible(true));
+        new QuanLyView();
     }
 }

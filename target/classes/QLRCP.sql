@@ -1,4 +1,17 @@
-﻿-- Tạo bảng NguoiDung (bảng cha của KhachHang và NhanVien)
+﻿  SET FOREIGN_KEY_CHECKS = 0;
+  SET @tables = NULL;
+  SELECT GROUP_CONCAT(table_schema, '.', table_name) INTO @tables
+    FROM information_schema.tables 
+    WHERE table_schema = 'quanlyrcp';
+  SET @tables = CONCAT('DROP TABLE ', @tables);
+  PREPARE stmt FROM @tables;
+  EXECUTE stmt;
+  DEALLOCATE PREPARE stmt;
+  SET FOREIGN_KEY_CHECKS = 1;
+
+USE quanlyrcp;
+
+-- Tạo bảng NguoiDung (bảng cha của KhachHang và NhanVien)
 CREATE TABLE IF NOT EXISTS NguoiDung (
     maNguoiDung INT AUTO_INCREMENT PRIMARY KEY,
     hoTen NVARCHAR(100) NOT NULL,
@@ -191,16 +204,3 @@ INSERT INTO ChiTietHoaDon (maHoaDon, maVe) VALUES
 (1, 2),
 (2, 3),
 (2, 4);
-
-SELECT * FROM NguoiDung;
-SELECT * FROM KhachHang;
-SELECT * FROM NhanVien;
-SELECT * FROM TaiKhoan;
-SELECT * FROM TheLoaiPhim;
-SELECT * FROM Phim;
-SELECT * FROM PhongChieu;
-SELECT * FROM Ghe;
-SELECT * FROM SuatChieu;
-SELECT * FROM HoaDon;
-SELECT * FROM Ve;
-SELECT * FROM ChiTietHoaDon;

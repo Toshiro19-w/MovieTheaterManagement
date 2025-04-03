@@ -1,5 +1,6 @@
 package com.cinema.repositories;
 
+import com.cinema.models.Phim;
 import com.cinema.models.TrangThaiVe;
 import com.cinema.models.Ve;
 import java.sql.*;

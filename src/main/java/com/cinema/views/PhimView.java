@@ -8,12 +8,11 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
-public class PhimView extends JFrame {
+public class PhimView extends JPanel {
     private Connection conn;
     private final PhimController controller;
     private JTable table;
@@ -29,13 +28,8 @@ public class PhimView extends JFrame {
     }
 
     private void initializeUI() {
-        setTitle("Quản lý Phim");
-        setSize(800, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         tableModel = new DefaultTableModel(new Object[]{
                 "Mã Phim", "Tên Phim", "Mã Thể Loại", "Thời Lượng", "Ngày Khởi Chiếu", "Nước Sản Xuất", "Định Dạng", "Mô Tả", "Đạo Diễn"
@@ -50,7 +44,7 @@ public class PhimView extends JFrame {
         });
         JScrollPane scrollPane = new JScrollPane(table);
 
-        JPanel formPanel = new JPanel(new GridLayout(3, 2, 5, 5));
+        JPanel formPanel = new JPanel(new GridLayout(9, 2, 5, 5)); // 9 hàng cho 9 trường
         formPanel.setBorder(BorderFactory.createTitledBorder("Thông tin Phim"));
 
         formPanel.add(new JLabel("Mã Phim:"));
@@ -62,9 +56,33 @@ public class PhimView extends JFrame {
         txtTenPhim = new JTextField();
         formPanel.add(txtTenPhim);
 
-        formPanel.add(new JLabel("Thể Loại:"));
+        formPanel.add(new JLabel("Mã Thể Loại:"));
         txtTheLoai = new JTextField();
         formPanel.add(txtTheLoai);
+
+        formPanel.add(new JLabel("Thời Lượng:"));
+        txtThoiLuong = new JTextField();
+        formPanel.add(txtThoiLuong);
+
+        formPanel.add(new JLabel("Ngày Khởi Chiếu:"));
+        txtNgayKhoiChieu = new JTextField();
+        formPanel.add(txtNgayKhoiChieu);
+
+        formPanel.add(new JLabel("Nước Sản Xuất:"));
+        txtNuocSanXuat = new JTextField();
+        formPanel.add(txtNuocSanXuat);
+
+        formPanel.add(new JLabel("Định Dạng:"));
+        txtDinhDang = new JTextField();
+        formPanel.add(txtDinhDang);
+
+        formPanel.add(new JLabel("Mô Tả:"));
+        txtMoTa = new JTextField();
+        formPanel.add(txtMoTa);
+
+        formPanel.add(new JLabel("Đạo Diễn:"));
+        txtDaoDien = new JTextField();
+        formPanel.add(txtDaoDien);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         btnThem = new JButton("Thêm");
@@ -82,13 +100,11 @@ public class PhimView extends JFrame {
         btnXoa.addActionListener(e -> xoaPhim());
         btnClear.addActionListener(e -> clearForm());
 
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        add(scrollPane, BorderLayout.CENTER);
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.add(formPanel, BorderLayout.CENTER);
         bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
-        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
-
-        add(mainPanel);
+        add(bottomPanel, BorderLayout.SOUTH);
     }
 
     private void loadDataToTable() {
@@ -117,6 +133,12 @@ public class PhimView extends JFrame {
             txtMaPhim.setText(tableModel.getValueAt(selectedRow, 0).toString());
             txtTenPhim.setText(tableModel.getValueAt(selectedRow, 1).toString());
             txtTheLoai.setText(tableModel.getValueAt(selectedRow, 2).toString());
+            txtThoiLuong.setText(tableModel.getValueAt(selectedRow, 3).toString());
+            txtNgayKhoiChieu.setText(tableModel.getValueAt(selectedRow, 4).toString());
+            txtNuocSanXuat.setText(tableModel.getValueAt(selectedRow, 5).toString());
+            txtDinhDang.setText(tableModel.getValueAt(selectedRow, 6).toString());
+            txtMoTa.setText(tableModel.getValueAt(selectedRow, 7).toString());
+            txtDaoDien.setText(tableModel.getValueAt(selectedRow, 8).toString());
         }
     }
 
@@ -199,13 +221,12 @@ public class PhimView extends JFrame {
         txtMaPhim.setText("");
         txtTenPhim.setText("");
         txtTheLoai.setText("");
+        txtThoiLuong.setText("");
+        txtNgayKhoiChieu.setText("");
+        txtNuocSanXuat.setText("");
+        txtDinhDang.setText("");
+        txtMoTa.setText("");
+        txtDaoDien.setText("");
         table.clearSelection();
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            PhimView view = new PhimView();
-            view.setVisible(true);
-        });
     }
 }
