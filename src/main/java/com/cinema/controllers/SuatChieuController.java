@@ -1,31 +1,31 @@
 package com.cinema.controllers;
 
-import com.cinema.models.Phim;
-import com.cinema.services.PhimService;
+import com.cinema.models.SuatChieu;
+import com.cinema.services.SuatChieuService;
 
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 
-public class PhimController {
-    private final PhimService phimService;
+public class SuatChieuController {
+    private final SuatChieuService suatChieuService;
 
-    public PhimController(PhimService phimService) {
-        this.phimService = phimService;
+    public SuatChieuController(SuatChieuService suatChieuService) {
+        this.suatChieuService = suatChieuService;
     }
 
-    public List<Phim> findAll() {
+    public List<SuatChieu> findAll() {
         try {
-            return phimService.getAllPhim();
+            return suatChieuService.getAllSuatChieu();
         } catch (SQLException e) {
             System.err.println("Lỗi khi tìm phim: " + e.getMessage());
             return null;
         }
     }
 
-    public List<Phim> findAllDetail() {
+    public List<SuatChieu> findAllDetail() {
         try {
-            return phimService.getAllPhimDetail();
+            return suatChieuService.getAllSuatChieuDetail();
         } catch (SQLException e) {
             System.err.println("Lỗi khi tìm phim: " + e.getMessage());
             return Collections.emptyList();
@@ -33,44 +33,44 @@ public class PhimController {
     }
 
     // Chưa làm sidebar cho tìm kiếm
-    public Phim timPhimTheoId(int maPhim) {
+    public SuatChieu findSuatChieuById(int maSuatChieu) {
         try {
-            return phimService.getPhimById(maPhim);
+            return suatChieuService.getSuatChieuById(maSuatChieu);
         } catch (SQLException e) {
             System.err.println("Lỗi khi tìm phim: " + e.getMessage());
             return null;
         }
     }
 
-    public Phim savePhim(Phim phim) {
+    public SuatChieu saveSuatChieu(SuatChieu suatChieu) {
         try {
 //            if (!ValidationUtils.validatePhim(phim)) {
 //                System.out.println("Dữ liệu phim không hợp lệ.");
 //                return null;
 //            }
-            return phimService.addPhim(phim);
+            return suatChieuService.addSuatChieu(suatChieu);
         } catch (SQLException e) {
             System.err.println("Lỗi khi lưu phim: " + e.getMessage());
             return null;
         }
     }
 
-    public Phim updatePhim(Phim phim) {
+    public SuatChieu updateSuatChieu(SuatChieu suatChieu) {
         try {
 //            if (!ValidationUtils.validatePhongChieu(phongChieu)) {
 //                System.out.println("Dữ liệu phòng chiếu không hợp lệ.");
 //                return null;
 //            }
-            return phimService.updatePhim(phim);
+            return suatChieuService.updateSuatChieu(suatChieu);
         } catch (SQLException e) {
             System.err.println("Lỗi khi cập nhật phim: " + e.getMessage());
             return null;
         }
     }
 
-    public boolean deletePhim(int maPhim) {
+    public boolean deleteSuatChieu(int maSuatChieu) {
         try {
-            phimService.deletePhim(maPhim);
+            suatChieuService.deleteSuatChieu(maSuatChieu);
             return true;
         } catch (SQLException e) {
             System.err.println("Lỗi khi xóa phim: " + e.getMessage());

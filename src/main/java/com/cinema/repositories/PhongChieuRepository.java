@@ -1,13 +1,15 @@
 package com.cinema.repositories;
 
 import com.cinema.models.PhongChieu;
+import com.cinema.utils.DatabaseConnection;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PhongChieuRepository extends BaseRepository<PhongChieu> {
-    public PhongChieuRepository(Connection conn) {
-        super(conn);
+    public PhongChieuRepository(DatabaseConnection databaseConnection) {
+        super(databaseConnection);
     }
 
     @Override

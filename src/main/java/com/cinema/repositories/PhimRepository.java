@@ -1,6 +1,7 @@
 package com.cinema.repositories;
 
 import com.cinema.models.Phim;
+import com.cinema.utils.DatabaseConnection;
 
 import java.sql.*;
 import java.time.LocalDate;
@@ -8,8 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PhimRepository extends BaseRepository<Phim> {
-    public PhimRepository(Connection conn) {
-        super(conn);
+    public PhimRepository(DatabaseConnection databaseConnection) {
+        super(databaseConnection);
     }
 
     @Override
@@ -35,14 +36,29 @@ public class PhimRepository extends BaseRepository<Phim> {
 
     public List<Phim> findAllDetail() throws SQLException {
         List<Phim> list = new ArrayList<>();
-        String sql = "SELECT \n" + "p.maPhim,\n" + "p.tenPhim,\n" + "tl.tenTheLoai,\n" + "p.thoiLuong,\n" + "p.ngayKhoiChieu,\n" +
-                "p.nuocSanXuat,\n" + "p.dinhDang,\n" + "p.moTa,\n" + "p.daoDien,\n" + "COUNT(sc.maSuatChieu) AS soSuatChieu\n" +
-                "FROM \n" + "Phim p\n" +
-                "JOIN \n" + "TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai\n" +
-                "LEFT JOIN \n" + "SuatChieu sc ON p.maPhim = sc.maPhim\n" +
-                "GROUP BY \n" + "p.maPhim, p.tenPhim, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu, \n" +
-                "p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien\n" +
-                "ORDER BY \n" + "p.ngayKhoiChieu DESC, p.tenPhim;";
+        String sql = """
+                SELECT\s
+                p.maPhim,
+                p.tenPhim,
+                tl.tenTheLoai,
+                p.thoiLuong,
+                p.ngayKhoiChieu,
+                p.nuocSanXuat,
+                p.dinhDang,
+                p.moTa,
+                p.daoDien,
+                COUNT(sc.maSuatChieu) AS soSuatChieu
+                FROM\s
+                Phim p
+                JOIN\s
+                TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai
+                LEFT JOIN\s
+                SuatChieu sc ON p.maPhim = sc.maPhim
+                GROUP BY\s
+                p.maPhim, p.tenPhim, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu,\s
+                p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien
+                ORDER BY\s
+                p.ngayKhoiChieu DESC, p.tenPhim;""";
         try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 LocalDate ngayKhoiChieu = null;

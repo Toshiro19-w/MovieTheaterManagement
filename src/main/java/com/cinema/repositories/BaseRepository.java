@@ -1,32 +1,28 @@
 package com.cinema.repositories;
 
-import com.cinema.models.Phim;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
-
 
 public abstract class BaseRepository<T> implements IRepository<T> {
     protected Connection conn;
+    protected final DatabaseConnection dbConnection;
 
-    public BaseRepository(Connection conn) {
-        this.conn = conn != null ? conn : DatabaseConnection.getConnection();
+    public BaseRepository(DatabaseConnection dbConnection) {
+        if (dbConnection == null) {
+            throw new IllegalArgumentException("DatabaseConnection cannot be null");
+        }
+        this.dbConnection = dbConnection;
+        try {
+            this.conn = dbConnection.getConnection();
+        } catch (SQLException e) {
+            throw new RuntimeException("Không thể lấy kết nối cơ sở dữ liệu", e);
+        }
     }
 
-    @Override
-    public void close() {
-        // Không đóng connection ở đây vì connection được quản lý tập trung bởi DatabaseConnection
-        // Các repository con có thể override nếu cần xử lý đặc biệt
+    // Đóng kết nối khi cần
+    public void closeConnection() {
+        dbConnection.closeConnection();
     }
-
-//    protected void finalize() throws Throwable {
-//        try {
-//            // Đảm bảo không đóng connection ở đây
-//        } finally {
-//            super.finalize();
-//        }
-//    }
 }
-

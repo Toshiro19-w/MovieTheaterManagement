@@ -3,6 +3,8 @@ package com.cinema.repositories;
 import com.cinema.models.Phim;
 import com.cinema.models.TrangThaiVe;
 import com.cinema.models.Ve;
+import com.cinema.utils.DatabaseConnection;
+
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -10,8 +12,8 @@ import java.util.List;
 
 public class VeRepository extends BaseRepository<Ve> {
 
-    public VeRepository(Connection conn) {
-        super(conn);
+    public VeRepository(DatabaseConnection databaseConnection) {
+        super(databaseConnection);
     }
 
     @Override

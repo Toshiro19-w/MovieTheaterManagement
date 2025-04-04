@@ -39,7 +39,6 @@ public class Phim {
         this.soSuatChieu = soSuatChieu;
     }
 
-
     public int getMaPhim() {
         return maPhim;
     }

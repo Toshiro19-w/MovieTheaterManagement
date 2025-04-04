@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public class RegisterView extends JFrame {
+    private Connection conn;
     private JTextField usernameField, emailField;
     private JPasswordField passwordField, confirmPasswordField;
 
@@ -190,7 +191,7 @@ public class RegisterView extends JFrame {
             return;
         }
 
-        try (Connection conn = DatabaseConnection.getConnection()) {
+        try {
             String sql = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan) VALUES (?, ?, ?)";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setString(1, username);

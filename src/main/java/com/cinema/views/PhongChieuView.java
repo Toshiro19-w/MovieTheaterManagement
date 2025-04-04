@@ -1,27 +1,38 @@
 package com.cinema.views;
 
+import com.cinema.controllers.PhimController;
 import com.cinema.controllers.PhongChieuController;
 import com.cinema.models.PhongChieu;
+import com.cinema.services.PhimService;
 import com.cinema.services.PhongChieuService;
+import com.cinema.utils.DatabaseConnection;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.sql.Connection;
 import java.util.List;
 
 public class PhongChieuView extends JFrame {
-    private Connection conn;
-    private final PhongChieuController controller;
+    private DatabaseConnection databaseConnection;
+    private PhongChieuController controller;
     private JTable table;
     private DefaultTableModel tableModel;
     private JTextField txtMaPhong, txtSoLuongGhe, txtLoaiPhong;
     private JButton btnThem, btnSua, btnXoa, btnClear;
 
     public PhongChieuView() {
-        this.controller = new PhongChieuController(new PhongChieuService(conn));
+        try {
+            databaseConnection = new DatabaseConnection();
+            controller = new PhongChieuController(new PhongChieuService(databaseConnection));
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Không thể đọc file cấu hình cơ sở dữ liệu!");
+            System.exit(1);
+        }
         initializeUI();
         loadDataToTable();
     }
@@ -53,7 +64,7 @@ public class PhongChieuView extends JFrame {
 
         formPanel.add(new JLabel("Mã Phòng:"));
         txtMaPhong = new JTextField();
-        txtMaPhong.setEditable(false); // Không cho sửa mã phòng
+        txtMaPhong.setEditable(false);
         formPanel.add(txtMaPhong);
 
         formPanel.add(new JLabel("Số Lượng Ghế:"));

@@ -1,26 +1,26 @@
 package com.cinema.views;
 
+import com.cinema.controllers.PhimController;
 import com.cinema.controllers.VeController;
-import com.cinema.models.Phim;
 import com.cinema.models.TrangThaiVe;
 import com.cinema.models.Ve;
+import com.cinema.services.PhimService;
 import com.cinema.services.VeService;
+import com.cinema.utils.DatabaseConnection;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.io.IOException;
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.List;
 
 public class VeView extends JPanel {
-    private Connection conn;
-    private VeController veController;
+    private DatabaseConnection databaseConnection;
+    private VeController controller;
     private JTable table;
     private DefaultTableModel tableModel;
     private JTextField searchField, txtMaVe, txtMaSuatChieu, txtMaPhong, txtSoGhe,
@@ -28,7 +28,14 @@ public class VeView extends JPanel {
     private JButton btnThem, btnSua, btnXoa, btnClear;
 
     public VeView() {
-        veController = new VeController(new VeService(conn));
+        try {
+            databaseConnection = new DatabaseConnection();
+            controller = new VeController(new VeService(databaseConnection));
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Không thể đọc file cấu hình cơ sở dữ liệu!");
+            System.exit(1);
+        }
         initializeUI();
         loadDataToTable();
     }
@@ -115,7 +122,7 @@ public class VeView extends JPanel {
     private void loadDataToTable() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         tableModel.setRowCount(0);
-        List<Ve> danhSach = veController.findAll();
+        List<Ve> danhSach = controller.findAll();
         if (danhSach != null) {
             for (Ve ve : danhSach) {
                 tableModel.addRow(new Object[]{
@@ -157,7 +164,7 @@ public class VeView extends JPanel {
             return;
         }
         tableModel.setRowCount(0);
-        List<Ve> veList = Collections.singletonList(veController.findVeById(Integer.parseInt(keyword)));
+        List<Ve> veList = Collections.singletonList(controller.findVeById(Integer.parseInt(keyword)));
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         //veList.forEach(ve -> addVeToTable(ve, formatter));
     }
@@ -170,7 +177,7 @@ public class VeView extends JPanel {
             LocalDateTime ngayDat = LocalDateTime.now();
 
             Ve ve = new Ve(0, 0, 0, soGhe, 0, giaVe, trangThai, ngayDat);
-            Ve result = veController.saveVe(ve);
+            Ve result = controller.saveVe(ve);
 
             if (result != null) {
                 JOptionPane.showMessageDialog(this, "Thêm vé thành công!");
@@ -196,7 +203,7 @@ public class VeView extends JPanel {
         LocalDateTime ngayDat = LocalDateTime.parse(txtNgayDat.getText());
 
         Ve ve = new Ve(0, 0, 0, soGhe, 0, giaVe, trangThai, ngayDat);
-        Ve result = veController.updateVe(ve);
+        Ve result = controller.updateVe(ve);
 
         if (result != null) {
             JOptionPane.showMessageDialog(this, "Cập nhật phim thành công!");
@@ -216,7 +223,7 @@ public class VeView extends JPanel {
         int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa phim này?", "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            boolean result = veController.deleteVe(maVe);
+            boolean result = controller.deleteVe(maVe);
             if (result) {
                 JOptionPane.showMessageDialog(this, "Xóa phim thành công!");
                 loadDataToTable();

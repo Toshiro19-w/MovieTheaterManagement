@@ -24,7 +24,14 @@ public class SuatChieu {
         this.thoiLuongPhim = thoiLuongPhim;
         this.dinhDangPhim = dinhDangPhim;
     }
-    
+
+    public SuatChieu(int maSuatChieu, int maPhim, int maPhong, LocalDateTime ngayGioChieu) {
+        this.maSuatChieu = maSuatChieu;
+        this.maPhim = maPhim;
+        this.maPhong = maPhong;
+        this.ngayGioChieu = ngayGioChieu;
+    }
+
     public SuatChieu() {}
 
     public int getMaSuatChieu() {

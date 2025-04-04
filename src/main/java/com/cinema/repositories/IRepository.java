@@ -9,6 +9,4 @@ public interface IRepository<T> {
     T save(T entity) throws SQLException;
     T update(T entity) throws SQLException;
     void delete(int id) throws SQLException;
-
-    void close();
 }

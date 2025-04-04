@@ -1,12 +1,10 @@
 package com.cinema.controllers;
 
-import com.cinema.models.TrangThaiVe;
 import com.cinema.models.Ve;
 import com.cinema.services.VeService;
 import com.cinema.utils.ValidationUtils;
 
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.util.List;
 
 public class VeController {
@@ -18,7 +16,7 @@ public class VeController {
 
     public List<Ve> findAll() {
         try {
-            return veService.findAll();
+            return veService.getAllVe();
         } catch (SQLException e) {
             System.err.println("Lỗi khi tìm vé: " + e.getMessage());
             return null;
@@ -27,7 +25,7 @@ public class VeController {
 
     public Ve findVeById(int maVe) {
         try {
-            return veService.findById(maVe);
+            return veService.getVeById(maVe);
         } catch (SQLException e) {
             System.err.println("Lỗi khi tìm vé: " + e.getMessage());
             return null;
@@ -57,7 +55,7 @@ public class VeController {
                 System.out.println("Dữ liệu vé không hợp lệ.");
                 return null;
             }
-            return veService.save(ve);
+            return veService.saveVe(ve);
         } catch (SQLException e) {
             System.err.println("Lỗi khi lưu vé: " + e.getMessage());
             return null;
@@ -66,7 +64,7 @@ public class VeController {
 
     public Ve updateVe(Ve ve) {
         try {
-            return veService.update(ve);
+            return veService.updateVe(ve);
         } catch (SQLException e) {
             System.err.println("Lỗi khi cập nhật vé: " + e.getMessage());
             return null;
@@ -75,7 +73,7 @@ public class VeController {
 
     public boolean deleteVe(int maVe) {
         try {
-            veService.delete(maVe);
+            veService.deleteVe(maVe);
             return true;
         } catch (SQLException e) {
             System.err.println("Lỗi khi xóa vé: " + e.getMessage());

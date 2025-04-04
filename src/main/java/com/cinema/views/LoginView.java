@@ -8,12 +8,15 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class LoginView extends JFrame {
+    private Connection conn;
+    private DatabaseConnection databaseConnection;
     private JTextField usernameField;
     private JPasswordField passwordField;
 
@@ -22,6 +25,17 @@ public class LoginView extends JFrame {
             UIManager.setLookAndFeel(new FlatLightLaf());
         } catch (Exception ex) {
             System.err.println("Failed to initialize FlatLaf");
+        }
+
+        try {
+            databaseConnection = new DatabaseConnection();
+            conn = databaseConnection.getConnection(); // Lấy đối tượng Connection
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Lỗi khi khởi tạo kết nối cơ sở dữ liệu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            throw new RuntimeException(e);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Lỗi khi lấy kết nối cơ sở dữ liệu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            throw new RuntimeException(e);
         }
         initUI();
     }
@@ -102,8 +116,7 @@ public class LoginView extends JFrame {
         forgotLabel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                //Dòng này thay bằng lệnh handleForgetPassword();
-                JOptionPane.showMessageDialog(LoginView.this, "Chức năng quên mật khẩu đang phát triển!");
+                handleForgotPassword();
             }
         });
         loginPanel.add(forgotLabel, gbc);
@@ -169,12 +182,14 @@ public class LoginView extends JFrame {
         }
 
         // Kết nối cơ sở dữ liệu và kiểm tra thông tin đăng nhập
-        try (Connection conn = DatabaseConnection.getConnection()) {
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        try {
             String sql = "SELECT loaiTaiKhoan FROM TaiKhoan WHERE tenDangNhap = ? AND matKhau = ?";
-            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt = conn.prepareStatement(sql);
             stmt.setString(1, username);
-            stmt.setString(2, password); // Mã hoá mật khẩu
-            ResultSet rs = stmt.executeQuery();
+            stmt.setString(2, password); // Mã hoá mật khẩu (nên mã hóa trước khi lưu vào DB)
+            rs = stmt.executeQuery();
 
             // Nếu đăng nhập thành công
             if (rs.next()) {
@@ -183,9 +198,9 @@ public class LoginView extends JFrame {
 
                 // Chuyển hướng dựa trên vai trò
                 if ("admin".equalsIgnoreCase(role)) {
-                    openQuanLyView(); // Mở giao diện admin
+                    openQuanLyView(username); // Mở giao diện admin
                 } else if ("user".equalsIgnoreCase(role)) {
-                    openNguoiDungView(); // Mở giao diện khách hàng
+                    openNguoiDungView(username); // Mở giao diện khách hàng
                 }
                 dispose(); // Đóng cửa sổ đăng nhập
             } else {
@@ -193,19 +208,35 @@ public class LoginView extends JFrame {
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Lỗi kết nối cơ sở dữ liệu!");
+            JOptionPane.showMessageDialog(this, "Lỗi truy vấn cơ sở dữ liệu: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            // Đóng PreparedStatement và ResultSet trong khối finally để đảm bảo chúng luôn được đóng
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
     // Phương thức mở giao diện admin
-    private void openQuanLyView() {
-        QuanLyView quanLyView = new QuanLyView();
+    private void openQuanLyView(String username) {
+        QuanLyView quanLyView = new QuanLyView(username);
         quanLyView.setVisible(true);
     }
 
     // Phương thức mở giao diện khách hàng
-    private void openNguoiDungView() {
-        NguoiDungView nguoiDungView = new NguoiDungView();
+    private void openNguoiDungView(String username) {
+        NguoiDungView nguoiDungView = new NguoiDungView(username);
         nguoiDungView.setVisible(true);
     }
 

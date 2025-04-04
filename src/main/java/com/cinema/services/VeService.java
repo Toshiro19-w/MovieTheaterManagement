@@ -1,27 +1,25 @@
 package com.cinema.services;
 
-import com.cinema.models.TrangThaiVe;
 import com.cinema.models.Ve;
 import com.cinema.repositories.VeRepository;
+import com.cinema.utils.DatabaseConnection;
 
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.util.List;
 
 public class VeService{
 
     private final VeRepository veRepository;
 
-    public VeService(Connection conn) {
-        this.veRepository = new VeRepository(conn);
+    public VeService(DatabaseConnection databaseConnection) {
+        this.veRepository = new VeRepository(databaseConnection);
     }
 
-    public List<Ve> findAll() throws SQLException {
+    public List<Ve> getAllVe() throws SQLException {
         return veRepository.findAll();
     }
 
-    public Ve findById(int maVe) throws SQLException {
+    public Ve getVeById(int maVe) throws SQLException {
         return veRepository.findById(maVe);
     }
 //
@@ -49,15 +47,15 @@ public class VeService{
 //        return veRepository.findVeChiTietByMaVe(maVe);
 //    }
 
-    public Ve save(Ve ve) throws SQLException {
+    public Ve saveVe(Ve ve) throws SQLException {
         return veRepository.save(ve);
     }
 
-    public Ve update(Ve ve) throws SQLException {
+    public Ve updateVe(Ve ve) throws SQLException {
         return veRepository.update(ve);
     }
 
-    public void delete(int maVe) throws SQLException {
+    public void deleteVe(int maVe) throws SQLException {
         veRepository.delete(maVe);
     }
 }
