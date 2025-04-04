@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS PhongChieu (
     loaiPhong NVARCHAR(50) NOT NULL
 );
 
--- Tạo bảng Ghe (bảng mới để quản lý ghế trong phòng chiếu)
+-- Tạo bảng Ghe
 CREATE TABLE IF NOT EXISTS Ghe (
     maPhong INT NOT NULL,
     soGhe NVARCHAR(5) NOT NULL,
@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS Ghe (
     FOREIGN KEY (maPhong) REFERENCES PhongChieu(maPhong) ON DELETE CASCADE
 );
 
--- Tạo bảng SuatChieu (thêm ràng buộc thời gian)
+-- Tạo bảng SuatChieu
 CREATE TABLE IF NOT EXISTS SuatChieu (
     maSuatChieu INT AUTO_INCREMENT PRIMARY KEY,
     maPhim INT NOT NULL,

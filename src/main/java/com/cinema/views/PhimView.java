@@ -9,12 +9,13 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.Connection;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
 public class PhimView extends JPanel {
     private Connection conn;
-    private final PhimController controller;
+    private final PhimController phimController;
     private JTable table;
     private DefaultTableModel tableModel;
     private JTextField txtMaPhim, txtTenPhim, txtTheLoai, txtThoiLuong,
@@ -22,7 +23,7 @@ public class PhimView extends JPanel {
     private JButton btnThem, btnSua, btnXoa, btnClear;
 
     public PhimView() {
-        this.controller = new PhimController(new PhimService(conn));
+        this.phimController = new PhimController(new PhimService(conn));
         initializeUI();
         loadDataToTable();
     }
@@ -108,8 +109,9 @@ public class PhimView extends JPanel {
     }
 
     private void loadDataToTable() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         tableModel.setRowCount(0);
-        List<Phim> danhSach = controller.findAll();
+        List<Phim> danhSach = phimController.findAll();
         if (danhSach != null) {
             for (Phim phim : danhSach) {
                 tableModel.addRow(new Object[]{
@@ -117,7 +119,7 @@ public class PhimView extends JPanel {
                         phim.getTenPhim(),
                         phim.getMaTheLoai(),
                         phim.getThoiLuong(),
-                        phim.getNgayKhoiChieu(),
+                        phim.getNgayKhoiChieu() != null ? phim.getNgayKhoiChieu().format(formatter) : "Chưa có",
                         phim.getNuocSanXuat(),
                         phim.getDinhDang(),
                         phim.getMoTa(),
@@ -154,7 +156,7 @@ public class PhimView extends JPanel {
             String daoDien = txtDaoDien.getText();
 
             Phim phim = new Phim(0, tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien);
-            Phim result = controller.save(phim);
+            Phim result = phimController.savePhim(phim);
 
             if (result != null) {
                 JOptionPane.showMessageDialog(this, "Thêm phim thành công!");
@@ -186,7 +188,7 @@ public class PhimView extends JPanel {
         String daoDien = txtDaoDien.getText();
 
         Phim phim = new Phim(0, tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien);
-        Phim result = controller.update(phim);
+        Phim result = phimController.updatePhim(phim);
 
         if (result != null) {
             JOptionPane.showMessageDialog(this, "Cập nhật phim thành công!");
@@ -206,7 +208,7 @@ public class PhimView extends JPanel {
         int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa phim này?", "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            boolean result = controller.delete(maPhim);
+            boolean result = phimController.deletePhim(maPhim);
             if (result) {
                 JOptionPane.showMessageDialog(this, "Xóa phim thành công!");
                 loadDataToTable();

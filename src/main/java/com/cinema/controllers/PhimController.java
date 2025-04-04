@@ -22,6 +22,7 @@ public class PhimController {
         }
     }
 
+    // Chưa làm sidebar cho tìm kiếm
     public Phim timPhimTheoId(int maPhim) {
         try {
             return phimService.getPhimById(maPhim);
@@ -31,7 +32,7 @@ public class PhimController {
         }
     }
 
-    public Phim save(Phim phim) {
+    public Phim savePhim(Phim phim) {
         try {
 //            if (!ValidationUtils.validatePhim(phim)) {
 //                System.out.println("Dữ liệu phim không hợp lệ.");
@@ -44,7 +45,7 @@ public class PhimController {
         }
     }
 
-    public Phim update(Phim phim) {
+    public Phim updatePhim(Phim phim) {
         try {
 //            if (!ValidationUtils.validatePhongChieu(phongChieu)) {
 //                System.out.println("Dữ liệu phòng chiếu không hợp lệ.");
@@ -57,7 +58,7 @@ public class PhimController {
         }
     }
 
-    public boolean delete(int maPhim) {
+    public boolean deletePhim(int maPhim) {
         try {
             phimService.deletePhim(maPhim);
             return true;
