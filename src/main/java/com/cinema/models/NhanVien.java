@@ -1,27 +1,17 @@
 package com.cinema.models;
 
-public class NhanVien extends NguoiDung{
-    private int maNhanVien;
-    private String chucVu;
-    private double luong;
+import java.math.BigDecimal;
 
-    public NhanVien(int maNguoiDung, String hoTen, String soDienThoai, String email, LoaiNguoiDung loaiNguoiDung, int maNhanVien, int maNguoiDung1, String chucVu, double luong) {
+public class NhanVien extends NguoiDung{
+    private String chucVu;
+    private BigDecimal luong;
+    private VaiTro vaiTro;
+
+    public NhanVien(int maNguoiDung, String hoTen, String soDienThoai, String email, LoaiNguoiDung loaiNguoiDung, String chucVu, BigDecimal luong, VaiTro vaiTro) {
         super(maNguoiDung, hoTen, soDienThoai, email, loaiNguoiDung);
-        this.maNhanVien = maNhanVien;
         this.chucVu = chucVu;
         this.luong = luong;
-    }
-
-    public NhanVien() {
-        super();
-    }
-
-    public int getMaNhanVien() {
-        return maNhanVien;
-    }
-
-    public void setMaNhanVien(int maNhanVien) {
-        this.maNhanVien = maNhanVien;
+        this.vaiTro = vaiTro;
     }
 
     public String getChucVu() {
@@ -32,11 +22,19 @@ public class NhanVien extends NguoiDung{
         this.chucVu = chucVu;
     }
 
-    public double getLuong() {
+    public BigDecimal getLuong() {
         return luong;
     }
 
-    public void setLuong(double luong) {
+    public void setLuong(BigDecimal luong) {
         this.luong = luong;
+    }
+
+    public VaiTro getVaiTro() {
+        return vaiTro;
+    }
+
+    public void setVaiTro(VaiTro vaiTro) {
+        this.vaiTro = vaiTro;
     }
 }

@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS NhanVien (
     maNguoiDung INT PRIMARY KEY,
     chucVu NVARCHAR(50) NOT NULL,
     luong DECIMAL(10,2) CHECK (luong >= 0) NOT NULL,
+    vaiTro ENUM('Admin', 'QuanLy', 'ThuNgan', 'BanVe') NOT NULL,
     FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung) ON DELETE CASCADE
 );
 
@@ -72,7 +73,7 @@ CREATE TABLE IF NOT EXISTS PhongChieu (
     loaiPhong NVARCHAR(50) NOT NULL
 );
 
--- Tạo bảng Ghe
+-- Tạo bảng Ghe (bảng mới để quản lý ghế trong phòng chiếu)
 CREATE TABLE IF NOT EXISTS Ghe (
     maPhong INT NOT NULL,
     soGhe NVARCHAR(5) NOT NULL,
@@ -80,7 +81,7 @@ CREATE TABLE IF NOT EXISTS Ghe (
     FOREIGN KEY (maPhong) REFERENCES PhongChieu(maPhong) ON DELETE CASCADE
 );
 
--- Tạo bảng SuatChieu
+-- Tạo bảng SuatChieu (thêm ràng buộc thời gian)
 CREATE TABLE IF NOT EXISTS SuatChieu (
     maSuatChieu INT AUTO_INCREMENT PRIMARY KEY,
     maPhim INT NOT NULL,
@@ -126,81 +127,142 @@ CREATE TABLE IF NOT EXISTS ChiTietHoaDon (
     FOREIGN KEY (maVe) REFERENCES Ve(maVe) ON DELETE CASCADE
 );
 
--- Dữ liệu cho bảng NguoiDung
 INSERT INTO NguoiDung (hoTen, soDienThoai, email, loaiNguoiDung) VALUES
-(N'Nguyễn Văn An', '0905123456', 'an.nguyen@email.com', 'KhachHang'),
-(N'Trần Thị Bình', '0915123456', 'binh.tran@email.com', 'KhachHang'),
-(N'Lê Văn Cường', '0925123456', 'cuong.le@email.com', 'NhanVien'),
-(N'Phạm Thị Duyên', '0935123456', 'duyen.pham@email.com', 'NhanVien');
+('Nguyễn Văn A', '0901234567', 'nguyenvana@gmail.com', 'KhachHang'),
+('Trần Thị B', '0912345678', 'tranthib@gmail.com', 'KhachHang'),
+('Lê Văn C', '0923456789', 'levanc@gmail.com', 'NhanVien'),
+('Phạm Thị D', '0934567890', 'phamthid@gmail.com', 'NhanVien'),
+('Hoàng Văn E', '0945678901', 'hoangvane@gmail.com', 'KhachHang'),
+('Đỗ Thị F', '0956789012', 'dothif@gmail.com', 'NhanVien'),
+('Bùi Văn G', '0967890123', 'buivang@gmail.com', 'KhachHang'),
+('Vũ Thị H', '0978901234', 'vuthih@gmail.com', 'NhanVien'),
+('Ngô Văn I', '0989012345', 'ngovani@gmail.com', 'KhachHang'),
+('Mai Thị K', '0990123456', 'maithik@gmail.com', 'NhanVien');
 
 -- Dữ liệu cho bảng KhachHang
 INSERT INTO KhachHang (maNguoiDung, diemTichLuy) VALUES
-(1, 100),
-(2, 50);
+(1, 50),
+(2, 20),
+(5, 100),
+(7, 0),
+(9, 30);
 
 -- Dữ liệu cho bảng NhanVien
-INSERT INTO NhanVien (maNguoiDung, chucVu, luong) VALUES
-(3, 'Quản lý', 10000000),
-(4, 'Thu ngân', 6000000);
+INSERT INTO NhanVien (maNguoiDung, chucVu, luong, vaiTro) VALUES
+(3, 'Quản lý', 15000000.00, 'QuanLy'),
+(4, 'Thu ngân', 8000000.00, 'ThuNgan'),
+(6, 'Bán vé', 7000000.00, 'BanVe'),
+(8, 'Admin', 20000000.00, 'Admin'),
+(10, 'Bán vé', 7000000.00, 'BanVe');
 
 -- Dữ liệu cho bảng TaiKhoan
 INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maNguoiDung) VALUES
-('nva', '123456', 'user', 1),
-('ttb', '654321', 'user', 2),
-('lvc', 'password', 'admin', 3),
-('ptd', 'pass123', 'admin', 4);
+('nguyenvana', 'pass123', 'user', 1),
+('tranthib', 'pass456', 'user', 2),
+('levanc', 'pass789', 'admin', 3),
+('phamthid', 'pass101', 'user', 4),
+('hoangvane', 'pass112', 'user', 5),
+('dothif', 'pass131', 'user', 6),
+('buivang', 'pass415', 'user', 7),
+('vuthih', 'pass161', 'admin', 8),
+('ngovani', 'pass718', 'user', 9),
+('maithik', 'pass192', 'user', 10);
 
 -- Dữ liệu cho bảng TheLoaiPhim
 INSERT INTO TheLoaiPhim (tenTheLoai) VALUES
 ('Hành động'),
-('Hài hước'),
-('Kinh dị'),
 ('Tình cảm'),
-('Khoa học viễn tưởng');
+('Kinh dị'),
+('Hài hước'),
+('Khoa học viễn tưởng'),
+('Hoạt hình'),
+('Tâm lý'),
+('Phiêu lưu'),
+('Tài liệu'),
+('Cổ trang');
 
 -- Dữ liệu cho bảng Phim
 INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien) VALUES
-('John Wick 4', 1, 169, '2023-03-24', 'Mỹ', '2D', 'Phim hành động', 'Chad Stahelski'),
-('Fast X', 1, 141, '2023-05-19', 'Mỹ', '3D', 'Phim hành động đua xe', 'Louis Leterrier'),
-('Siêu Lừa Gặp Siêu Lầy', 2, 107, '2023-03-10', 'Việt Nam', '2D', 'Phim hài hước', 'Lý Hải'),
-('Lật Mặt 6: Tấm Vé Định Mệnh', 2, 120, '2023-04-28', 'Việt Nam', '2D', 'Phim hài hành động', 'Lý Hải'),
-('The Flash', 5, 144, '2023-06-16', 'Mỹ', 'IMAX', 'Phim khoa học viễn tưởng', 'Andy Muschietti');
+('Fast & Furious 9', 1, 143, '2021-06-25', 'Mỹ', '2D', 'Phim hành động tốc độ cao', 'Justin Lin'),
+('Titanic', 2, 195, '1997-12-19', 'Mỹ', '3D', 'Tình yêu trên tàu định mệnh', 'James Cameron'),
+('The Conjuring', 3, 112, '2013-07-19', 'Mỹ', '2D', 'Kinh dị dựa trên sự kiện có thật', 'James Wan'),
+('Home Alone', 4, 103, '1990-11-16', 'Mỹ', '2D', 'Hài hước mùa Giáng sinh', 'Chris Columbus'),
+('Interstellar', 5, 169, '2014-11-07', 'Mỹ', 'IMAX', 'Hành trình khám phá vũ trụ', 'Christopher Nolan'),
+('Coco', 6, 105, '2017-11-22', 'Mỹ', '3D', 'Hành trình âm nhạc gia đình', 'Lee Unkrich'),
+('Joker', 7, 122, '2019-10-04', 'Mỹ', '2D', 'Tâm lý tội phạm', 'Todd Phillips'),
+('Avatar', 8, 162, '2009-12-18', 'Mỹ', '3D', 'Phiêu lưu trên Pandora', 'James Cameron'),
+('Planet Earth', 9, 60, '2006-03-05', 'Anh', '2D', 'Tài liệu về thiên nhiên', 'Alastair Fothergill'),
+('Tam Quốc Diễn Nghĩa', 10, 120, '1994-01-01', 'Trung Quốc', '2D', 'Lịch sử cổ trang', 'Wang Fulin');
 
 -- Dữ liệu cho bảng PhongChieu
 INSERT INTO PhongChieu (tenPhong, soLuongGhe, loaiPhong) VALUES
-('Phòng 1', 50, '2D'),
-('Phòng 2', 100, '3D'),
-('Phòng 3', 75, 'IMAX');
+('Phòng 1', 100, 'Thường'),
+('Phòng 2', 80, 'VIP'),
+('Phòng 3', 120, 'Thường'),
+('Phòng 4', 60, 'VIP'),
+('Phòng 5', 150, 'Thường');
 
 -- Dữ liệu cho bảng Ghe
 INSERT INTO Ghe (maPhong, soGhe) VALUES
-(1, 'A1'), (1, 'A2'), (1, 'A3'), (1, 'B1'), (1, 'B2'),
-(2, 'A1'), (2, 'A2'), (2, 'A3'), (2, 'B1'), (2, 'B2'), (2, 'C1'), (2, 'C2'),
-(3, 'A1'), (3, 'A2'), (3, 'A3'), (3, 'B1'), (3, 'B2'), (3,'C1'), (3,'C2'), (3, 'D1');
+-- Phòng 1 (100 ghế, thêm 20 ghế mẫu)
+(1, 'A1'), (1, 'A2'), (1, 'A3'), (1, 'A4'), (1, 'A5'),
+(1, 'B1'), (1, 'B2'), (1, 'B3'), (1, 'B4'), (1, 'B5'),
+(1, 'C1'), (1, 'C2'), (1, 'C3'), (1, 'C4'), (1, 'C5'),
+(1, 'D1'), (1, 'D2'), (1, 'D3'), (1, 'D4'), (1, 'D5'),
+
+-- Phòng 2 (80 ghế, thêm 15 ghế mẫu)
+(2, 'A1'), (2, 'A2'), (2, 'A3'), (2, 'A4'), (2, 'A5'),
+(2, 'B1'), (2, 'B2'), (2, 'B3'), (2, 'B4'), (2, 'B5'),
+(2, 'C1'), (2, 'C2'), (2, 'C3'), (2, 'C4'), (2, 'C5'),
+
+-- Phòng 3 (120 ghế, thêm 15 ghế mẫu)
+(3, 'A1'), (3, 'A2'), (3, 'A3'), (3, 'A4'), (3, 'A5'),
+(3, 'B1'), (3, 'B2'), (3, 'B3'), (3, 'B4'), (3, 'B5'),
+(3, 'C1'), (3, 'C2'), (3, 'C3'), (3, 'C4'), (3, 'C5'),
+
+-- Phòng 4 (60 ghế, thêm 10 ghế mẫu)
+(4, 'A1'), (4, 'A2'), (4, 'A3'), (4, 'A4'), (4, 'A5'),
+(4, 'B1'), (4, 'B2'), (4, 'B3'), (4, 'B4'), (4, 'B5'),
+
+-- Phòng 5 (150 ghế, thêm 15 ghế mẫu)
+(5, 'A1'), (5, 'A2'), (5, 'A3'), (5, 'A4'), (5, 'A5'),
+(5, 'B1'), (5, 'B2'), (5, 'B3'), (5, 'B4'), (5, 'B5'),
+(5, 'C1'), (5, 'C2'), (5, 'C3'), (5, 'C4'), (5, 'C5');
 
 -- Dữ liệu cho bảng SuatChieu
 INSERT INTO SuatChieu (maPhim, maPhong, ngayGioChieu) VALUES
-(1, 1, '2023-11-20 10:00:00'),
-(2, 2, '2023-11-20 14:00:00'),
-(3, 1, '2023-11-20 16:00:00'),
-(4, 3, '2023-11-20 19:00:00'),
-(5, 2, '2023-11-20 21:00:00');
+(1, 1, '2025-04-06 14:00:00'),
+(2, 2, '2025-04-06 16:00:00'),
+(3, 3, '2025-04-06 20:00:00'),
+(4, 4, '2025-04-07 10:00:00'),
+(5, 5, '2025-04-07 15:00:00');
 
 -- Dữ liệu cho bảng HoaDon
-INSERT INTO HoaDon (maNhanVien, maKhachHang, tongTien) VALUES
-(3, 1, 200000),
-(4, 2, 150000);
+INSERT INTO HoaDon (maNhanVien, maKhachHang, ngayLap, tongTien) VALUES
+(3, 1, '2025-04-05 10:00:00', 150000.00),
+(4, 2, '2025-04-05 12:00:00', 200000.00),
+(NULL, 5, '2025-04-05 14:00:00', 100000.00),
+(6, 7, '2025-04-05 16:00:00', 300000.00),
+(8, 9, '2025-04-05 18:00:00', 250000.00);
 
 -- Dữ liệu cho bảng Vechitiethoadon
 INSERT INTO Ve (maSuatChieu, maPhong, soGhe, maHoaDon, giaVe, trangThai, ngayDat) VALUES
-(1, 1, 'A1', 1, 100000, 'paid', '2023-11-19 10:00:00'),
-(2, 2, 'B2', 1, 100000, 'paid', '2023-11-19 10:00:00'),
-(3, 1, 'B2', 2, 75000, 'paid', '2023-11-19 11:00:00'),
-(4, 3, 'C1', 2, 75000, 'paid', '2023-11-19 11:00:00');
+(1, 1, 'A1', 1, 75000.00, 'paid', '2025-04-05 09:00:00'),
+(1, 1, 'A2', 1, 75000.00, 'paid', '2025-04-05 09:00:00'),
+(2, 2, 'A1', 2, 100000.00, 'paid', '2025-04-05 11:00:00'),
+(3, 3, 'A1', 3, 100000.00, 'paid', '2025-04-05 13:00:00'),
+(4, 4, 'A1', 4, 150000.00, 'paid', '2025-04-05 15:00:00'),
+(5, 5, 'A1', 5, 125000.00, 'paid', '2025-04-05 17:00:00'),
+(1, 1, 'B1', NULL, 75000.00, 'available', NULL),
+(2, 2, 'A2', NULL, 100000.00, 'booked', '2025-04-05 10:00:00'),
+(3, 3, 'B1', NULL, 100000.00, 'pending', '2025-04-05 12:00:00'),
+(5, 5, 'A2', NULL, 125000.00, 'cancelled', '2025-04-05 14:00:00');
 
 -- Dữ liệu cho bảng ChiTietHoaDon
 INSERT INTO ChiTietHoaDon (maHoaDon, maVe) VALUES
 (1, 1),
 (1, 2),
 (2, 3),
-(2, 4);
+(3, 4),
+(4, 5),
+(5, 6);

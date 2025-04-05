@@ -22,6 +22,10 @@ public class VeService{
     public Ve getVeById(int maVe) throws SQLException {
         return veRepository.findById(maVe);
     }
+
+    public List<Ve> findByHoaDon(Integer maHoaDon) throws SQLException {
+        return veRepository.findByHoaDon(maHoaDon);
+    }
 //
 //    public List<Ve> findByMaSuatChieu(int maSuatChieu) throws SQLException {
 //        return veRepository.findByMaSuatChieu(maSuatChieu);
@@ -57,5 +61,9 @@ public class VeService{
 
     public void deleteVe(int maVe) throws SQLException {
         veRepository.delete(maVe);
+    }
+
+    public void updateVeStatus(int maVe, String trangThai, Integer maHoaDon) throws SQLException {
+        updateVeStatus(maVe, trangThai, maHoaDon);
     }
 }

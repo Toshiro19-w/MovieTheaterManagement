@@ -33,7 +33,7 @@ public class QuanLyView extends JFrame {
         headerPanel.add(logoLabel, BorderLayout.WEST);
 
         JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        String[] sections = {"Phim", "Suất chiếu", "Vé", "Hóa đơn", "Nhân viên", "Báo cáo"};
+        String[] sections = {"Phim", "Suất chiếu", "Vé", "Thanh toán", "Nhân viên", "Báo cáo"};
         for (String section : sections) {
             JButton button = new JButton(section);
             button.addActionListener(_ -> cardLayout.show(mainContentPanel, section));
@@ -61,8 +61,8 @@ public class QuanLyView extends JFrame {
         mainContentPanel.add(new PhimView(), "Phim");
         mainContentPanel.add(new SuatChieuView(), "Suất chiếu");
         mainContentPanel.add(new VeView(), "Vé");
-        //mainContentPanel.add(new HoaDonView(), "Hoá đơn");
-        //mainContentPanel.add(new NhanVienView(), "Nhân viên");
+        mainContentPanel.add(new ThanhToanView(), "Thanh toán");
+        mainContentPanel.add(new NhanVienView(), "Nhân viên");
         //mainContentPanel.add(new BaoCaoView(), "Báo cáo");
 
         add(headerPanel, BorderLayout.NORTH);

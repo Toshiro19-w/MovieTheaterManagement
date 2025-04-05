@@ -1,15 +1,16 @@
 package com.cinema.models;
 
-import java.util.Date;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public class HoaDon {
     private int maHoaDon;
     private int maNhanVien;
     private int maKhachHang;
-    private Date ngayLap;
-    private double tongTien;
+    private LocalDateTime ngayLap;
+    private BigDecimal tongTien;
 
-    public HoaDon(int maHoaDon, int maNhanVien, int maKhachHang, Date ngayLap, double tongTien) {
+    public HoaDon(int maHoaDon, int maNhanVien, int maKhachHang, LocalDateTime ngayLap, BigDecimal tongTien) {
         this.maHoaDon = maHoaDon;
         this.maNhanVien = maNhanVien;
         this.maKhachHang = maKhachHang;
@@ -41,19 +42,19 @@ public class HoaDon {
         this.maKhachHang = maKhachHang;
     }
 
-    public Date getNgayLap() {
+    public LocalDateTime getNgayLap() {
         return ngayLap;
     }
 
-    public void setNgayLap(Date ngayLap) {
+    public void setNgayLap(LocalDateTime ngayLap) {
         this.ngayLap = ngayLap;
     }
 
-    public double getTongTien() {
+    public BigDecimal getTongTien() {
         return tongTien;
     }
 
-    public void setTongTien(double tongTien) {
+    public void setTongTien(BigDecimal tongTien) {
         this.tongTien = tongTien;
     }
 }

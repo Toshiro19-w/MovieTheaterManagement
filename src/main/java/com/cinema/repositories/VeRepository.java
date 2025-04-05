@@ -72,6 +72,29 @@ public class VeRepository extends BaseRepository<Ve> {
         return null;
     }
 
+    public List<Ve> findByHoaDon(int maHoaDon) throws SQLException {
+        List<Ve> list = new ArrayList<>();
+        String sql = "SELECT * FROM Ve WHERE maHoaDon = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maHoaDon);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    list.add(new Ve(
+                            rs.getInt("maVe"),
+                            rs.getInt("maSuatChieu"),
+                            rs.getInt("maPhong"),
+                            rs.getString("soGhe"),
+                            rs.getObject("maHoaDon") != null ? rs.getInt("maHoaDon") : null,
+                            rs.getBigDecimal("giaVe"),
+                            TrangThaiVe.fromString(rs.getString("trangThai")),
+                            rs.getTimestamp("ngayDat") != null ? rs.getTimestamp("ngayDat").toLocalDateTime() : null
+                    ));
+                }
+            }
+        }
+        return list;
+    }
+
     @Override
     public Ve save(Ve ve) throws SQLException {
         String sql = "INSERT INTO Ve (maSuatChieu, maPhong, soGhe, maHoaDon, giaVe, trangThai, ngayDat) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -119,6 +142,16 @@ public class VeRepository extends BaseRepository<Ve> {
             }
         }
         return null;
+    }
+
+    public void updateVeStatus(int maVe, String trangThai, Integer maHoaDon) throws SQLException {
+        String sql = "UPDATE Ve SET trangThai = ?, maHoaDon = ? WHERE maVe = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, trangThai);
+            stmt.setObject(2, maHoaDon);
+            stmt.setInt(3, maVe);
+            stmt.executeUpdate();
+        }
     }
 
     @Override
