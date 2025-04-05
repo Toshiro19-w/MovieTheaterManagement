@@ -166,7 +166,10 @@ public class VeView extends JPanel {
         tableModel.setRowCount(0);
         List<Ve> veList = Collections.singletonList(controller.findVeById(Integer.parseInt(keyword)));
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        //veList.forEach(ve -> addVeToTable(ve, formatter));
+        veList.forEach(ve -> addVeToTable(ve, formatter));
+    }
+
+    private void addVeToTable(Ve ve, DateTimeFormatter formatter) {
     }
 
     private void themVe() {

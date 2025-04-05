@@ -20,8 +20,6 @@ public class ThanhToanView extends JPanel {
     private JTextField maKhachHangField;
     private JTextField maNhanVienField;
     private JTextArea veListArea;
-    private JButton thanhToanButton;
-    private JButton xemLichSuButton;
 
     public ThanhToanView() {
         try {
@@ -60,11 +58,11 @@ public class ThanhToanView extends JPanel {
 
         // Nút chức năng
         JPanel buttonPanel = new JPanel(new FlowLayout());
-        thanhToanButton = new JButton("Thanh toán");
-        thanhToanButton.addActionListener(e -> thanhToan());
+        JButton thanhToanButton = new JButton("Thanh toán");
+        thanhToanButton.addActionListener(_ -> thanhToan());
         buttonPanel.add(thanhToanButton);
-        xemLichSuButton = new JButton("Xem lịch sử hóa đơn");
-        xemLichSuButton.addActionListener(e -> xemLichSu());
+        JButton xemLichSuButton = new JButton("Xem lịch sử hóa đơn");
+        xemLichSuButton.addActionListener(_ -> xemLichSu());
         buttonPanel.add(xemLichSuButton);
         this.add(buttonPanel, BorderLayout.SOUTH);
     }
