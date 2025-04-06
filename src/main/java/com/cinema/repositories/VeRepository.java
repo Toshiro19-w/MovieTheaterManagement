@@ -6,6 +6,7 @@ import com.cinema.models.Ve;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +44,52 @@ public class VeRepository extends BaseRepository<Ve> {
             return result;
         }
     }
+
+    public List<Ve> findAllDetail() throws SQLException {
+        String sql = "SELECT \n" +
+                "    Ve.maVe,\n" +
+                "    Ve.trangThai,\n" +
+                "    Ve.giaVe,\n" +
+                "    Ve.soGhe,\n" +
+                "    Ve.ngayDat,\n" +
+                "    PhongChieu.tenPhong,\n" +
+                "    SuatChieu.ngayGioChieu,\n" +
+                "    Phim.tenPhim\n" +
+                "FROM Ve\n" +
+                "LEFT JOIN SuatChieu ON Ve.maSuatChieu = SuatChieu.maSuatChieu\n" +
+                "LEFT JOIN PhongChieu ON Ve.maPhong = PhongChieu.maPhong\n" +
+                "LEFT JOIN Phim ON SuatChieu.maPhim = Phim.maPhim\n" +
+                "ORDER BY Ve.maVe;";
+
+        List<Ve> result = new ArrayList<>();
+        try (PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet resultSet = stmt.executeQuery()) {
+
+            while (resultSet.next()) {
+                LocalDateTime ngayDat = null, ngayGioChieu = null;
+                if (resultSet.getTimestamp("ngayDat") != null) {
+                    ngayDat = resultSet.getTimestamp("ngayDat").toLocalDateTime();
+                }
+                if (resultSet.getTimestamp("ngayGioChieu") != null) {
+                    ngayGioChieu = resultSet.getTimestamp("ngayGioChieu").toLocalDateTime();
+                }
+
+                Ve ve = new Ve(
+                        resultSet.getInt("maVe"),
+                        TrangThaiVe.fromString(resultSet.getString("trangThai")),
+                        resultSet.getBigDecimal("giaVe"),
+                        resultSet.getString("soGhe"),
+                        ngayDat,
+                        resultSet.getString("tenPhong"),
+                        ngayGioChieu,
+                        resultSet.getString("tenPhim")
+                );
+                result.add(ve);
+            }
+        }
+        return result;
+    }
+
 
     @Override
     public Ve findById(int id) throws SQLException {

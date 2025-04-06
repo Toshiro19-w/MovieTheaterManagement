@@ -19,6 +19,10 @@ public class VeService{
         return veRepository.findAll();
     }
 
+    public List<Ve> getAllVeDetail() throws SQLException {
+        return veRepository.findAllDetail();
+    }
+
     public Ve getVeById(int maVe) throws SQLException {
         return veRepository.findById(maVe);
     }

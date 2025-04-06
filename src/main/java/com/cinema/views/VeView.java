@@ -1,10 +1,8 @@
 package com.cinema.views;
 
-import com.cinema.controllers.PhimController;
 import com.cinema.controllers.VeController;
 import com.cinema.models.TrangThaiVe;
 import com.cinema.models.Ve;
-import com.cinema.services.PhimService;
 import com.cinema.services.VeService;
 import com.cinema.utils.DatabaseConnection;
 
@@ -13,6 +11,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -23,8 +22,8 @@ public class VeView extends JPanel {
     private VeController controller;
     private JTable table;
     private DefaultTableModel tableModel;
-    private JTextField searchField, txtMaVe, txtMaSuatChieu, txtMaPhong, txtSoGhe,
-            txtMaHoaDon, txtGiaVe, txtTrangThai, txtNgayDat;
+    private JTextField searchField, txtMaVe, txtTrangThai, txtGiaVe, txtSoGhe,
+            txtNgayDat, txtTenPhong, txtNgayGioChieu, txtTenPhim;
     private JButton btnThem, btnSua, btnXoa, btnClear;
 
     public VeView() {
@@ -45,7 +44,8 @@ public class VeView extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         tableModel = new DefaultTableModel(new Object[]{
-                "Mã Vé", "Mã Suất Chiếu", "Mã Phòng", "Số Ghế", "Mã HĐ", "Giá Vé", "Trạng Thái", "Ngày Đặt"
+                "Mã Vé", "Trạng Thái", "Giá Vé", "Số Ghế",
+                "Ngày Đặt", "Tên Phòng", "Ngày Giờ Chiếu", "Tên Phim"
         }, 0);
 
         table = new JTable(tableModel);
@@ -65,36 +65,34 @@ public class VeView extends JPanel {
         txtMaVe.setEditable(false);
         formPanel.add(txtMaVe);
 
-        formPanel.add(new JLabel("Mã Suất Chiếu:"));
-        txtMaSuatChieu = new JTextField();
-        txtMaSuatChieu.setEditable(false);
-        formPanel.add(txtMaSuatChieu);
-
-        formPanel.add(new JLabel("Mã Phòng:"));
-        txtMaPhong = new JTextField();
-        txtMaPhong.setEditable(false);
-        formPanel.add(txtMaPhong);
-
-        formPanel.add(new JLabel("Số Ghế:"));
-        txtSoGhe = new JTextField();
-        formPanel.add(txtSoGhe);
-
-        formPanel.add(new JLabel("Mã hoá đơn:"));
-        txtMaHoaDon = new JTextField();
-        txtMaHoaDon.setEditable(false);
-        formPanel.add(txtMaHoaDon);
+        formPanel.add(new JLabel("Trạng Thái:"));
+        txtTrangThai = new JTextField();
+        formPanel.add(txtTrangThai);
 
         formPanel.add(new JLabel("Giá Vé:"));
         txtGiaVe = new JTextField();
         formPanel.add(txtGiaVe);
 
-        formPanel.add(new JLabel("Trạng Thái:"));
-        txtTrangThai = new JTextField();
-        formPanel.add(txtTrangThai);
+        formPanel.add(new JLabel("Số Ghế:"));
+        txtSoGhe = new JTextField();
+        formPanel.add(txtSoGhe);
 
-        formPanel.add(new JLabel("Ngày đặt:"));
+        formPanel.add(new JLabel("Ngày Đặt:"));
         txtNgayDat = new JTextField();
+        txtNgayDat.setEditable(false);
         formPanel.add(txtNgayDat);
+
+        formPanel.add(new JLabel("Tên Phòng:"));
+        txtTenPhong = new JTextField();
+        formPanel.add(txtTenPhong);
+
+        formPanel.add(new JLabel("Ngày Giờ Chiếu:"));
+        txtNgayGioChieu = new JTextField();
+        formPanel.add(txtNgayGioChieu);
+
+        formPanel.add(new JLabel("Tên Phim:"));
+        txtTenPhim = new JTextField();
+        formPanel.add(txtTenPhim);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         btnThem = new JButton("Thêm");
@@ -120,20 +118,22 @@ public class VeView extends JPanel {
     }
 
     private void loadDataToTable() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        DateTimeFormatter ngayDatformatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        DateTimeFormatter ngayGioChieuFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+
         tableModel.setRowCount(0);
-        List<Ve> danhSach = controller.findAll();
+        List<Ve> danhSach = controller.findAllDetail();
         if (danhSach != null) {
             for (Ve ve : danhSach) {
                 tableModel.addRow(new Object[]{
                         ve.getMaVe(),
-                        ve.getMaSuatChieu(),
-                        ve.getMaPhong() != null ? ve.getMaPhong() : "Chưa đặt",
-                        ve.getSoGhe(),
-                        ve.getMaHoaDon() != null ? ve.getMaHoaDon() : "Chưa thanh toán",
-                        formatCurrency(ve.getGiaVe()),
                         ve.getTrangThai().getValue(),
-                        ve.getNgayDat() != null ? ve.getNgayDat().format(formatter) : "Chưa đặt"
+                        formatCurrency(ve.getGiaVe()),
+                        ve.getSoGhe(),
+                        ve.getNgayDat() != null ? ve.getNgayDat().format(ngayDatformatter) : "Chưa đặt",
+                        ve.getTenPhong() != null ? ve.getTenPhong() : "Chưa đặt",
+                        ve.getNgayGioChieu() != null ? ve.getNgayGioChieu().format(ngayGioChieuFormatter) : "Chưa có",
+                        ve.getTenPhim()
                 });
             }
         }
@@ -143,13 +143,13 @@ public class VeView extends JPanel {
         int selectedRow = table.getSelectedRow();
         if (selectedRow >= 0) {
             txtMaVe.setText(tableModel.getValueAt(selectedRow, 0).toString());
-            txtMaSuatChieu.setText(tableModel.getValueAt(selectedRow, 1).toString());
-            txtMaPhong.setText(tableModel.getValueAt(selectedRow, 2).toString());
+            txtTrangThai.setText(tableModel.getValueAt(selectedRow, 1).toString());
+            txtGiaVe.setText(tableModel.getValueAt(selectedRow, 2).toString());
             txtSoGhe.setText(tableModel.getValueAt(selectedRow, 3).toString());
-            txtMaHoaDon.setText(tableModel.getValueAt(selectedRow, 4).toString());
-            txtGiaVe.setText(tableModel.getValueAt(selectedRow, 5).toString());
-            txtTrangThai.setText(tableModel.getValueAt(selectedRow, 6).toString());
-            txtNgayDat.setText(tableModel.getValueAt(selectedRow, 7).toString());
+            txtNgayDat.setText(tableModel.getValueAt(selectedRow, 4).toString());
+            txtTenPhong.setText(tableModel.getValueAt(selectedRow, 5).toString());
+            txtNgayGioChieu.setText(tableModel.getValueAt(selectedRow, 6).toString());
+            txtTenPhim.setText(tableModel.getValueAt(selectedRow, 7).toString());
         }
     }
 
@@ -174,12 +174,17 @@ public class VeView extends JPanel {
 
     private void themVe() {
         try {
+            TrangThaiVe trangThai = TrangThaiVe.valueOf(txtTrangThai.getText());
             String soGhe = txtSoGhe.getText();
             BigDecimal giaVe = BigDecimal.valueOf(Long.parseLong(txtGiaVe.getText()));
-            TrangThaiVe trangThai = TrangThaiVe.valueOf(txtTrangThai.getText());
             LocalDateTime ngayDat = LocalDateTime.now();
+            String tenPhong = txtTenPhong.getText();
+            String ngayGioChieuStr = txtNgayGioChieu.getText();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+            LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayGioChieuStr, formatter);
+            String tenPhim = txtTenPhim.getText();
 
-            Ve ve = new Ve(0, 0, 0, soGhe, 0, giaVe, trangThai, ngayDat);
+            Ve ve = new Ve(0, trangThai, giaVe, soGhe, ngayDat, tenPhong, LocalDateTime.parse(ngayGioChieuStr), tenPhim);
             Ve result = controller.saveVe(ve);
 
             if (result != null) {
@@ -200,13 +205,18 @@ public class VeView extends JPanel {
             return;
         }
 
+        TrangThaiVe trangThai = TrangThaiVe.valueOf(txtTrangThai.getText());
         String soGhe = txtSoGhe.getText();
         BigDecimal giaVe = BigDecimal.valueOf(Long.parseLong(txtGiaVe.getText()));
-        TrangThaiVe trangThai = TrangThaiVe.valueOf(txtTrangThai.getText());
-        LocalDateTime ngayDat = LocalDateTime.parse(txtNgayDat.getText());
+        LocalDateTime ngayDat = LocalDateTime.now();
+        String tenPhong = txtTenPhong.getText();
+        String ngayGioChieuStr = txtNgayGioChieu.getText();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayGioChieuStr, formatter);
+        String tenPhim = txtTenPhim.getText();
 
-        Ve ve = new Ve(0, 0, 0, soGhe, 0, giaVe, trangThai, ngayDat);
-        Ve result = controller.updateVe(ve);
+        Ve ve = new Ve(0, trangThai, giaVe, soGhe, ngayDat, tenPhong, LocalDateTime.parse(ngayGioChieuStr), tenPhim);
+        Ve result = controller.saveVe(ve);
 
         if (result != null) {
             JOptionPane.showMessageDialog(this, "Cập nhật phim thành công!");
@@ -239,10 +249,10 @@ public class VeView extends JPanel {
 
     private void clearForm () {
         txtMaVe.setText("");
-        txtMaSuatChieu.setText("");
-        txtMaPhong.setText("");
+        txtTenPhong.setText("");
+        txtNgayGioChieu.setText("");
         txtSoGhe.setText("");
-        txtMaHoaDon.setText("");
+        txtTenPhim.setText("");
         txtGiaVe.setText("");
         txtTrangThai.setText("");
         txtNgayDat.setText("");

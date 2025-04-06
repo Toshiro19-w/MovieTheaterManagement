@@ -32,7 +32,6 @@ public class SuatChieuController {
         }
     }
 
-    // Chưa làm sidebar cho tìm kiếm
     public SuatChieu findSuatChieuById(int maSuatChieu) {
         try {
             return suatChieuService.getSuatChieuById(maSuatChieu);

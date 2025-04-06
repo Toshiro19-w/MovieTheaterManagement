@@ -9,9 +9,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.IOException;
-import java.sql.Connection;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -21,8 +19,8 @@ public class PhimView extends JPanel {
     private PhimController controller;
     private JTable table;
     private DefaultTableModel tableModel;
-    private JTextField txtMaPhim, txtTenPhim, txtTheLoai, txtThoiLuong,
-            txtNgayKhoiChieu, txtNuocSanXuat, txtMoTa, txtDinhDang, txtDaoDien;
+    private JTextField txtMaPhim, txtTenPhim, txtTenTheLoai, txtThoiLuong,
+            txtNgayKhoiChieu, txtNuocSanXuat, txtMoTa, txtDinhDang, txtDaoDien, txtSoSuatChieu;
     private JButton btnThem, btnSua, btnXoa, btnClear;
 
     public PhimView() {
@@ -43,7 +41,8 @@ public class PhimView extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         tableModel = new DefaultTableModel(new Object[]{
-                "Mã Phim", "Tên Phim", "Mã Thể Loại", "Thời Lượng", "Ngày Khởi Chiếu", "Nước Sản Xuất", "Định Dạng", "Mô Tả", "Đạo Diễn"
+                "Mã Phim", "Tên Phim", "Tên Thể Loại", "Thời Lượng", "Ngày Khởi Chiếu",
+                "Nước Sản Xuất", "Định Dạng", "Mô Tả", "Đạo Diễn", "Số Suất Chiếu"
         }, 0);
 
         table = new JTable(tableModel);
@@ -55,7 +54,7 @@ public class PhimView extends JPanel {
         });
         JScrollPane scrollPane = new JScrollPane(table);
 
-        JPanel formPanel = new JPanel(new GridLayout(9, 2, 5, 5)); // 9 hàng cho 9 trường
+        JPanel formPanel = new JPanel(new GridLayout(10, 2, 5, 5));
         formPanel.setBorder(BorderFactory.createTitledBorder("Thông tin Phim"));
 
         formPanel.add(new JLabel("Mã Phim:"));
@@ -67,9 +66,9 @@ public class PhimView extends JPanel {
         txtTenPhim = new JTextField();
         formPanel.add(txtTenPhim);
 
-        formPanel.add(new JLabel("Mã Thể Loại:"));
-        txtTheLoai = new JTextField();
-        formPanel.add(txtTheLoai);
+        formPanel.add(new JLabel("Tên Thể Loại:"));
+        txtTenTheLoai = new JTextField();
+        formPanel.add(txtTenTheLoai);
 
         formPanel.add(new JLabel("Thời Lượng:"));
         txtThoiLuong = new JTextField();
@@ -94,6 +93,11 @@ public class PhimView extends JPanel {
         formPanel.add(new JLabel("Đạo Diễn:"));
         txtDaoDien = new JTextField();
         formPanel.add(txtDaoDien);
+
+        formPanel.add(new JLabel("Số Suất Chiếu:"));
+        txtSoSuatChieu = new JTextField();
+        txtSoSuatChieu.setEditable(false);
+        formPanel.add(txtSoSuatChieu);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         btnThem = new JButton("Thêm");
@@ -121,19 +125,20 @@ public class PhimView extends JPanel {
     private void loadDataToTable() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         tableModel.setRowCount(0);
-        List<Phim> danhSach = controller.findAll();
+        List<Phim> danhSach = controller.findAllDetail();
         if (danhSach != null) {
             for (Phim phim : danhSach) {
                 tableModel.addRow(new Object[]{
                         phim.getMaPhim(),
                         phim.getTenPhim(),
-                        phim.getMaTheLoai(),
+                        phim.getTenTheLoai(),
                         phim.getThoiLuong(),
                         phim.getNgayKhoiChieu() != null ? phim.getNgayKhoiChieu().format(formatter) : "Chưa có",
                         phim.getNuocSanXuat(),
                         phim.getDinhDang(),
                         phim.getMoTa(),
-                        phim.getDaoDien()
+                        phim.getDaoDien(),
+                        phim.getSoSuatChieu()
                 });
             }
         }
@@ -144,20 +149,21 @@ public class PhimView extends JPanel {
         if (selectedRow >= 0) {
             txtMaPhim.setText(tableModel.getValueAt(selectedRow, 0).toString());
             txtTenPhim.setText(tableModel.getValueAt(selectedRow, 1).toString());
-            txtTheLoai.setText(tableModel.getValueAt(selectedRow, 2).toString());
+            txtTenTheLoai.setText(tableModel.getValueAt(selectedRow, 2).toString());
             txtThoiLuong.setText(tableModel.getValueAt(selectedRow, 3).toString());
             txtNgayKhoiChieu.setText(tableModel.getValueAt(selectedRow, 4).toString());
             txtNuocSanXuat.setText(tableModel.getValueAt(selectedRow, 5).toString());
             txtDinhDang.setText(tableModel.getValueAt(selectedRow, 6).toString());
             txtMoTa.setText(tableModel.getValueAt(selectedRow, 7).toString());
             txtDaoDien.setText(tableModel.getValueAt(selectedRow, 8).toString());
+            txtSoSuatChieu.setText(tableModel.getValueAt(selectedRow, 9).toString());
         }
     }
 
     private void themPhim() {
         try {
             String tenPhim = txtTenPhim.getText();
-            int maTheLoai = Integer.parseInt(txtTheLoai.getText());
+            String tenTheLoai = txtTenTheLoai.getText();
             int thoiLuong = Integer.parseInt(txtThoiLuong.getText());
             String ngayKhoiChieuStr = txtNgayKhoiChieu.getText();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -166,8 +172,9 @@ public class PhimView extends JPanel {
             String dinhDang = txtDinhDang.getText();
             String moTa = txtMoTa.getText();
             String daoDien = txtDaoDien.getText();
+            int soSuatChieu = Integer.parseInt(txtSoSuatChieu.getText());
 
-            Phim phim = new Phim(0, tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien);
+            Phim phim = new Phim(0, tenPhim, tenTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien, soSuatChieu);
             Phim result = controller.savePhim(phim);
 
             if (result != null) {
@@ -191,7 +198,7 @@ public class PhimView extends JPanel {
         }
 
         String tenPhim = txtTenPhim.getText();
-        int maTheLoai = Integer.parseInt(txtTheLoai.getText());
+        String tenTheLoai = txtTenTheLoai.getText();
         int thoiLuong = Integer.parseInt(txtThoiLuong.getText());
         String ngayKhoiChieuStr = txtNgayKhoiChieu.getText();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -200,8 +207,9 @@ public class PhimView extends JPanel {
         String dinhDang = txtDinhDang.getText();
         String moTa = txtMoTa.getText();
         String daoDien = txtDaoDien.getText();
+        int soSuatChieu = Integer.parseInt(txtSoSuatChieu.getText());
 
-        Phim phim = new Phim(0, tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien);
+        Phim phim = new Phim(0, tenPhim, tenTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien, soSuatChieu);
         Phim result = controller.updatePhim(phim);
 
         if (result != null) {
@@ -236,13 +244,14 @@ public class PhimView extends JPanel {
     private void clearForm() {
         txtMaPhim.setText("");
         txtTenPhim.setText("");
-        txtTheLoai.setText("");
+        txtTenTheLoai.setText("");
         txtThoiLuong.setText("");
         txtNgayKhoiChieu.setText("");
         txtNuocSanXuat.setText("");
         txtDinhDang.setText("");
         txtMoTa.setText("");
         txtDaoDien.setText("");
+        txtSoSuatChieu.setText("");
         table.clearSelection();
     }
 }

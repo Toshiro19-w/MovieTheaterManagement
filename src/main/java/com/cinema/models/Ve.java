@@ -14,11 +14,11 @@ public class Ve {
     private TrangThaiVe trangThai;
     private LocalDateTime ngayDat;
 
-    //JOIN chỉ cho user
     private String tenPhim;
-    private LocalDate ngayGioChieu;
+    private LocalDateTime ngayGioChieu;
     private String hoTenKhachHang;
     private String loaiPhong;
+    private String tenPhong;
 
     public Ve(int maVe, int maSuatChieu, Integer maPhong,
               String soGhe, Integer maHoaDon, BigDecimal giaVe,
@@ -35,7 +35,7 @@ public class Ve {
 
     public Ve(int maVe, int maSuatChieu, Integer maPhong,
               String soGhe, Integer maHoaDon, BigDecimal giaVe,
-              TrangThaiVe trangThai, LocalDateTime ngayDat, String tenPhim, LocalDate ngayGioChieu,
+              TrangThaiVe trangThai, LocalDateTime ngayDat, String tenPhim, LocalDateTime ngayGioChieu,
               String hoTenKhachHang, String loaiPhong) {
         this.maVe = maVe;
         this.maSuatChieu = maSuatChieu;
@@ -52,6 +52,25 @@ public class Ve {
     }
 
     public Ve() {}
+
+    public Ve(int maVe, TrangThaiVe trangThai, BigDecimal giaVe, String soGhe, LocalDateTime ngayDat, String tenPhong, LocalDateTime ngayGioChieu, String tenPhim) {
+        this.maVe = maVe;
+        this.trangThai = trangThai;
+        this.giaVe = giaVe;
+        this.soGhe = soGhe;
+        this.ngayDat = ngayDat;
+        this.tenPhong = tenPhong;
+        this.ngayGioChieu = ngayGioChieu;
+        this.tenPhim = tenPhim;
+    }
+
+    public String getTenPhong() {
+        return tenPhong;
+    }
+
+    public void setTenPhong(String tenPhong) {
+        this.tenPhong = tenPhong;
+    }
 
     public int getMaVe() {
         return maVe;
@@ -117,11 +136,11 @@ public class Ve {
         this.tenPhim = tenPhim;
     }
 
-    public LocalDate getNgayGioChieu() {
+    public LocalDateTime getNgayGioChieu() {
         return ngayGioChieu;
     }
 
-    public void setNgayGioChieu(LocalDate ngayGioChieu) {
+    public void setNgayGioChieu(LocalDateTime ngayGioChieu) {
         this.ngayGioChieu = ngayGioChieu;
     }
 

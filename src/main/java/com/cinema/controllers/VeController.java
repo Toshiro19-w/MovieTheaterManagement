@@ -23,6 +23,15 @@ public class VeController {
         }
     }
 
+    public List<Ve> findAllDetail() {
+        try {
+            return veService.getAllVeDetail();
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi tìm vé: " + e.getMessage());
+            return null;
+        }
+    }
+
     public Ve findVeById(int maVe) {
         try {
             return veService.getVeById(maVe);

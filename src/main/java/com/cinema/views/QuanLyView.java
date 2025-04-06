@@ -63,7 +63,7 @@ public class QuanLyView extends JFrame {
         mainContentPanel.add(new VeView(), "Vé");
         mainContentPanel.add(new ThanhToanView(), "Thanh toán");
         mainContentPanel.add(new NhanVienView(), "Nhân viên");
-        //mainContentPanel.add(new BaoCaoView(), "Báo cáo");
+        mainContentPanel.add(new BaoCaoView(), "Báo cáo");
 
         add(headerPanel, BorderLayout.NORTH);
         add(mainContentPanel, BorderLayout.CENTER);

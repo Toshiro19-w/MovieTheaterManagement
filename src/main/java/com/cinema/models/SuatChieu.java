@@ -15,13 +15,11 @@ public class SuatChieu {
     private int thoiLuongPhim;
     private String dinhDangPhim;
 
-    public SuatChieu(int maSuatChieu, int maPhim, int maPhong, LocalDateTime ngayGioChieu, String tenPhim, String tenPhong, int thoiLuongPhim, String dinhDangPhim) {
+    public SuatChieu(int maSuatChieu, String tenPhim, String tenPhong, LocalDateTime ngayGioChieu, int thoiLuongPhim, String dinhDangPhim) {
         this.maSuatChieu = maSuatChieu;
-        this.maPhim = maPhim;
-        this.maPhong = maPhong;
-        this.ngayGioChieu = ngayGioChieu;
         this.tenPhim = tenPhim;
         this.tenPhong = tenPhong;
+        this.ngayGioChieu = ngayGioChieu;
         this.thoiLuongPhim = thoiLuongPhim;
         this.dinhDangPhim = dinhDangPhim;
     }
@@ -32,8 +30,6 @@ public class SuatChieu {
         this.maPhong = maPhong;
         this.ngayGioChieu = ngayGioChieu;
     }
-
-    public SuatChieu() {}
 
     public SuatChieu(int maSuatChieu, String tenPhim, int thoiLuongPhim, String dinhDangPhim,
                      String tenPhong, int maPhong, LocalDateTime ngayGioChieu) {

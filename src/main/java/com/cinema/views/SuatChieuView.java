@@ -1,7 +1,6 @@
 package com.cinema.views;
 
 import com.cinema.controllers.SuatChieuController;
-import com.cinema.models.Phim;
 import com.cinema.models.SuatChieu;
 import com.cinema.services.SuatChieuService;
 import com.cinema.utils.DatabaseConnection;
@@ -10,26 +9,23 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.IOException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
 public class SuatChieuView extends JPanel {
-    private DatabaseConnection databaseConnection;
     private SuatChieuController controller;
     private JTable table;
     private DefaultTableModel tableModel;
-    private JTextField txtMaSuatChieu, txtMaPhim, txtMaPhong, txtNgayGioChieu;
-    private JButton btnThem, btnSua, btnXoa, btnClear;
+    private JTextField txtMaSuatChieu, txtTenPhim, txtTenPhong,
+            txtNgayGioChieu, txtThoiLuong, txtDinhDang;
 
     public SuatChieuView() {
         try {
-            databaseConnection = new DatabaseConnection();
+            DatabaseConnection databaseConnection = new DatabaseConnection();
             controller = new SuatChieuController(new SuatChieuService(databaseConnection));
         } catch (IOException e) {
-            e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Không thể đọc file cấu hình cơ sở dữ liệu!");
             System.exit(1);
         }
@@ -42,7 +38,7 @@ public class SuatChieuView extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         tableModel = new DefaultTableModel(new Object[]{
-                "Mã Suất Chiếu", "Mã Phim", "Mã Phòng", "Ngày Giờ Chiếu"
+                "Mã Suất Chiếu", "Tên Phim", "Tên Phòng", "Ngày Giờ Chiếu", "Thời Lượng", "Định Dạng"
         }, 0);
 
         table = new JTable(tableModel);
@@ -54,7 +50,7 @@ public class SuatChieuView extends JPanel {
         });
         JScrollPane scrollPane = new JScrollPane(table);
 
-        JPanel formPanel = new JPanel(new GridLayout(4, 2, 5, 5));
+        JPanel formPanel = new JPanel(new GridLayout(6, 2, 5, 5));
         formPanel.setBorder(BorderFactory.createTitledBorder("Thông tin Phim"));
 
         formPanel.add(new JLabel("Mã Suất Chiếu:"));
@@ -62,33 +58,41 @@ public class SuatChieuView extends JPanel {
         txtMaSuatChieu.setEditable(false);
         formPanel.add(txtMaSuatChieu);
 
-        formPanel.add(new JLabel("Mã Phim:"));
-        txtMaPhim = new JTextField();
-        formPanel.add(txtMaPhim);
+        formPanel.add(new JLabel("Tên Phim:"));
+        txtTenPhim = new JTextField();
+        formPanel.add(txtTenPhim);
 
-        formPanel.add(new JLabel("Mã Phòng:"));
-        txtMaPhong = new JTextField();
-        formPanel.add(txtMaPhong);
+        formPanel.add(new JLabel("Tên Phòng:"));
+        txtTenPhong = new JTextField();
+        formPanel.add(txtTenPhong);
 
-        formPanel.add(new JLabel("Ngày giờ chiếu:"));
+        formPanel.add(new JLabel("Ngày Giờ Chiếu:"));
         txtNgayGioChieu = new JTextField();
         formPanel.add(txtNgayGioChieu);
 
+        formPanel.add(new JLabel("Thời Lượng:"));
+        txtThoiLuong = new JTextField();
+        formPanel.add(txtThoiLuong);
+
+        formPanel.add(new JLabel("Định dạng:"));
+        txtDinhDang = new JTextField();
+        formPanel.add(txtDinhDang);
+
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        btnThem = new JButton("Thêm");
-        btnSua = new JButton("Sửa");
-        btnXoa = new JButton("Xóa");
-        btnClear = new JButton("Clear");
+        JButton btnThem = new JButton("Thêm");
+        JButton btnSua = new JButton("Sửa");
+        JButton btnXoa = new JButton("Xóa");
+        JButton btnClear = new JButton("Clear");
 
         buttonPanel.add(btnThem);
         buttonPanel.add(btnSua);
         buttonPanel.add(btnXoa);
         buttonPanel.add(btnClear);
 
-        btnThem.addActionListener(e -> themSuatChieu());
-        btnSua.addActionListener(e -> suaSuatChieu());
-        btnXoa.addActionListener(e -> xoaSuatChieu());
-        btnClear.addActionListener(e -> clearForm());
+        btnThem.addActionListener(_ -> themSuatChieu());
+        btnSua.addActionListener(_ -> suaSuatChieu());
+        btnXoa.addActionListener(_ -> xoaSuatChieu());
+        btnClear.addActionListener(_ -> clearForm());
 
         add(scrollPane, BorderLayout.CENTER);
         JPanel bottomPanel = new JPanel(new BorderLayout());
@@ -100,7 +104,7 @@ public class SuatChieuView extends JPanel {
     private void loadDataToTable() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
         tableModel.setRowCount(0);
-        List<SuatChieu> danhSach = controller.findAll();
+        List<SuatChieu> danhSach = controller.findAllDetail();
         if (danhSach != null) {
             for (SuatChieu suatChieu : danhSach) {
                 String ngayGioChieuFormatted = "Chưa có";
@@ -109,9 +113,11 @@ public class SuatChieuView extends JPanel {
                 }
                 tableModel.addRow(new Object[]{
                         suatChieu.getMaSuatChieu(),
-                        suatChieu.getMaPhim(),
-                        suatChieu.getMaPhong(),
+                        suatChieu.getTenPhim(),
+                        suatChieu.getTenPhong(),
                         ngayGioChieuFormatted,
+                        suatChieu.getThoiLuongPhim(),
+                        suatChieu.getThoiLuongPhim()
                 });
             }
         }
@@ -121,21 +127,25 @@ public class SuatChieuView extends JPanel {
         int selectedRow = table.getSelectedRow();
         if (selectedRow >= 0) {
             txtMaSuatChieu.setText(tableModel.getValueAt(selectedRow, 0).toString());
-            txtMaPhim.setText(tableModel.getValueAt(selectedRow, 1).toString());
-            txtMaPhong.setText(tableModel.getValueAt(selectedRow, 2).toString());
+            txtTenPhim.setText(tableModel.getValueAt(selectedRow, 1).toString());
+            txtTenPhong.setText(tableModel.getValueAt(selectedRow, 2).toString());
             txtNgayGioChieu.setText(tableModel.getValueAt(selectedRow, 3).toString());
+            txtThoiLuong.setText(tableModel.getValueAt(selectedRow, 4).toString());
+            txtDinhDang.setText(tableModel.getValueAt(selectedRow, 5).toString());
         }
     }
 
     private void themSuatChieu() {
         try {
-            int maPhim = Integer.parseInt(txtMaPhim.getText());
-            int maPhong = Integer.parseInt(txtMaPhong.getText());
+            String tenPhim = txtTenPhim.getText();
+            String tenPhong = txtTenPhong.getText();
             String ngayGioChieuStr = txtNgayGioChieu.getText();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
             LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayGioChieuStr, formatter);
+            int thoiLuong = Integer.parseInt(txtThoiLuong.getText());
+            String dinhDang = txtDinhDang.getText();
 
-            SuatChieu suatChieu = new SuatChieu(0, maPhim, maPhong, ngayGioChieu);
+            SuatChieu suatChieu = new SuatChieu(0, tenPhim, tenPhong, ngayGioChieu, thoiLuong, dinhDang);
             SuatChieu result = controller.saveSuatChieu(suatChieu);
 
             if (result != null) {
@@ -160,15 +170,16 @@ public class SuatChieuView extends JPanel {
         }
 
         try {
-            int maSuatChieu = Integer.parseInt(maSuatChieuStr);
-            int maPhim = Integer.parseInt(txtMaPhim.getText());
-            int maPhong = Integer.parseInt(txtMaPhong.getText());
+            String tenPhim = txtTenPhim.getText();
+            String tenPhong = txtTenPhong.getText();
             String ngayGioChieuStr = txtNgayGioChieu.getText();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
             LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayGioChieuStr, formatter);
+            int thoiLuong = Integer.parseInt(txtThoiLuong.getText());
+            String dinhDang = txtDinhDang.getText();
 
-            SuatChieu suatChieu = new SuatChieu(maSuatChieu, maPhim, maPhong, ngayGioChieu);
-            SuatChieu result = controller.updateSuatChieu(suatChieu);
+            SuatChieu suatChieu = new SuatChieu(0, tenPhim, tenPhong, ngayGioChieu, thoiLuong, dinhDang);
+            SuatChieu result = controller.saveSuatChieu(suatChieu);
 
             if (result != null) {
                 JOptionPane.showMessageDialog(this, "Cập nhật suất chiếu thành công!");
@@ -185,12 +196,12 @@ public class SuatChieuView extends JPanel {
     }
 
     private void xoaSuatChieu() {
-        if (txtMaPhim.getText().isEmpty()) {
+        if (txtTenPhim.getText().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Vui lòng chọn suất chiếu cần xóa!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        int maSuatChieu = Integer.parseInt(txtMaPhim.getText());
+        int maSuatChieu = Integer.parseInt(txtTenPhim.getText());
         int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa suất chiếu này?", "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
@@ -207,8 +218,8 @@ public class SuatChieuView extends JPanel {
 
     private void clearForm() {
         txtMaSuatChieu.setText("");
-        txtMaPhim.setText("");
-        txtMaPhong.setText("");
+        txtTenPhim.setText("");
+        txtTenPhong.setText("");
         txtNgayGioChieu.setText("");
         table.clearSelection();
     }

@@ -117,8 +117,10 @@ public class NguoiDungView extends JFrame {
         sidebarPanel.add(applyFilterButton);
 
         // Danh sách phim
-        phimPanel = new JPanel(new GridLayout(0, 3, 10, 10));
-        phimPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        phimPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
         // Thêm Sidebar và danh sách phim vào mainPanel
         mainPanel.add(sidebarPanel, BorderLayout.WEST);
