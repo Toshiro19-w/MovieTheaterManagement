@@ -1,6 +1,7 @@
 package com.cinema.models;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class SuatChieu {
     private int maSuatChieu;
@@ -33,6 +34,17 @@ public class SuatChieu {
     }
 
     public SuatChieu() {}
+
+    public SuatChieu(int maSuatChieu, String tenPhim, int thoiLuongPhim, String dinhDangPhim,
+                     String tenPhong, int maPhong, LocalDateTime ngayGioChieu) {
+        this.maSuatChieu = maSuatChieu;
+        this.tenPhim = tenPhim != null ? tenPhim : "Unknown Film";
+        this.thoiLuongPhim = thoiLuongPhim;
+        this.dinhDangPhim = dinhDangPhim != null ? dinhDangPhim : "Unknown Format";
+        this.tenPhong = tenPhong != null ? tenPhong : "Unknown Room";
+        this.maPhong = maPhong;
+        this.ngayGioChieu = ngayGioChieu;
+    }
 
     public int getMaSuatChieu() {
         return maSuatChieu;
@@ -96,5 +108,12 @@ public class SuatChieu {
 
     public void setDinhDangPhim(String dinhDangPhim) {
         this.dinhDangPhim = dinhDangPhim;
+    }
+
+    @Override
+    public String toString() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        return tenPhim + " - " + tenPhong + " - " +
+                (ngayGioChieu != null ? ngayGioChieu.format(formatter) : "N/A");
     }
 }

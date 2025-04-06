@@ -1,8 +1,14 @@
 package com.cinema.views;
 
+import com.cinema.controllers.DatVeController;
 import com.cinema.controllers.PhimController;
+import com.cinema.models.Ghe;
 import com.cinema.models.Phim;
+import com.cinema.models.SuatChieu;
+import com.cinema.services.GheService;
 import com.cinema.services.PhimService;
+import com.cinema.services.SuatChieuService;
+import com.cinema.services.VeService;
 import com.cinema.utils.DatabaseConnection;
 import com.formdev.flatlaf.FlatLightLaf;
 
@@ -11,6 +17,10 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -152,6 +162,12 @@ public class NguoiDungView extends JFrame {
         }
         headerPanel.add(menuPanel, BorderLayout.CENTER);
 
+        JPanel userPanel = getUserPanel();
+        headerPanel.add(userPanel, BorderLayout.EAST);
+        return headerPanel;
+    }
+
+    private JPanel getUserPanel() {
         JPanel userPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         userPanel.setOpaque(false);
         JLabel userLabel = new JLabel("Xin chào " + username);
@@ -169,8 +185,7 @@ public class NguoiDungView extends JFrame {
         });
         userPanel.add(userLabel);
         userPanel.add(logoutButton);
-        headerPanel.add(userPanel, BorderLayout.EAST);
-        return headerPanel;
+        return userPanel;
     }
 
     private void loadPhimList() {
@@ -241,7 +256,84 @@ public class NguoiDungView extends JFrame {
     }
 
     private void datVe(int maPhim) {
-        JOptionPane.showMessageDialog(this, "Chức năng đặt vé cho phim " + maPhim + " đang phát triển!");
+        try {
+            DatVeController datVeController = new DatVeController(
+                    new SuatChieuService(databaseConnection),
+                    new GheService(databaseConnection),
+                    new VeService(databaseConnection)
+            );
+            JDialog dialog = new JDialog(this, "Đặt vé", true);
+            dialog.setSize(600, 400);
+            dialog.setLayout(new BorderLayout());
+
+            // Panel chọn suất chiếu
+            JPanel suatChieuPanel = new JPanel(new FlowLayout());
+            JLabel suatChieuLabel = new JLabel("Chọn suất chiếu:");
+            JComboBox<SuatChieu> suatChieuCombo = new JComboBox<>();
+            List<SuatChieu> suatChieuList = datVeController.getSuatChieuByPhim(maPhim);
+            for (SuatChieu sc : suatChieuList) {
+                suatChieuCombo.addItem(sc);
+            }
+            suatChieuPanel.add(suatChieuLabel);
+            suatChieuPanel.add(suatChieuCombo);
+
+            // Panel chọn ghế
+            JPanel ghePanel = new JPanel(new FlowLayout());
+            JLabel gheLabel = new JLabel("Chọn ghế:");
+            JComboBox<Ghe> gheCombo = new JComboBox<>();
+            suatChieuCombo.addActionListener(e -> {
+                gheCombo.removeAllItems();
+                SuatChieu selectedSuatChieu = (SuatChieu) suatChieuCombo.getSelectedItem();
+                if (selectedSuatChieu != null) {
+                    try {
+                        List<Ghe> gheList = datVeController.getGheTrongByPhongAndSuatChieu(
+                                selectedSuatChieu.getMaPhong(), selectedSuatChieu.getMaSuatChieu());
+                        System.out.println("So ghe trong: " + gheList.size());
+                        for (Ghe ghe : gheList) {
+                            gheCombo.addItem(ghe);
+                        }
+                    } catch (SQLException ex) {
+                        JOptionPane.showMessageDialog(dialog,
+                                "Lỗi khi tải danh sách ghế: " + ex.getMessage(),
+                                "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            });
+            ghePanel.add(gheLabel);
+            ghePanel.add(gheCombo);
+
+            // Nút xác nhận
+            JButton confirmButton = new JButton("Xác nhận đặt vé");
+            confirmButton.addActionListener(_ -> {
+                SuatChieu selectedSuatChieu = (SuatChieu) suatChieuCombo.getSelectedItem();
+                Ghe selectedGhe = (Ghe) gheCombo.getSelectedItem();
+                if (selectedSuatChieu == null || selectedGhe == null) {
+                    JOptionPane.showMessageDialog(dialog, "Vui lòng chọn suất chiếu và ghế!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                try {
+                    BigDecimal giaVe = new BigDecimal("50000"); // Giả định giá vé cố định
+                    datVeController.datVe(
+                            selectedSuatChieu.getMaSuatChieu(),
+                            selectedGhe.getMaPhong(),
+                            selectedGhe.getSoGhe(),
+                            giaVe
+                    );
+                    JOptionPane.showMessageDialog(dialog, "Đặt vé thành công!");
+                    dialog.dispose();
+                } catch (SQLException ex) {
+                    JOptionPane.showMessageDialog(dialog, "Lỗi khi đặt vé!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+
+            dialog.add(suatChieuPanel, BorderLayout.NORTH);
+            dialog.add(ghePanel, BorderLayout.CENTER);
+            dialog.add(confirmButton, BorderLayout.SOUTH);
+            dialog.setLocationRelativeTo(this);
+            dialog.setVisible(true);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

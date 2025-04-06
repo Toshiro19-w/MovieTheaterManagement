@@ -26,6 +26,10 @@ public class SuatChieuService {
         return suatChieuRepository.findById(maSuatChieu);
     }
 
+    public List<SuatChieu> findByMaPhim(int maPhim) throws SQLException {
+        return suatChieuRepository.findByMaPhim(maPhim);
+    }
+
     public SuatChieu addSuatChieu(SuatChieu suatChieu) throws SQLException {
         return suatChieuRepository.save(suatChieu);
     }

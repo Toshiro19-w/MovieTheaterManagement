@@ -24,4 +24,9 @@ public class Ghe {
     public void setSoGhe(String soGhe) {
         this.soGhe = soGhe;
     }
+
+    @Override
+    public String toString() {
+        return "Phòng " + maPhong + " - " + soGhe;
+    }
 }

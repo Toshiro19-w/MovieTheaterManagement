@@ -106,6 +106,33 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
         }
     }
 
+    public List<SuatChieu> findByMaPhim(int maPhim) throws SQLException {
+        List<SuatChieu> list = new ArrayList<>();
+        String sql = "SELECT sc.maSuatChieu, p.tenPhim, p.thoiLuong AS thoiLuongPhim, " +
+                "p.dinhDang AS dinhDangPhim, pc.tenPhong, sc.maPhong, sc.ngayGioChieu " +
+                "FROM SuatChieu sc " +
+                "JOIN Phim p ON sc.maPhim = p.maPhim " +
+                "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong " +
+                "WHERE sc.maPhim = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maPhim);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                list.add(new SuatChieu(
+                        rs.getInt("maSuatChieu"),
+                        rs.getString("tenPhim"),
+                        rs.getInt("thoiLuongPhim"),
+                        rs.getString("dinhDangPhim"),
+                        rs.getString("tenPhong"),
+                        rs.getInt("maPhong"), // Thêm maPhong
+                        rs.getTimestamp("ngayGioChieu") != null ?
+                                rs.getTimestamp("ngayGioChieu").toLocalDateTime() : null
+                ));
+            }
+        }
+        return list;
+    }
+
     @Override
     public SuatChieu update(SuatChieu entity) throws SQLException {
         String sql = "UPDATE SuatChieu SET maPhim=?, maPhong=?, ngayGioChieu=? WHERE maSuatChieu=?";
