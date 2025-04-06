@@ -18,8 +18,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
@@ -46,7 +44,6 @@ public class NguoiDungView extends JFrame {
             databaseConnection = new DatabaseConnection();
             controller = new PhimController(new PhimService(databaseConnection));
         } catch (IOException e) {
-            e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Không thể đọc file cấu hình cơ sở dữ liệu!");
             System.exit(1);
         }
@@ -281,7 +278,7 @@ public class NguoiDungView extends JFrame {
             JPanel ghePanel = new JPanel(new FlowLayout());
             JLabel gheLabel = new JLabel("Chọn ghế:");
             JComboBox<Ghe> gheCombo = new JComboBox<>();
-            suatChieuCombo.addActionListener(e -> {
+            suatChieuCombo.addActionListener(_ -> {
                 gheCombo.removeAllItems();
                 SuatChieu selectedSuatChieu = (SuatChieu) suatChieuCombo.getSelectedItem();
                 if (selectedSuatChieu != null) {

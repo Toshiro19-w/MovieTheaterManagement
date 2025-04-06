@@ -236,6 +236,11 @@ INSERT INTO SuatChieu (maPhim, maPhong, ngayGioChieu) VALUES
 (3, 3, '2025-04-06 20:00:00'),
 (4, 4, '2025-04-07 10:00:00'),
 (5, 5, '2025-04-07 15:00:00');
+(6, 1, '2025-04-07 17:00:00'), -- Coco
+(7, 2, '2025-04-07 19:00:00'), -- Joker
+(8, 3, '2025-04-07 21:00:00'), -- Avatar
+(9, 4, '2025-04-08 14:00:00'), -- Planet Earth
+(10, 5, '2025-04-08 16:00:00'); -- Tam Quốc Diễn Nghĩa
 
 -- Dữ liệu cho bảng HoaDon
 INSERT INTO HoaDon (maNhanVien, maKhachHang, ngayLap, tongTien) VALUES
