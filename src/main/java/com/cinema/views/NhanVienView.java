@@ -1,9 +1,12 @@
 package com.cinema.views;
 
+import com.cinema.controllers.BaoCaoController;
 import com.cinema.controllers.NhanVienController;
+import com.cinema.models.BaoCao;
 import com.cinema.models.LoaiNguoiDung;
 import com.cinema.models.NhanVien;
 import com.cinema.models.VaiTro;
+import com.cinema.services.BaoCaoService;
 import com.cinema.services.NhanVienService;
 import com.cinema.utils.DatabaseConnection;
 
@@ -13,6 +16,8 @@ import java.awt.*;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class NhanVienView extends JPanel {
