@@ -44,8 +44,9 @@ public class LoginView extends JFrame {
         setTitle("Đăng nhập - Hệ thống quản lý rạp chiếu phim");
         setSize(1280, 700);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setMinimumSize(new Dimension(950, 533));
         setLocationRelativeTo(null);
-        setResizable(false);
+        setResizable(true);
 
         // Panel nền với gradient
         JPanel backgroundPanel = getBackgroundPanel();
@@ -77,8 +78,9 @@ public class LoginView extends JFrame {
         loginPanel.add(usernameLabel, gbc);
 
         gbc.gridx = 1;
-        usernameField = new JTextField(20);
+        usernameField = new JTextField(15);
         usernameField.setFont(new Font("Arial", Font.PLAIN, 14));
+        gbc.fill = GridBagConstraints.NONE;
         loginPanel.add(usernameField, gbc);
 
         // Password
@@ -89,8 +91,9 @@ public class LoginView extends JFrame {
         loginPanel.add(passwordLabel, gbc);
 
         gbc.gridx = 1;
-        passwordField = new JPasswordField(20);
+        passwordField = new JPasswordField(15);
         passwordField.setFont(new Font("Arial", Font.PLAIN, 14));
+        gbc.fill = GridBagConstraints.NONE;
         loginPanel.add(passwordField, gbc);
 
         // Nút đăng nhập
@@ -105,6 +108,7 @@ public class LoginView extends JFrame {
         loginBtn.setFocusPainted(false);
         loginBtn.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         loginBtn.addActionListener(_ -> handleLogin());
+        getRootPane().setDefaultButton(loginBtn);
         loginPanel.add(loginBtn, gbc);
 
         // Liên kết Forgot Password và Register
@@ -122,7 +126,7 @@ public class LoginView extends JFrame {
         loginPanel.add(forgotLabel, gbc);
 
         gbc.gridy++;
-        JLabel registerLabel = new JLabel("Không có tài khoản? Đăng ký", SwingConstants.CENTER);
+        JLabel registerLabel = new JLabel("Đăng ký", SwingConstants.CENTER);
         registerLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         registerLabel.setForeground(new Color(0, 102, 204));
         registerLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -143,7 +147,7 @@ public class LoginView extends JFrame {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                GradientPaint gp = new GradientPaint(0, 0, new Color(0, 102, 204), 0, getHeight(), new Color(0, 204, 255));
+                GradientPaint gp = new GradientPaint(0, 0, new Color(0, 126, 250), 0, getHeight(), new Color(0, 1, 23));
                 g2d.setPaint(gp);
                 g2d.fillRect(0, 0, getWidth(), getHeight());
             }
@@ -166,7 +170,7 @@ public class LoginView extends JFrame {
         loginPanel.setOpaque(false);
         loginPanel.setBorder(new EmptyBorder(30, 30, 30, 30));
         loginPanel.setLayout(new GridBagLayout());
-        loginPanel.setPreferredSize(new Dimension(700, 500));
+        loginPanel.setPreferredSize(new Dimension(350, 350));
         return loginPanel;
     }
 
@@ -185,28 +189,32 @@ public class LoginView extends JFrame {
         PreparedStatement stmt = null;
         ResultSet rs = null;
         try {
-            String sql = "SELECT loaiTaiKhoan FROM TaiKhoan WHERE tenDangNhap = ? AND matKhau = ?";
+            String sql = "SELECT loaiTaiKhoan ,matKhau FROM TaiKhoan WHERE tenDangNhap = ?";
             stmt = conn.prepareStatement(sql);
             stmt.setString(1, username);
-            stmt.setString(2, password); // Mã hoá mật khẩu (nên mã hóa trước khi lưu vào DB)
             rs = stmt.executeQuery();
 
             // Nếu đăng nhập thành công
             if (rs.next()) {
+                String storedPassHash = rs.getString("matKhau");
+                String inputPassHash = hashPassword(password);
                 String role = rs.getString("loaiTaiKhoan"); // Lấy vai trò từ cơ sở dữ liệu
-                JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
-
-                // Chuyển hướng dựa trên vai trò
-                if ("admin".equalsIgnoreCase(role)) {
-                    openQuanLyView(username); // Mở giao diện admin
-                } else if ("user".equalsIgnoreCase(role)) {
-                    openNguoiDungView(username); // Mở giao diện khách hàng
+                //kiểm tra mật khẩu
+                if(storedPassHash.equals(inputPassHash)) {
+                    JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
+                    if ("admin".equalsIgnoreCase(role)) {
+                        openQuanLyView(username); // Mở giao diện admin
+                    } else if ("user".equalsIgnoreCase(role)) {
+                        openNguoiDungView(username); // Mở giao diện khách hàng
+                    }
+                    dispose(); // Đóng cửa sổ đăng nhập
                 }
-                dispose(); // Đóng cửa sổ đăng nhập
-            } else {
+             else {
                 JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
             }
-        } catch (SQLException ex) {
+        }
+        }
+        catch (SQLException ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Lỗi truy vấn cơ sở dữ liệu: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         } finally {
@@ -252,5 +260,20 @@ public class LoginView extends JFrame {
         ForgotPasswordView forgotPasswordView = new ForgotPasswordView();
         forgotPasswordView.setVisible(true);
         dispose();
+    }
+    // Hàm mã hóa mật khẩu (sử dụng MD5)
+    private String hashPassword(String password) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+            byte[] hash = md.digest(password.getBytes());
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                hexString.append(Integer.toHexString(0xFF & b));
+            }
+            return hexString.toString(); // Trả về mật khẩu đã mã hóa MD5
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return null;
     }
 }

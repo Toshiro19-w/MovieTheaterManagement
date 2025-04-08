@@ -8,8 +8,10 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class RegisterView extends JFrame {
@@ -175,7 +177,6 @@ public class RegisterView extends JFrame {
         String password = new String(passwordField.getPassword());
         String confirmPassword = new String(confirmPasswordField.getPassword());
 
-        // Validation
         if (username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin!");
             return;
@@ -191,12 +192,37 @@ public class RegisterView extends JFrame {
             return;
         }
 
+        DatabaseConnection db = null;
+        Connection conn = null;
+
         try {
-            String sql = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan) VALUES (?, ?, ?)";
+            db = new DatabaseConnection();
+            conn = db.getConnection();
+
+            // Kiểm tra username/email đã tồn tại
+            String checkSQL = "SELECT COUNT(*) FROM TaiKhoan WHERE tenDangNhap = ?";
+            PreparedStatement checkStmt = conn.prepareStatement(checkSQL);
+            checkStmt.setString(1, username);
+            ResultSet rs = checkStmt.executeQuery();
+            if (rs.next() && rs.getInt(1) > 0) {
+                JOptionPane.showMessageDialog(this, "Tên đăng nhập hoặc email đã tồn tại!");
+                return;
+            }
+
+            rs.close();
+            checkStmt.close();
+
+            String hashedPassword = hashPassword(password);
+            
+
+            String sql = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maKhachHang) VALUES (?, ?, ?, ?)";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setString(1, username);
-            stmt.setString(2, password); // Trong thực tế, nên mã hóa mật khẩu
-            stmt.setString(3, "user"); // Mặc định là user, admin cần được cấp quyền riêng
+            stmt.setString(2, hashedPassword);
+            stmt.setString(3, "user");
+//            stmt.setString(4, email);
+            stmt.setString(4, max+1);
+
             int rowsAffected = stmt.executeUpdate();
 
             if (rowsAffected > 0) {
@@ -207,9 +233,42 @@ public class RegisterView extends JFrame {
             } else {
                 JOptionPane.showMessageDialog(this, "Đăng ký thất bại!");
             }
+
+            stmt.close();
+
         } catch (SQLException ex) {
             ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Lỗi kết nối cơ sở dữ liệu hoặc tài khoản đã tồn tại!");
+            JOptionPane.showMessageDialog(this, "Lỗi kết nối CSDL: " + ex.getMessage());
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Lỗi hệ thống: " + e.getMessage());
+        } finally {
+            try {
+                if (conn != null && !conn.isClosed()) {
+                    conn.close();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
         }
     }
+
+    
+
+    // Hàm mã hóa mật khẩu (sử dụng MD5)
+    private String hashPassword(String password) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+            byte[] hash = md.digest(password.getBytes());
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                hexString.append(Integer.toHexString(0xFF & b));
+            }
+            return hexString.toString(); // Trả về mật khẩu đã mã hóa MD5
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
 }
