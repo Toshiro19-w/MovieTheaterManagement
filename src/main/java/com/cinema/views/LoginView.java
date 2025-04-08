@@ -29,7 +29,7 @@ public class LoginView extends JFrame {
 
         try {
             databaseConnection = new DatabaseConnection();
-            conn = databaseConnection.getConnection(); // Lấy đối tượng Connection
+            conn = databaseConnection.getConnection();
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Lỗi khi khởi tạo kết nối cơ sở dữ liệu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             throw new RuntimeException(e);

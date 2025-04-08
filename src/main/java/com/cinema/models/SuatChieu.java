@@ -42,6 +42,8 @@ public class SuatChieu {
         this.ngayGioChieu = ngayGioChieu;
     }
 
+    public SuatChieu() {}
+
     public int getMaSuatChieu() {
         return maSuatChieu;
     }

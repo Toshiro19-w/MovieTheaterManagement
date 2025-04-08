@@ -1,12 +1,10 @@
 package com.cinema.repositories;
 
-import com.cinema.models.Phim;
 import com.cinema.models.TrangThaiVe;
 import com.cinema.models.Ve;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -140,6 +138,51 @@ public class VeRepository extends BaseRepository<Ve> {
             }
         }
         return list;
+    }
+
+    public List<Ve> findBySoGhe(String soGhe) throws SQLException {
+        List<Ve> veList = new ArrayList<>();
+        String sql = "SELECT \n" +
+                "    Ve.maVe,\n" +
+                "    Ve.trangThai,\n" +
+                "    Ve.giaVe,\n" +
+                "    Ve.soGhe,\n" +
+                "    Ve.ngayDat,\n" +
+                "    PhongChieu.tenPhong,\n" +
+                "    SuatChieu.ngayGioChieu,\n" +
+                "    Phim.tenPhim\n" +
+                "FROM Ve\n" +
+                "LEFT JOIN SuatChieu ON Ve.maSuatChieu = SuatChieu.maSuatChieu\n" +
+                "LEFT JOIN PhongChieu ON Ve.maPhong = PhongChieu.maPhong\n" +
+                "LEFT JOIN Phim ON SuatChieu.maPhim = Phim.maPhim\n" +
+                "WHERE soGhe = ?\n" +
+                "ORDER BY Ve.maVe;";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, soGhe);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                LocalDateTime ngayDat = null, ngayGioChieu = null;
+                if (rs.getTimestamp("ngayDat") != null) {
+                    ngayDat = rs.getTimestamp("ngayDat").toLocalDateTime();
+                }
+                if (rs.getTimestamp("ngayGioChieu") != null) {
+                    ngayGioChieu = rs.getTimestamp("ngayGioChieu").toLocalDateTime();
+                }
+
+                Ve ve = new Ve(
+                        rs.getInt("maVe"),
+                        TrangThaiVe.fromString(rs.getString("trangThai")),
+                        rs.getBigDecimal("giaVe"),
+                        rs.getString("soGhe"),
+                        ngayDat,
+                        rs.getString("tenPhong"),
+                        ngayGioChieu,
+                        rs.getString("tenPhim")
+                );
+                veList.add(ve);
+            }
+        }
+        return veList;
     }
 
     @Override

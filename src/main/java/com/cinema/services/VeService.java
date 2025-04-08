@@ -30,30 +30,10 @@ public class VeService{
     public List<Ve> findByHoaDon(Integer maHoaDon) throws SQLException {
         return veRepository.findByHoaDon(maHoaDon);
     }
-//
-//    public List<Ve> findByMaSuatChieu(int maSuatChieu) throws SQLException {
-//        return veRepository.findByMaSuatChieu(maSuatChieu);
-//    }
-//
-//    public List<Ve> findByMaKhachHang(Integer maKhachHang, int page, int pageSize) throws SQLException {
-//        return veRepository.findByMaKhachHang(maKhachHang, page, pageSize);
-//    }
-//
-//    public List<Ve> findByMaHoaDon(Integer maHoaDon) throws SQLException {
-//        return veRepository.findByMaHoaDon(maHoaDon);
-//    }
-//
-//    public List<Ve> findByTrangThai(TrangThaiVe trangThai, int page, int pageSize) throws SQLException {
-//        return veRepository.findByTrangThai(trangThai, page, pageSize);
-//    }
-//
-//    public List<Ve> findByNgayDat(LocalDate ngayDat) throws SQLException {
-//        return veRepository.findByNgayDat(ngayDat);
-//    }
-//
-//    public Ve findVeChiTietByMaVe(int maVe) throws SQLException {
-//        return veRepository.findVeChiTietByMaVe(maVe);
-//    }
+
+    public List<Ve> findBySoGhe(String soGhe) throws SQLException {
+        return veRepository.findBySoGhe(soGhe);
+    }
 
     public Ve saveVe(Ve ve) throws SQLException {
         return veRepository.save(ve);

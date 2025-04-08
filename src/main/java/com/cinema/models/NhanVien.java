@@ -14,6 +14,8 @@ public class NhanVien extends NguoiDung{
         this.vaiTro = vaiTro;
     }
 
+    public NhanVien() {}
+
     public String getChucVu() {
         return chucVu;
     }

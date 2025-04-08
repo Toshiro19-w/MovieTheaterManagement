@@ -3,11 +3,13 @@ package com.cinema.controllers;
 import com.cinema.models.Phim;
 import com.cinema.services.PhimService;
 
+import javax.swing.*;
+import java.awt.*;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 
-public class PhimController {
+public class PhimController extends Component {
     private final PhimService phimService;
 
     public PhimController(PhimService phimService) {
@@ -32,16 +34,6 @@ public class PhimController {
         }
     }
 
-    // Chưa làm sidebar cho tìm kiếm
-    public Phim timPhimTheoId(int maPhim) {
-        try {
-            return phimService.getPhimById(maPhim);
-        } catch (SQLException e) {
-            System.err.println("Lỗi khi tìm phim: " + e.getMessage());
-            return null;
-        }
-    }
-
     public Phim savePhim(Phim phim) {
         try {
 //            if (!ValidationUtils.validatePhim(phim)) {
@@ -51,6 +43,9 @@ public class PhimController {
             return phimService.addPhim(phim);
         } catch (SQLException e) {
             System.err.println("Lỗi khi lưu phim: " + e.getMessage());
+            return null;
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Giá vé phải là số!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return null;
         }
     }
@@ -75,6 +70,15 @@ public class PhimController {
         } catch (SQLException e) {
             System.err.println("Lỗi khi xóa phim: " + e.getMessage());
             return false;
+        }
+    }
+
+    public List<Phim> searchPhimByTen(String tenPhim) throws SQLException {
+        try {
+            return phimService.getPhimByTen(tenPhim);
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi tìm phim: " + e.getMessage());
+            return Collections.emptyList();
         }
     }
 }

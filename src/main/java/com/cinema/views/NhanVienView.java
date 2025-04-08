@@ -1,14 +1,9 @@
 package com.cinema.views;
 
-import com.cinema.controllers.BaoCaoController;
-import com.cinema.controllers.NhanVienController;
-import com.cinema.models.BaoCao;
-import com.cinema.models.LoaiNguoiDung;
-import com.cinema.models.NhanVien;
-import com.cinema.models.VaiTro;
-import com.cinema.services.BaoCaoService;
-import com.cinema.services.NhanVienService;
-import com.cinema.utils.DatabaseConnection;
+import com.cinema.controllers.*;
+import com.cinema.models.*;
+import com.cinema.services.*;
+import com.cinema.utils.*;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -25,7 +20,7 @@ public class NhanVienView extends JPanel {
     private NhanVienController controller;
     private JTable table;
     private DefaultTableModel tableModel;
-    private JTextField txtMaND, txtHoTen, txtSDT, txtEmail, txtChucVu, txtLuong;
+    private JTextField txtMaND, txtHoTen, txtSDT, txtEmail, txtChucVu, txtLuong, tenNhanVienField;
     private JComboBox<String> vaiTroCombo;
     private JButton btnThem, btnSua, btnXoa, btnClear;
 
@@ -33,6 +28,8 @@ public class NhanVienView extends JPanel {
         try {
             databaseConnection = new DatabaseConnection();
             controller = new NhanVienController(new NhanVienService(databaseConnection));
+            setLayout(new BorderLayout(10, 10));
+            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         } catch (IOException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Không thể đọc file cấu hình cơ sở dữ liệu!");
@@ -43,8 +40,18 @@ public class NhanVienView extends JPanel {
     }
 
     private void initializeUI() {
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        // Sidebar tìm kiếm
+        JPanel searchPanel = new JPanel(new GridLayout(2, 1, 5, 5));
+        searchPanel.setBorder(BorderFactory.createTitledBorder("Tìm kiếm nhân viên"));
+        searchPanel.add(new JLabel("Tên nhân viên:"));
+        tenNhanVienField = new JTextField();
+        searchPanel.add(tenNhanVienField);
+
+        JButton searchButton = new JButton("Tìm kiếm");
+        searchButton.addActionListener(e -> searchNhanVien());
+        searchPanel.add(searchButton);
+
+        add(searchPanel, BorderLayout.WEST);
 
         tableModel = new DefaultTableModel(new Object[]{
                 "Mã ND", "Họ tên", "SĐT", "Email", "Chức vụ", "Lương", "Vai trò"
@@ -160,14 +167,21 @@ public class NhanVienView extends JPanel {
             BigDecimal luong = new BigDecimal(txtLuong.getText());
             VaiTro vaiTro = VaiTro.fromString(vaiTroCombo.getSelectedItem().toString());
 
+            if (!ValidationUtils.isValidString(hoTen))
+                throw new IllegalArgumentException("Tên nhân viên không được để trống");
+            if (!ValidationUtils.isValidEmail(email))
+                throw new IllegalArgumentException("Email không hợp lệ");
+            if (!ValidationUtils.isValidPhoneNumber(sdt))
+                throw new IllegalArgumentException("Số điện thoại không hợp lệ (phải có 10 chữ số, bắt đầu từ 0)");
+            if (!ValidationUtils.isPositiveBigDecimal(luong))
+                throw new IllegalArgumentException("Lương phải là số dương!");
+
             NhanVien nhanVien = new NhanVien(0, hoTen, sdt, email, LoaiNguoiDung.NHANVIEN, chucVu, luong, vaiTro);
             controller.save(nhanVien);
 
             JOptionPane.showMessageDialog(this, "Thêm nhân viên thành công!");
             loadDataToTable();
             clearForm();
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Lương phải là số!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Thêm nhân viên thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -188,13 +202,20 @@ public class NhanVienView extends JPanel {
             BigDecimal luong = new BigDecimal(txtLuong.getText());
             VaiTro vaiTro = VaiTro.fromString(vaiTroCombo.getSelectedItem().toString());
 
+            if (!ValidationUtils.isValidString(hoTen))
+                throw new IllegalArgumentException("Tên nhân viên không được để trống");
+            if (!ValidationUtils.isValidEmail(email))
+                throw new IllegalArgumentException("Email không hợp lệ");
+            if (!ValidationUtils.isValidPhoneNumber(sdt))
+                throw new IllegalArgumentException("Số điện thoại không hợp lệ (phải có 10 chữ số, bắt đầu từ 0)");
+            if (!ValidationUtils.isPositiveBigDecimal(luong))
+                throw new IllegalArgumentException("Lương phải là số dương!");
+
             NhanVien nhanVien = new NhanVien(maND, hoTen, sdt, email, LoaiNguoiDung.NHANVIEN, chucVu, luong, vaiTro);
             controller.update(nhanVien);
 
             JOptionPane.showMessageDialog(this, "Cập nhật nhân viên thành công!");
             loadDataToTable();
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Lương phải là số!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Cập nhật nhân viên thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -219,6 +240,28 @@ public class NhanVienView extends JPanel {
             } catch (SQLException e) {
                 JOptionPane.showMessageDialog(this, "Xóa nhân viên thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
+        }
+    }
+
+    private void searchNhanVien() {
+        String tenNhanVien = tenNhanVienField.getText();
+        if (!ValidationUtils.isValidString(tenNhanVien)) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập tên nhân viên!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        List<NhanVien> nhanVienList = controller.searchNhanVienByTen(tenNhanVien);
+        tableModel.setRowCount(0);
+        for (NhanVien nv : nhanVienList) {
+            tableModel.addRow(new Object[]{
+                    nv.getMaNguoiDung(),
+                    nv.getHoTen(),
+                    nv.getSoDienThoai(),
+                    nv.getEmail(),
+                    nv.getChucVu(),
+                    formatCurrency(nv.getLuong()),
+                    nv.getVaiTro().getValue()
+            });
         }
     }
 

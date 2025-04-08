@@ -1,59 +1,52 @@
 package com.cinema.repositories;
 
 import com.cinema.models.HoaDon;
+import com.cinema.repositories.Interface.IHoaDonRepository;
 import com.cinema.utils.DatabaseConnection;
 
-import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HoaDonRepository extends BaseRepository<HoaDon>{
+public class HoaDonRepository implements IHoaDonRepository {
+    protected Connection conn;
+    protected DatabaseConnection dbConnection;
+
     public HoaDonRepository(DatabaseConnection dbConnection) {
-        super(dbConnection);
+        if (dbConnection == null) {
+            throw new IllegalArgumentException("DatabaseConnection cannot be null");
+        }
+        this.dbConnection = dbConnection;
+        try {
+            this.conn = dbConnection.getConnection();
+        } catch (SQLException e) {
+            throw new RuntimeException("Không thể lấy kết nối cơ sở dữ liệu", e);
+        }
     }
 
     @Override
-    public List<HoaDon> findAll() throws SQLException {
-        return List.of();
-    }
-
-    @Override
-    public HoaDon findById(int id) throws SQLException {
-        return null;
-    }
-
-    @Override
-    public HoaDon save(HoaDon entity) throws SQLException {
-        return null;
-    }
-
-    @Override
-    public HoaDon update(HoaDon entity) throws SQLException {
-        return null;
-    }
-
-    @Override
-    public void delete(int id) throws SQLException {
-
-    }
-
-    public int createHoaDon(Integer maNhanVien, Integer maKhachHang, BigDecimal tongTien) throws SQLException {
-        String sql = "INSERT INTO HoaDon (maNhanVien, maKhachHang, ngayLap, tongTien) VALUES (?, ?, NOW(), ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setObject(1, maNhanVien);
-            stmt.setObject(2, maKhachHang);
-            stmt.setBigDecimal(3, tongTien);
-            stmt.executeUpdate();
-            try (ResultSet rs = stmt.getGeneratedKeys()) {
-                if (rs.next()) {
-                    return rs.getInt(1); // Trả về maHoaDon vừa tạo
-                }
+    public List<HoaDon> getHoaDonByTenKhachHang(String tenKhachHang) throws SQLException {
+        List<HoaDon> hoaDonList = new ArrayList<>();
+        String sql = "SELECT hd.* FROM HoaDon hd " +
+                "JOIN KhachHang kh ON hd.maKhachHang = kh.maNguoiDung " +
+                "JOIN NguoiDung nd ON kh.maNguoiDung = nd.maNguoiDung " +
+                "WHERE nd.hoTen LIKE ? AND nd.loaiNguoiDung = 'KhachHang'";
+        try (PreparedStatement stmt = dbConnection.getConnection().prepareStatement(sql)) {
+            stmt.setString(1, "%" + tenKhachHang + "%");
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                HoaDon hd = new HoaDon();
+                hd.setMaHoaDon(rs.getInt("maHoaDon"));
+                hd.setMaKhachHang(rs.getInt("maKhachHang"));
+                hd.setNgayLap(rs.getTimestamp("ngayLap").toLocalDateTime());
+                hd.setTongTien(rs.getBigDecimal("tongTien"));
+                hoaDonList.add(hd);
             }
         }
-        throw new SQLException("Không thể tạo hóa đơn!");
+        return hoaDonList;
     }
 
+    @Override
     public List<HoaDon> findByKhachHang(int maKhachHang) throws SQLException {
         List<HoaDon> list = new ArrayList<>();
         String sql = "SELECT * FROM HoaDon WHERE maKhachHang = ?";
@@ -72,5 +65,20 @@ public class HoaDonRepository extends BaseRepository<HoaDon>{
             }
         }
         return list;
+    }
+
+    @Override
+    public List<String> getAllTenKhachHang() throws SQLException {
+        List<String> tenKhachHangList = new ArrayList<>();
+        String sql = "SELECT DISTINCT nd.hoTen FROM NguoiDung nd " +
+                "JOIN KhachHang kh ON nd.maNguoiDung = kh.maNguoiDung " +
+                "WHERE nd.loaiNguoiDung = 'KhachHang'";
+        try (PreparedStatement stmt = dbConnection.getConnection().prepareStatement(sql)) {
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                tenKhachHangList.add(rs.getString("hoTen"));
+            }
+        }
+        return tenKhachHangList;
     }
 }

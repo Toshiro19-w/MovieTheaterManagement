@@ -40,24 +40,16 @@ public class VeController {
             return null;
         }
     }
-//
-//    public List<Ve> findVeByMaSuatChieu(int maSuatChieu) {
-//        try {
-//            return veService.findByMaSuatChieu(maSuatChieu);
-//        } catch (SQLException e) {
-//            System.err.println("Lỗi khi tìm vé theo mã suất chiếu: " + e.getMessage());
-//            return null;
-//        }
-//    }
-//
-//    public List<Ve> findVeByMaKhachHang(int maKhachHang, int page, int pageSize) {
-//        try {
-//            return veService.findByMaKhachHang(maKhachHang, page, pageSize);
-//        } catch (SQLException e) {
-//            System.err.println("Lỗi khi tìm vé theo mã khách hàng: " + e.getMessage());
-//            return null;
-//        }
-//    }
+
+    public List<Ve> searchVeBySoGhe(String soGhe){
+        try {
+            return veService.findBySoGhe(soGhe);
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi tìm vé: " + e.getMessage());
+            return null;
+        }
+    }
+
     public Ve saveVe(Ve ve) {
         try {
             if (!ValidationUtils.validateVe(ve)) {

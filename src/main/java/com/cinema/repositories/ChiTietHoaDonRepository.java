@@ -1,15 +1,26 @@
 package com.cinema.repositories;
 
-import com.cinema.models.ChiTietHoaDon;
+import com.cinema.repositories.Interface.IChiTietHoaDonRepository;
 import com.cinema.utils.DatabaseConnection;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.List;
 
-public class ChiTietHoaDonRepository extends BaseRepository<ChiTietHoaDon> {
+public class ChiTietHoaDonRepository implements IChiTietHoaDonRepository {
+    protected Connection conn;
+    protected DatabaseConnection dbConnection;
+
     public ChiTietHoaDonRepository(DatabaseConnection dbConnection) {
-        super(dbConnection);
+        if (dbConnection == null) {
+            throw new IllegalArgumentException("DatabaseConnection cannot be null");
+        }
+        this.dbConnection = dbConnection;
+        try {
+            this.conn = dbConnection.getConnection();
+        } catch (SQLException e) {
+            throw new RuntimeException("Không thể lấy kết nối cơ sở dữ liệu", e);
+        }
     }
 
     public void createChiTietHoaDon(int maHoaDon, int maVe) throws SQLException {
@@ -19,30 +30,5 @@ public class ChiTietHoaDonRepository extends BaseRepository<ChiTietHoaDon> {
             stmt.setInt(2, maVe);
             stmt.executeUpdate();
         }
-    }
-
-    @Override
-    public List<ChiTietHoaDon> findAll() throws SQLException {
-        return List.of();
-    }
-
-    @Override
-    public ChiTietHoaDon findById(int id) throws SQLException {
-        return null;
-    }
-
-    @Override
-    public ChiTietHoaDon save(ChiTietHoaDon entity) throws SQLException {
-        return null;
-    }
-
-    @Override
-    public ChiTietHoaDon update(ChiTietHoaDon entity) throws SQLException {
-        return null;
-    }
-
-    @Override
-    public void delete(int id) throws SQLException {
-
     }
 }
