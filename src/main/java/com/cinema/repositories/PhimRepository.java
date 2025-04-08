@@ -36,29 +36,14 @@ public class PhimRepository extends BaseRepository<Phim> {
 
     public List<Phim> findAllDetail() throws SQLException {
         List<Phim> list = new ArrayList<>();
-        String sql = """
-                SELECT\s
-                p.maPhim,
-                p.tenPhim,
-                tl.tenTheLoai,
-                p.thoiLuong,
-                p.ngayKhoiChieu,
-                p.nuocSanXuat,
-                p.dinhDang,
-                p.moTa,
-                p.daoDien,
-                COUNT(sc.maSuatChieu) AS soSuatChieu
-                FROM\s
-                Phim p
-                JOIN\s
-                TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai
-                LEFT JOIN\s
-                SuatChieu sc ON p.maPhim = sc.maPhim
-                GROUP BY\s
-                p.maPhim, p.tenPhim, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu,\s
-                p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien
-                ORDER BY\s
-                p.ngayKhoiChieu DESC, p.tenPhim;""";
+        String sql = "SELECT p.maPhim, p.tenPhim, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu, " +
+                "p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien,COUNT(sc.maSuatChieu) AS soSuatChieu " +
+                "FROM Phim p " +
+                "JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai " +
+                "LEFT JOIN SuatChieu sc ON p.maPhim = sc.maPhim " +
+                "GROUP BY p.maPhim, p.tenPhim, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu, " +
+                "p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien " +
+                "ORDER BY p.ngayKhoiChieu DESC, p.tenPhim";
         try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 LocalDate ngayKhoiChieu = null;
@@ -102,6 +87,42 @@ public class PhimRepository extends BaseRepository<Phim> {
             }
         }
         return null;
+    }
+
+    public List<Phim> searchPhimByTen(String tenPhim) throws SQLException {
+        List<Phim> list = new ArrayList<>();
+        String sql = "SELECT p.maPhim, p.tenPhim, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu, " +
+                "p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien,COUNT(sc.maSuatChieu) AS soSuatChieu " +
+                "FROM Phim p " +
+                "JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai " +
+                "LEFT JOIN SuatChieu sc ON p.maPhim = sc.maPhim " +
+                "WHERE p.tenPhim LIKE ? " +
+                "GROUP BY p.maPhim, p.tenPhim, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu, " +
+                "p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien " +
+                "ORDER BY p.ngayKhoiChieu DESC, p.tenPhim";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, "%" + tenPhim + "%");
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                LocalDate ngayKhoiChieu = null;
+                if (rs.getDate("ngayKhoiChieu") != null) {
+                    ngayKhoiChieu = rs.getDate("ngayKhoiChieu").toLocalDate();
+                }
+                list.add(new Phim(
+                        rs.getInt("maPhim"),
+                        rs.getString("tenPhim"),
+                        rs.getString("tenTheLoai"),
+                        rs.getInt("thoiLuong"),
+                        ngayKhoiChieu,
+                        rs.getString("nuocSanXuat"),
+                        rs.getString("dinhDang"),
+                        rs.getString("moTa"),
+                        rs.getString("daoDien"),
+                        rs.getInt("soSuatChieu")
+                ));
+            }
+        }
+        return list;
     }
 
     @Override

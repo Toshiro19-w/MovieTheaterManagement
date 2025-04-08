@@ -18,6 +18,8 @@ public class HoaDon {
         this.tongTien = tongTien;
     }
 
+    public HoaDon() {}
+
     public int getMaHoaDon() {
         return maHoaDon;
     }

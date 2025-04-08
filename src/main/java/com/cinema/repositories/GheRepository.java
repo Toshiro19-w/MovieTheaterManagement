@@ -1,17 +1,30 @@
 package com.cinema.repositories;
 
 import com.cinema.models.Ghe;
+import com.cinema.repositories.Interface.IGheRepository;
 import com.cinema.utils.DatabaseConnection;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GheRepository extends BaseRepository<Ghe> {
+public class GheRepository implements IGheRepository {
+    protected Connection conn;
+    protected DatabaseConnection dbConnection;
+
     public GheRepository(DatabaseConnection dbConnection) {
-        super(dbConnection);
+        if (dbConnection == null) {
+            throw new IllegalArgumentException("DatabaseConnection cannot be null");
+        }
+        this.dbConnection = dbConnection;
+        try {
+            this.conn = dbConnection.getConnection();
+        } catch (SQLException e) {
+            throw new RuntimeException("Không thể lấy kết nối cơ sở dữ liệu", e);
+        }
     }
 
     public List<Ghe> findGheTrongByPhongAndSuatChieu(int maPhong, int maSuatChieu) throws SQLException {
@@ -35,30 +48,5 @@ public class GheRepository extends BaseRepository<Ghe> {
             }
         }
         return list;
-    }
-
-    @Override
-    public List<Ghe> findAll() throws SQLException {
-        return List.of();
-    }
-
-    @Override
-    public Ghe findById(int id) throws SQLException {
-        return null;
-    }
-
-    @Override
-    public Ghe save(Ghe entity) throws SQLException {
-        return null;
-    }
-
-    @Override
-    public Ghe update(Ghe entity) throws SQLException {
-        return null;
-    }
-
-    @Override
-    public void delete(int id) throws SQLException {
-
     }
 }

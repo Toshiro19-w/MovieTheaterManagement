@@ -18,6 +18,10 @@ public class NhanVienService {
         return nhanVienRepository.findAll();
     }
 
+    public List<NhanVien> findByTen(String hoTen) throws SQLException {
+        return nhanVienRepository.findByTen(hoTen);
+    }
+
     public void saveNhanVien(NhanVien entity) throws SQLException {
         nhanVienRepository.save(entity);
     }

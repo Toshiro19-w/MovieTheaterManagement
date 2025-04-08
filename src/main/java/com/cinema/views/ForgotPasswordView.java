@@ -11,6 +11,14 @@ import java.sql.*;
 import java.io.IOException;
 
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.utils.ValidationUtils;
+import com.cinema.views.LoginView;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+
 public class ForgotPasswordView extends JFrame {
     private Connection connec;
     private JTextField usernameField;

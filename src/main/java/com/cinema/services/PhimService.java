@@ -15,6 +15,10 @@ public class PhimService {
         this.phimRepo = new PhimRepository(databaseConnection);
     }
 
+    public List<Phim> getPhimByTen(String tenPhim) throws SQLException {
+        return phimRepo.searchPhimByTen(tenPhim);
+    }
+
     public List<Phim> getAllPhim() throws SQLException {
         return phimRepo.findAll();
     }

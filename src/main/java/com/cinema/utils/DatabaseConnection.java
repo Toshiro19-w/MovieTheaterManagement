@@ -41,7 +41,6 @@ public class DatabaseConnection {
         try {
             Class.forName(driver);
             connection = DriverManager.getConnection(url, username, password);
-            System.out.println("Kết nối CSDL thành công!");
             return connection;
         } catch (ClassNotFoundException e) {
             throw new SQLException("Không tìm thấy driver JDBC: " + driver, e);

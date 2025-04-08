@@ -1,16 +1,7 @@
 package com.cinema.controllers;
 
-import com.cinema.models.Ghe;
-import com.cinema.models.SuatChieu;
-import com.cinema.models.TrangThaiVe;
-import com.cinema.models.Ve;
-import com.cinema.repositories.GheRepository;
-import com.cinema.repositories.SuatChieuRepository;
-import com.cinema.repositories.VeRepository;
-import com.cinema.services.GheService;
-import com.cinema.services.SuatChieuService;
-import com.cinema.services.VeService;
-import com.cinema.utils.DatabaseConnection;
+import com.cinema.models.*;
+import com.cinema.services.*;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;

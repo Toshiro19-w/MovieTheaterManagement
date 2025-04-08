@@ -3,6 +3,9 @@ package com.cinema.utils;
 import com.cinema.models.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 public class ValidationUtils {
 
@@ -14,6 +17,11 @@ public class ValidationUtils {
     // Kiểm tra số thực dương
     public static boolean isPositiveDouble(double number) {
         return number > 0;
+    }
+
+    // Kiểm tra số BigDecimal
+    public static boolean isPositiveBigDecimal(BigDecimal number) {
+        return number != null && number.compareTo(BigDecimal.ZERO) > 0;
     }
 
     // Kiểm tra chuỗi không rỗng và không chỉ chứa khoảng trắng
@@ -28,12 +36,7 @@ public class ValidationUtils {
 
     // Kiểm tra số điện thoại hợp lệ (10 chữ số, bắt đầu từ 0)
     public static boolean isValidPhoneNumber(String phoneNumber) {
-        return phoneNumber != null && phoneNumber.matches("^0d{9}$");
-    }
-
-    // Kiểm tra mã suất chiếu hợp lệ (chỉ chứa chữ và số, tối đa 10 ký tự)
-    public static boolean isValidShowCode(String code) {
-        return code != null && code.matches("^[A-Za-z0-9]{1,10}$");
+        return phoneNumber != null && phoneNumber.matches("^0\\d{9}$");
     }
 
     public static void validatePagination(int page, int pageSize) {
@@ -81,5 +84,26 @@ public class ValidationUtils {
             }
         }
         return false;
+    }
+
+    // Thêm phương thức kiểm tra định dạng ngày giờ
+    public static LocalDateTime validateDateTime(String dateTimeStr, String fieldName) {
+        if (!isValidString(dateTimeStr)) {
+            throw new IllegalArgumentException(fieldName + " không được để trống");
+        }
+
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+            return LocalDateTime.parse(dateTimeStr, formatter);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException(fieldName + " phải có định dạng dd/MM/yyyy HH:mm:ss");
+        }
+    }
+
+    // Kiểm tra logic thời gian: ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc
+    public static void validateDateRange(LocalDateTime start, LocalDateTime end) {
+        if (start.isAfter(end)) {
+            throw new IllegalArgumentException("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc");
+        }
     }
 }

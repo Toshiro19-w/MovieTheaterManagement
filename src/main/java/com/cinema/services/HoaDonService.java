@@ -5,7 +5,6 @@ import com.cinema.repositories.ChiTietHoaDonRepository;
 import com.cinema.repositories.HoaDonRepository;
 import com.cinema.utils.DatabaseConnection;
 
-import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -18,8 +17,8 @@ public class HoaDonService {
         this.chiTietHoaDonRepository = new ChiTietHoaDonRepository(databaseConnection);
     }
 
-    public int createHoaDon(Integer maNhanVien, Integer maKhachHang, BigDecimal tongTien) throws SQLException {
-        return hoaDonRepository.createHoaDon(maNhanVien, maKhachHang, tongTien);
+    public List<HoaDon> getLichSuHoaDonByTenKhachHang(String tenKhachHang) throws SQLException {
+        return hoaDonRepository.getHoaDonByTenKhachHang(tenKhachHang);
     }
 
     public List<HoaDon> findByKhachHang(int maKhachHang) throws SQLException {
@@ -28,5 +27,9 @@ public class HoaDonService {
 
     public void createChiTietHoaDon(int maHoaDon, int maVe) throws SQLException {
         chiTietHoaDonRepository.createChiTietHoaDon(maHoaDon, maVe);
+    }
+
+    public List<String> getAllTenKhachHang() throws SQLException {
+        return hoaDonRepository.getAllTenKhachHang();
     }
 }

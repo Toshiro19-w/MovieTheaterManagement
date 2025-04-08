@@ -4,6 +4,7 @@ import com.cinema.models.SuatChieu;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,8 +81,34 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
         }
     }
 
+    public List<SuatChieu> searchSuatChieuByNgay(LocalDateTime ngayGioChieu) throws SQLException {
+        List<SuatChieu> suatChieuList = new ArrayList<>();
+        String sql = "SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, " +
+                "pc.tenPhong, sc.ngayGioChieu, p.thoiLuong, p.dinhDang " +
+                "FROM SuatChieu sc " +
+                "JOIN Phim p ON sc.maPhim = p.maPhim " +
+                "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong " +
+                "WHERE sc.ngayGioChieu = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setTimestamp(1, Timestamp.valueOf(ngayGioChieu));
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                suatChieuList.add(new SuatChieu(
+                        rs.getInt("maSuatChieu"),
+                        rs.getString("tenPhim"),
+                        rs.getString("tenPhong"),
+                        rs.getTimestamp("ngayGioChieu").toLocalDateTime(),
+                        rs.getInt("thoiLuong"),
+                        rs.getString("dinhDang")
+                ));
+            }
+        }
+        return suatChieuList;
+    }
+
+
     public List<SuatChieu> findByMaPhim(int maPhim) throws SQLException {
-        List<SuatChieu> list = new ArrayList<>();
+        List<SuatChieu> suatChieuList = new ArrayList<>();
         String sql = "SELECT sc.maSuatChieu, p.tenPhim, p.thoiLuong AS thoiLuongPhim, " +
                 "p.dinhDang AS dinhDangPhim, pc.tenPhong, sc.maPhong, sc.ngayGioChieu " +
                 "FROM SuatChieu sc " +
@@ -92,19 +119,18 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
             stmt.setInt(1, maPhim);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
-                list.add(new SuatChieu(
+                suatChieuList.add(new SuatChieu(
                         rs.getInt("maSuatChieu"),
                         rs.getString("tenPhim"),
                         rs.getInt("thoiLuongPhim"),
                         rs.getString("dinhDangPhim"),
                         rs.getString("tenPhong"),
-                        rs.getInt("maPhong"), // Thêm maPhong
-                        rs.getTimestamp("ngayGioChieu") != null ?
-                                rs.getTimestamp("ngayGioChieu").toLocalDateTime() : null
+                        rs.getInt("maPhong"),
+                        rs.getTimestamp("ngayGioChieu") != null ? rs.getTimestamp("ngayGioChieu").toLocalDateTime() : null
                 ));
             }
         }
-        return list;
+        return suatChieuList;
     }
 
     @Override

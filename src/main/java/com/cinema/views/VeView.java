@@ -5,12 +5,14 @@ import com.cinema.models.TrangThaiVe;
 import com.cinema.models.Ve;
 import com.cinema.services.VeService;
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.utils.ValidationUtils;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -18,18 +20,22 @@ import java.util.Collections;
 import java.util.List;
 
 public class VeView extends JPanel {
-    private DatabaseConnection databaseConnection;
+    private DateTimeFormatter ngayDatformatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private DateTimeFormatter ngayGioChieuFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
     private VeController controller;
     private JTable table;
     private DefaultTableModel tableModel;
+    private JTextField soGheField;
     private JTextField searchField, txtMaVe, txtTrangThai, txtGiaVe, txtSoGhe,
             txtNgayDat, txtTenPhong, txtNgayGioChieu, txtTenPhim;
     private JButton btnThem, btnSua, btnXoa, btnClear;
 
     public VeView() {
         try {
-            databaseConnection = new DatabaseConnection();
+            DatabaseConnection databaseConnection = new DatabaseConnection();
             controller = new VeController(new VeService(databaseConnection));
+            setLayout(new BorderLayout(10, 10));
+            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         } catch (IOException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Không thể đọc file cấu hình cơ sở dữ liệu!");
@@ -40,8 +46,19 @@ public class VeView extends JPanel {
     }
 
     private void initializeUI() {
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        // Sidebar tìm kiếm
+        JPanel searchPanel = new JPanel(new GridLayout(3, 1, 5, 5));
+        searchPanel.setPreferredSize(new Dimension(200, 300));
+        searchPanel.setBorder(BorderFactory.createTitledBorder("Tìm kiếm vé"));
+        searchPanel.add(new JLabel("Số ghế:"));
+        soGheField = new JTextField();
+        searchPanel.add(soGheField);
+
+        JButton searchButton = new JButton("Tìm kiếm");
+        searchButton.addActionListener(e -> searchVe());
+        searchPanel.add(searchButton);
+
+        add(searchPanel, BorderLayout.WEST);
 
         tableModel = new DefaultTableModel(new Object[]{
                 "Mã Vé", "Trạng Thái", "Giá Vé", "Số Ghế",
@@ -118,9 +135,6 @@ public class VeView extends JPanel {
     }
 
     private void loadDataToTable() {
-        DateTimeFormatter ngayDatformatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        DateTimeFormatter ngayGioChieuFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-
         tableModel.setRowCount(0);
         List<Ve> danhSach = controller.findAllDetail();
         if (danhSach != null) {
@@ -157,45 +171,26 @@ public class VeView extends JPanel {
         return String.format("%,.0f VND", amount);
     }
 
-    private void searchTickets() {
-        String keyword = searchField.getText().trim();
-        if (keyword.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập mã vé.", "Thông báo", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        tableModel.setRowCount(0);
-        List<Ve> veList = Collections.singletonList(controller.findVeById(Integer.parseInt(keyword)));
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        veList.forEach(ve -> addVeToTable(ve, formatter));
-    }
-
-    private void addVeToTable(Ve ve, DateTimeFormatter formatter) {
-    }
-
     private void themVe() {
-        try {
-            TrangThaiVe trangThai = TrangThaiVe.valueOf(txtTrangThai.getText());
-            String soGhe = txtSoGhe.getText();
-            BigDecimal giaVe = BigDecimal.valueOf(Long.parseLong(txtGiaVe.getText()));
-            LocalDateTime ngayDat = LocalDateTime.now();
-            String tenPhong = txtTenPhong.getText();
-            String ngayGioChieuStr = txtNgayGioChieu.getText();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-            LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayGioChieuStr, formatter);
-            String tenPhim = txtTenPhim.getText();
+        TrangThaiVe trangThai = TrangThaiVe.valueOf(txtTrangThai.getText());
+        String soGhe = txtSoGhe.getText();
+        BigDecimal giaVe = BigDecimal.valueOf(Long.parseLong(txtGiaVe.getText()));
+        LocalDateTime ngayDat = LocalDateTime.now();
+        String tenPhong = txtTenPhong.getText();
+        String ngayGioChieuStr = txtNgayGioChieu.getText();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayGioChieuStr, formatter);
+        String tenPhim = txtTenPhim.getText();
 
-            Ve ve = new Ve(0, trangThai, giaVe, soGhe, ngayDat, tenPhong, LocalDateTime.parse(ngayGioChieuStr), tenPhim);
-            Ve result = controller.saveVe(ve);
+        Ve ve = new Ve(0, trangThai, giaVe, soGhe, ngayDat, tenPhong, LocalDateTime.parse(ngayGioChieuStr), tenPhim);
+        Ve result = controller.saveVe(ve);
 
-            if (result != null) {
-                JOptionPane.showMessageDialog(this, "Thêm vé thành công!");
-                loadDataToTable();
-                clearForm();
-            } else {
-                JOptionPane.showMessageDialog(this, "Thêm vé thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Giá vé phải là số!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        if (result != null) {
+            JOptionPane.showMessageDialog(this, "Thêm vé thành công!");
+            loadDataToTable();
+            clearForm();
+        } else {
+            JOptionPane.showMessageDialog(this, "Thêm vé thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -244,6 +239,30 @@ public class VeView extends JPanel {
             } else {
                 JOptionPane.showMessageDialog(this, "Xóa phim thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
+        }
+    }
+
+    private void searchVe() {
+        String soGhe = soGheField.getText();
+        if (!ValidationUtils.isValidString(soGhe)) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập số ghế!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            loadDataToTable();
+            return;
+        }
+
+        List<Ve> veList = controller.searchVeBySoGhe(soGhe);
+        tableModel.setRowCount(0);
+        for (Ve ve : veList) {
+            tableModel.addRow(new Object[]{
+                    ve.getMaVe(),
+                    ve.getTrangThai().getValue(),
+                    formatCurrency(ve.getGiaVe()),
+                    ve.getSoGhe(),
+                    ve.getNgayDat() != null ? ve.getNgayDat().format(ngayDatformatter) : "Chưa đặt",
+                    ve.getTenPhong() != null ? ve.getTenPhong() : "Chưa đặt",
+                    ve.getNgayGioChieu() != null ? ve.getNgayGioChieu().format(ngayGioChieuFormatter) : "Chưa có",
+                    ve.getTenPhim()
+            });
         }
     }
 

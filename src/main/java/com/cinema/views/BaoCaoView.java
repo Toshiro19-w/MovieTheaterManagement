@@ -6,16 +6,18 @@ import com.cinema.models.BaoCao;
 import com.cinema.services.BaoCaoService;
 import com.cinema.services.NhanVienService;
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.utils.ValidationUtils;
 import org.apache.poi.sl.usermodel.*;
-import org.apache.poi.sl.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.*;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -53,13 +55,13 @@ public class BaoCaoView extends JPanel {
         JLabel denNgayLabel = new JLabel("Đến ngày:");
         denNgayField = new JTextField("2025-04-07 23:59", 15);
         JButton xemButton = new JButton("Xem báo cáo");
-        JButton exportButton = new JButton("Xuất CSV"); // Nút xuất CSV
+        JButton xuatfileButton = new JButton("Xuất CSV"); // Nút xuất CSV
         timePanel.add(tuNgayLabel);
         timePanel.add(tuNgayField);
         timePanel.add(denNgayLabel);
         timePanel.add(denNgayField);
         timePanel.add(xemButton);
-        timePanel.add(exportButton);
+        timePanel.add(xuatfileButton);
 
         // Bảng hiển thị báo cáo
         tableModel = new DefaultTableModel(new String[]{
@@ -68,83 +70,113 @@ public class BaoCaoView extends JPanel {
         JTable baoCaoTable = new JTable(tableModel);
         JScrollPane scrollPane = new JScrollPane(baoCaoTable);
 
-        // Sự kiện nút "Xem báo cáo"
-        xemButton.addActionListener(_ -> {
-            try {
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-                LocalDateTime tuNgay = LocalDateTime.parse(tuNgayField.getText(), formatter);
-                LocalDateTime denNgay = LocalDateTime.parse(denNgayField.getText(), formatter);
-                List<BaoCao> baoCaoList = controller.getBaoCaoDoanhThuTheoPhim(tuNgay, denNgay);
-                tableModel.setRowCount(0); // Xóa dữ liệu cũ
-                for (BaoCao baoCao : baoCaoList) {
-                    tableModel.addRow(new Object[]{
-                            baoCao.getTenPhim(),
-                            baoCao.getSoVeBanRa(),
-                            baoCao.getTongDoanhThu()
-                    });
-                }
-            } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(this,
-                        "Lỗi khi tải báo cáo: " + ex.getMessage(),
-                        "Lỗi", JOptionPane.ERROR_MESSAGE);
-            } catch (DateTimeParseException ex) {
-                JOptionPane.showMessageDialog(this,
-                        "Định dạng ngày không hợp lệ! (yyyy-MM-dd HH:mm)",
-                        "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        // Sự kiện nút "Xuất CSV"
-        exportButton.addActionListener(e -> {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setDialogTitle("Chọn vị trí lưu file CSV");
-            fileChooser.setSelectedFile(new File("BaoCaoDoanhThu.csv"));
-            int userSelection = fileChooser.showSaveDialog(this);
-
-            if (userSelection == JFileChooser.APPROVE_OPTION) {
-                File fileToSave = fileChooser.getSelectedFile();
-                try {
-                    exportToCSV(fileToSave);
-                    JOptionPane.showMessageDialog(this,
-                            "Xuất file CSV thành công!",
-                            "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-                } catch (IOException ex) {
-                    JOptionPane.showMessageDialog(this,
-                            "Lỗi khi xuất file CSV: " + ex.getMessage(),
-                            "Lỗi", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
+        // Sự kiện
+        xemButton.addActionListener(_ -> xemBaoCao());
+        xuatfileButton.addActionListener(e -> xuatFile());
 
         // Thêm các thành phần vào panel
         add(timePanel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private void exportToCSV(File file) throws IOException {
-        try (FileWriter writer = new FileWriter(file)) {
-            // Ghi tiêu đề
-            for (int col = 0; col < tableModel.getColumnCount(); col++) {
-                writer.append(tableModel.getColumnName(col));
-                if (col < tableModel.getColumnCount() - 1) {
-                    writer.append(",");
-                }
-            }
-            writer.append("\n");
+    private void xemBaoCao(){
+        try {
+            // Validate ngày giờ
+            LocalDateTime tuNgay = ValidationUtils.validateDateTime(tuNgayField.getText(), "Ngày bắt đầu");
+            LocalDateTime denNgay = ValidationUtils.validateDateTime(denNgayField.getText(), "Ngày kết thúc");
 
-            // Ghi dữ liệu
-            for (int row = 0; row < tableModel.getRowCount(); row++) {
-                for (int col = 0; col < tableModel.getColumnCount(); col++) {
-                    Object value = tableModel.getValueAt(row, col);
-                    if (value != null) {
-                        writer.append(value.toString());
-                    }
-                    if (col < tableModel.getColumnCount() - 1) {
-                        writer.append(",");
-                    }
-                }
-                writer.append("\n");
+            // Kiểm tra logic thời gian
+            ValidationUtils.validateDateRange(tuNgay, denNgay);
+
+            // Lấy dữ liệu báo cáo
+            List<BaoCao> baoCaoList = controller.getBaoCaoDoanhThuTheoPhim(tuNgay, denNgay);
+            tableModel.setRowCount(0); // Xóa dữ liệu cũ
+            for (BaoCao baoCao : baoCaoList) {
+                tableModel.addRow(new Object[]{
+                        baoCao.getTenPhim(),
+                        baoCao.getSoVeBanRa(),
+                        baoCao.getTongDoanhThu()
+                });
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Lỗi khi tải báo cáo: " + ex.getMessage(),
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+        } catch (DateTimeParseException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Định dạng ngày không hợp lệ! (yyyy-MM-dd HH:mm)",
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void xuatFile(){
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Chọn vị trí lưu file Excel");
+        fileChooser.setSelectedFile(new File("BaoCaoDoanhThu.xlsx"));
+        int userSelection = fileChooser.showSaveDialog(this);
+
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToSave = fileChooser.getSelectedFile();
+            try {
+                exportToExcel(fileToSave);
+                JOptionPane.showMessageDialog(this,
+                        "Xuất file Excel thành công!",
+                        "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this,
+                        "Lỗi khi xuất file Excel: " + ex.getMessage(),
+                        "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    private void exportToExcel(File file) throws IOException {
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Báo cáo Doanh thu");
+
+        // Tạo style cho header
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerStyle.setFont(headerFont);
+
+        // Ghi header
+        Row headerRow = sheet.createRow(0);
+        for (int col = 0; col < tableModel.getColumnCount(); col++) {
+            Cell cell = headerRow.createCell(col);
+            cell.setCellValue(tableModel.getColumnName(col));
+            cell.setCellStyle(headerStyle);
+        }
+
+        // Ghi dữ liệu
+        for (int row = 0; row < tableModel.getRowCount(); row++) {
+            Row dataRow = sheet.createRow(row + 1);
+            for (int col = 0; col < tableModel.getColumnCount(); col++) {
+                Cell cell = dataRow.createCell(col);
+                Object value = tableModel.getValueAt(row, col);
+
+                if (value instanceof String) {
+                    cell.setCellValue((String) value);
+                } else if (value instanceof Integer) {
+                    cell.setCellValue((Integer) value);
+                } else if (value instanceof Double) {
+                    cell.setCellValue((Double) value);
+                } else if (value != null) {
+                    cell.setCellValue(value.toString()); // fallback cho các kiểu khác
+                }
+            }
+        }
+
+        // Tự động căn chỉnh độ rộng cột
+        for (int col = 0; col < tableModel.getColumnCount(); col++) {
+            sheet.autoSizeColumn(col);
+        }
+
+        // Ghi ra file
+        try (FileOutputStream fileOut = new FileOutputStream(file)) {
+            workbook.write(fileOut);
+        }
+
+        workbook.close();
     }
 }

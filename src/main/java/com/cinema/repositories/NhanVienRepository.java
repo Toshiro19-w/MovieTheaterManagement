@@ -105,4 +105,30 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
             stmt.executeUpdate();
         }
     }
+
+    public List<NhanVien> findByTen(String hoTen) throws SQLException {
+        List<NhanVien> nhanVienList = new ArrayList<>();
+        String sql = "SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email, nd.loaiNguoiDung,  \n" +
+                "nv.chucVu, nv.luong, nv.vaiTro \n" +
+                "FROM NguoiDung nd  \n" +
+                "JOIN NhanVien nv ON nd.maNguoiDung = nv.maNguoiDung\n" +
+                "WHERE nd.loaiNguoiDung = 'NhanVien' AND nd.hoTen LIKE ?;";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, "%" + hoTen + "%");
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                nhanVienList.add(new NhanVien(
+                        rs.getInt("maNguoiDung"),
+                        rs.getString("hoTen"),
+                        rs.getString("soDienThoai"),
+                        rs.getString("email"),
+                        LoaiNguoiDung.fromString(rs.getString("loaiNguoiDung")),
+                        rs.getString("chucVu"),
+                        rs.getBigDecimal("luong"),
+                        VaiTro.fromString(rs.getString("vaiTro"))
+                ));
+            }
+        }
+        return nhanVienList;
+    }
 }

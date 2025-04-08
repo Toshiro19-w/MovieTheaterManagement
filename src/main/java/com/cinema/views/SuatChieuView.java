@@ -4,19 +4,25 @@ import com.cinema.controllers.SuatChieuController;
 import com.cinema.models.SuatChieu;
 import com.cinema.services.SuatChieuService;
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.utils.ValidationUtils;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
 public class SuatChieuView extends JPanel {
+    private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
     private SuatChieuController controller;
     private JTable table;
+    private JTextField ngayChieuField;
     private DefaultTableModel tableModel;
     private JTextField txtMaSuatChieu, txtTenPhim, txtTenPhong,
             txtNgayGioChieu, txtThoiLuong, txtDinhDang;
@@ -25,6 +31,8 @@ public class SuatChieuView extends JPanel {
         try {
             DatabaseConnection databaseConnection = new DatabaseConnection();
             controller = new SuatChieuController(new SuatChieuService(databaseConnection));
+            setLayout(new BorderLayout(10, 10));
+            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Không thể đọc file cấu hình cơ sở dữ liệu!");
             System.exit(1);
@@ -34,8 +42,28 @@ public class SuatChieuView extends JPanel {
     }
 
     private void initializeUI() {
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel searchPanel = new JPanel();
+        searchPanel.setLayout(new BoxLayout(searchPanel, BoxLayout.Y_AXIS));
+        searchPanel.setBorder(BorderFactory.createTitledBorder("Tìm kiếm suất chiếu"));
+
+        searchPanel.setPreferredSize(new Dimension(200, 100));
+
+        JLabel label = new JLabel("Ngày chiếu:");
+        label.getHorizontalTextPosition();
+        searchPanel.add(label);
+
+        ngayChieuField = new JTextField();
+        ngayChieuField.setMaximumSize(new Dimension(200, 25));
+        setPlaceholder(ngayChieuField, "(dd/MM/yyyy HH:mm:ss)...");
+        searchPanel.add(ngayChieuField);
+
+        JButton searchButton = new JButton("Tìm kiếm");
+        searchButton.setMaximumSize(new Dimension(100, 25));
+        searchPanel.add(Box.createRigidArea(new Dimension(0, 5))); // khoảng cách
+        searchButton.addActionListener(e -> searchSuatChieu());
+        searchPanel.add(searchButton);
+
+        add(searchPanel, BorderLayout.WEST);
 
         tableModel = new DefaultTableModel(new Object[]{
                 "Mã Suất Chiếu", "Tên Phim", "Tên Phòng", "Ngày Giờ Chiếu", "Thời Lượng", "Định Dạng"
@@ -116,8 +144,8 @@ public class SuatChieuView extends JPanel {
                         suatChieu.getTenPhim(),
                         suatChieu.getTenPhong(),
                         ngayGioChieuFormatted,
-                        suatChieu.getThoiLuongPhim(),
-                        suatChieu.getThoiLuongPhim()
+                        suatChieu.getThoiLuongPhim() + " phút",
+                        suatChieu.getDinhDangPhim()
                 });
             }
         }
@@ -136,30 +164,22 @@ public class SuatChieuView extends JPanel {
     }
 
     private void themSuatChieu() {
-        try {
-            String tenPhim = txtTenPhim.getText();
-            String tenPhong = txtTenPhong.getText();
-            String ngayGioChieuStr = txtNgayGioChieu.getText();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-            LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayGioChieuStr, formatter);
-            int thoiLuong = Integer.parseInt(txtThoiLuong.getText());
-            String dinhDang = txtDinhDang.getText();
+        String tenPhim = txtTenPhim.getText();
+        String tenPhong = txtTenPhong.getText();
+        String ngayGioChieuStr = txtNgayGioChieu.getText();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayGioChieuStr, formatter);
+        int thoiLuong = Integer.parseInt(txtThoiLuong.getText());
+        String dinhDang = txtDinhDang.getText();
 
-            SuatChieu suatChieu = new SuatChieu(0, tenPhim, tenPhong, ngayGioChieu, thoiLuong, dinhDang);
-            SuatChieu result = controller.saveSuatChieu(suatChieu);
+        SuatChieu suatChieu = new SuatChieu(0, tenPhim, tenPhong, ngayGioChieu, thoiLuong, dinhDang);
+        SuatChieu result = controller.saveSuatChieu(suatChieu);
 
-            if (result != null) {
-                JOptionPane.showMessageDialog(this, "Thêm suất chiếu thành công!");
-                loadDataToTable();
-                clearForm();
-            } else {
-                JOptionPane.showMessageDialog(this, "Thêm suất chiếu thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Mã thể loại và mã phòng là số!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-        } catch (DateTimeParseException e) {
-            JOptionPane.showMessageDialog(this, "Ngày giờ chiếu không đúng định dạng (dd/MM/yyyy HH:mm:sss)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
+        if (result != null) {
+            JOptionPane.showMessageDialog(this, "Thêm suất chiếu thành công!");
+            loadDataToTable();
+            clearForm();
+        } else JOptionPane.showMessageDialog(this, "Thêm suất chiếu thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
     }
 
     private void suaSuatChieu() {
@@ -169,29 +189,22 @@ public class SuatChieuView extends JPanel {
             return;
         }
 
-        try {
-            String tenPhim = txtTenPhim.getText();
-            String tenPhong = txtTenPhong.getText();
-            String ngayGioChieuStr = txtNgayGioChieu.getText();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-            LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayGioChieuStr, formatter);
-            int thoiLuong = Integer.parseInt(txtThoiLuong.getText());
-            String dinhDang = txtDinhDang.getText();
+        String tenPhim = txtTenPhim.getText();
+        String tenPhong = txtTenPhong.getText();
+        String ngayGioChieuStr = txtNgayGioChieu.getText();
+        LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayGioChieuStr, formatter);
+        int thoiLuong = Integer.parseInt(txtThoiLuong.getText());
+        String dinhDang = txtDinhDang.getText();
 
-            SuatChieu suatChieu = new SuatChieu(0, tenPhim, tenPhong, ngayGioChieu, thoiLuong, dinhDang);
-            SuatChieu result = controller.saveSuatChieu(suatChieu);
+        SuatChieu suatChieu = new SuatChieu(0, tenPhim, tenPhong, ngayGioChieu, thoiLuong, dinhDang);
+        SuatChieu result = controller.updateSuatChieu(suatChieu);
 
-            if (result != null) {
-                JOptionPane.showMessageDialog(this, "Cập nhật suất chiếu thành công!");
-                loadDataToTable();
-                clearForm(); // Thường nên clear form sau khi sửa thành công
-            } else {
-                JOptionPane.showMessageDialog(this, "Cập nhật suất chiếu thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Mã suất chiếu, mã phim và mã phòng phải là số!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-        } catch (DateTimeParseException e) {
-            JOptionPane.showMessageDialog(this, "Ngày giờ chiếu không đúng định dạng (dd/MM/yyyy HH:mm:ss)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        if (result != null) {
+            JOptionPane.showMessageDialog(this, "Cập nhật suất chiếu thành công!");
+            loadDataToTable();
+            clearForm();
+        } else {
+            JOptionPane.showMessageDialog(this, "Cập nhật suất chiếu thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -216,11 +229,57 @@ public class SuatChieuView extends JPanel {
         }
     }
 
+    private void searchSuatChieu() {
+        String ngayChieuStr = ngayChieuField.getText();
+        String dateTimeStr = ngayChieuStr;
+        LocalDateTime ngayGioChieu = ValidationUtils.validateDateTime(dateTimeStr, "Ngày chiếu");
+        List<SuatChieu> suatChieuList = controller.searchSuatChieuByNgay(ngayGioChieu);
+        tableModel.setRowCount(0);
+        for (SuatChieu sc : suatChieuList) {
+            String ngayGioChieuFormatted = (sc.getNgayGioChieu() != null)
+                    ? sc.getNgayGioChieu().format(formatter)
+                    : "Chưa có";
+            tableModel.addRow(new Object[]{
+                    sc.getMaSuatChieu(),
+                    sc.getTenPhim(),
+                    sc.getTenPhong(),
+                    ngayGioChieuFormatted,
+                    sc.getThoiLuongPhim() + " phút",
+                    sc.getDinhDangPhim()
+            });
+        }
+        if(suatChieuList.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Suất chiếu không tồn tại!");
+            loadDataToTable();
+        }
+    }
+
     private void clearForm() {
         txtMaSuatChieu.setText("");
         txtTenPhim.setText("");
         txtTenPhong.setText("");
         txtNgayGioChieu.setText("");
         table.clearSelection();
+    }
+
+    public void setPlaceholder(JTextField field, String placeholder) {
+        field.setText(placeholder);
+        field.setForeground(Color.GRAY);
+
+        field.addFocusListener(new FocusAdapter() {
+            public void focusGained(FocusEvent e) {
+                if (field.getText().equals(placeholder)) {
+                    field.setText("");
+                    field.setForeground(Color.BLACK);
+                }
+            }
+
+            public void focusLost(FocusEvent e) {
+                if (field.getText().isEmpty()) {
+                    field.setForeground(Color.GRAY);
+                    field.setText(placeholder);
+                }
+            }
+        });
     }
 }
