@@ -21,7 +21,7 @@ import java.awt.event.*;
 
 public class ForgotPasswordView extends JFrame {
     private Connection connec;
-    private JTextField usernameField, phoneField, emailFiled;
+    private JTextField usernameField, phoneField, emailField;
     private JPasswordField passwordField;
 
     public ForgotPasswordView() {
@@ -79,7 +79,29 @@ public class ForgotPasswordView extends JFrame {
         usernameField = new JTextField(20);
         usernameField.setFont(new Font("Arial", Font.PLAIN, 14));
         Forgot.add(usernameField, gbc);
-
+        
+        gbc.gridx = 0;
+        gbc.gridy ++;
+        JLabel phoneLabel = new JLabel("Xác nhận số điện thoại:");
+        phoneLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        Forgot.add(phoneLabel,gbc);
+        
+        gbc.gridx = 1;
+        phoneField = new JTextField(20);
+        phoneField.setFont(new Font("Arial", Font.PLAIN, 14));
+        Forgot.add(phoneField,gbc);
+        
+        gbc.gridx = 0;
+        gbc.gridy ++;
+        JLabel emailLabel = new JLabel("Xác nhận email:");
+        emailLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        Forgot.add(emailLabel,gbc);
+        
+        gbc.gridx = 1;
+        emailField = new JTextField(20);
+        emailField.setFont(new Font("Arial", Font.PLAIN, 14));
+        Forgot.add(emailField,gbc);
+        
         gbc.gridx = 0;
         gbc.gridy++;
         JLabel passwordLabel = new JLabel("Mật khẩu mới:");
@@ -123,10 +145,12 @@ public class ForgotPasswordView extends JFrame {
     private void handleForgotPassword() {
         String username = usernameField.getText().trim();
         String password = new String(passwordField.getPassword()).trim();
+        String phone = phoneField.getText().trim();
+        String email = emailField.getText().trim();
         
         String passwordHash = hashPassword(password);
 
-        if (username.isEmpty() || password.isEmpty()) {
+        if (username.isEmpty() || password.isEmpty() || phone.isEmpty() || email.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin");
             return;
         }
@@ -141,8 +165,8 @@ public class ForgotPasswordView extends JFrame {
             connec = db.getConnection();
 
             // Kiểm tra tài khoản có tồn tại không
-            if (!KiemTraCoTonTaiKhong(connec, username)) {
-                JOptionPane.showMessageDialog(this, "Tài khoản không tồn tại.");
+            if (!KiemTraCoTonTaiKhong(connec, username) && !KiemTraEmail(connec, email) && !KiemTraSoDienThoai(connec, phone)) {
+                JOptionPane.showMessageDialog(this, "Sai thông tin!");
                 return;
             }
 
@@ -176,6 +200,35 @@ public class ForgotPasswordView extends JFrame {
         }
         return false;
     }
+    
+    public boolean KiemTraSoDienThoai(Connection connec, String phone) {
+        String sql = "SELECT COUNT(*) FROM TaiKhoan WHERE soDienThoai = ?";
+        try (PreparedStatement ps = connec.prepareStatement(sql)) {
+            ps.setString(1, phone);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean KiemTraEmail(Connection connec, String email) {
+        String sql = "SELECT COUNT(*) FROM TaiKhoan WHERE email = ?";
+        try (PreparedStatement ps = connec.prepareStatement(sql)) {
+            ps.setString(1, email);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
 
     public boolean CapNhatMatKhau(Connection connec, String username, String newPassword) {
         String sql = "UPDATE TaiKhoan SET matKhau = ? WHERE tenDangNhap = ?";
