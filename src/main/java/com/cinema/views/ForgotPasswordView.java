@@ -21,7 +21,7 @@ import java.awt.event.*;
 
 public class ForgotPasswordView extends JFrame {
     private Connection connec;
-    private JTextField usernameField;
+    private JTextField usernameField, phoneField, emailFiled;
     private JPasswordField passwordField;
 
     public ForgotPasswordView() {

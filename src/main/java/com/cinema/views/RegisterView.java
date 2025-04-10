@@ -13,10 +13,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class RegisterView extends JFrame {
     private Connection conn;
-    private JTextField usernameField, emailField;
+    private JTextField usernameField, emailField , fullNameField, phoneField;
     private JPasswordField passwordField, confirmPasswordField;
 
     public RegisterView() {
@@ -67,6 +68,32 @@ public class RegisterView extends JFrame {
         usernameField = new JTextField(20);
         usernameField.setFont(new Font("Arial", Font.PLAIN, 14));
         registerPanel.add(usernameField, gbc);
+        
+        //Name
+        gbc.gridx = 0;
+        gbc.gridy++;
+        JLabel fullNameLabel = new JLabel("Tên :");
+        fullNameLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        registerPanel.add(fullNameLabel, gbc);
+        
+        gbc.gridx = 1;
+        fullNameField = new JTextField(20);
+        fullNameField.setFont(new Font("Arial", Font.PLAIN, 14));
+        registerPanel.add(fullNameField, gbc);
+        
+        
+     // Số điện thoại
+        gbc.gridx = 0;
+        gbc.gridy++;
+        JLabel phoneLabel = new JLabel("Số điện thoại:");
+        phoneLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        registerPanel.add(phoneLabel, gbc);
+
+        gbc.gridx = 1;
+        phoneField = new JTextField(20);
+        phoneField.setFont(new Font("Arial", Font.PLAIN, 14));
+        registerPanel.add(phoneField, gbc);
+
 
         // Email
         gbc.gridx = 0;
@@ -172,7 +199,10 @@ public class RegisterView extends JFrame {
     }
 
     private void handleRegister() {
+    	
         String username = usernameField.getText().trim();
+        String fullName = fullNameField.getText().trim();
+        String phone = phoneField.getText().trim();
         String email = emailField.getText().trim();
         String password = new String(passwordField.getPassword());
         String confirmPassword = new String(confirmPasswordField.getPassword());
@@ -212,16 +242,33 @@ public class RegisterView extends JFrame {
             rs.close();
             checkStmt.close();
 
-            String hashedPassword = hashPassword(password);
+            //thêm vào bảng người dùng
+            String  inserNguoiDung = "INSERT INTO NguoiDung(hoTen,soDienThoai,email,loaiNguoiDung)"
+            		+ "VALUES (?, ? , ?, ?)";
+            PreparedStatement NguoiDungStmt = conn.prepareStatement(inserNguoiDung, Statement.RETURN_GENERATED_KEYS);
+            NguoiDungStmt.setString(1,fullName);
+            NguoiDungStmt.setString(2,phone);
+            NguoiDungStmt.setString(3,email);
+            NguoiDungStmt.setString(4,"KhachHang");
+            NguoiDungStmt.executeUpdate();
             
-
-            String sql = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maKhachHang) VALUES (?, ?, ?, ?)";
+            //lấy mã người dùng được sinh tự động
+            
+            ResultSet generatedKeys = NguoiDungStmt.getGeneratedKeys();
+            int maNguoiDung = -1;
+            if (generatedKeys.next()) {
+            	maNguoiDung = generatedKeys.getInt(1);
+            }
+            generatedKeys.close();
+            NguoiDungStmt.close();
+            
+            String hashedPassword = hashPassword(password);
+            String sql = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maNguoiDung) VALUES (?, ?, ?, ?)";         
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setString(1, username);
             stmt.setString(2, hashedPassword);
             stmt.setString(3, "user");
-//            stmt.setString(4, email);
-            stmt.setString(4, max+1);
+            stmt.setInt(4, maNguoiDung);
 
             int rowsAffected = stmt.executeUpdate();
 
