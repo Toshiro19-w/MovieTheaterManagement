@@ -15,8 +15,13 @@ public class NhanVienController extends Component {
         this.nhanVienService = nhanVienService;
     }
 
-    public List<NhanVien> findAll() throws SQLException {
-        return nhanVienService.findAllNhanVien();
+    public List<NhanVien> findAll() {
+        try {
+            return nhanVienService.findAllNhanVien();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Lỗi khi tải danh sách nhân viên!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
     }
 
     public List<NhanVien> searchNhanVienByTen(String hoTen) {
@@ -28,15 +33,27 @@ public class NhanVienController extends Component {
         }
     }
 
-    public void save(NhanVien nhanVien) throws SQLException {
-        nhanVienService.saveNhanVien(nhanVien);
+    public void save(NhanVien nhanVien)  {
+        try {
+            nhanVienService.saveNhanVien(nhanVien);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Thêm nhân viên thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
-    public void update(NhanVien nhanVien) throws SQLException {
-        nhanVienService.updateNhanVien(nhanVien);
+    public void update(NhanVien nhanVien) {
+        try {
+            nhanVienService.updateNhanVien(nhanVien);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Cập nhật nhân viên thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
-    public void delete(int maNguoiDung) throws SQLException {
-        nhanVienService.deleteNhanVien(maNguoiDung);
+    public void delete(int maNguoiDung) {
+        try {
+            nhanVienService.deleteNhanVien(maNguoiDung);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Xóa nhân viên thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

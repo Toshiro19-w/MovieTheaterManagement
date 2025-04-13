@@ -5,10 +5,8 @@ import com.cinema.models.LoaiTaiKhoan;
 import com.cinema.models.TaiKhoan;
 import com.cinema.utils.DatabaseConnection;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,28 +61,30 @@ public class TaiKhoanRepository {
         return false;
     }
 
-    public boolean dangKyTaiKhoan(TaiKhoan tk) {
-        String checkSql = "SELECT COUNT(*) FROM TaiKhoan WHERE tenDangNhap = ?";
-        try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-            checkStmt.setString(1, tk.getTenDangNhap());
-            try (ResultSet rs = checkStmt.executeQuery()) {
-                if (rs.next() && rs.getInt(1) > 0) {
-                    return false;  // Tên đăng nhập đã tồn tại
-                }
-            }
+    public void saveResetTokenToDB(String email, String token) {
+        String sql = "INSERT INTO ResetToken (email, token, expiration_time) VALUES (?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, email);
+            stmt.setString(2, token);
+            stmt.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now().plusMinutes(15))); // token có hiệu lực 15 phút
+            stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
 
-        String sql = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan) VALUES (?, ?, ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, tk.getTenDangNhap());
-            stmt.setString(2, tk.getMatKhau());
-            stmt.setObject(3, tk.getLoaiTaiKhoan());
-            return stmt.executeUpdate() > 0;
+    public boolean checkEmailExists(String email) {
+        String query = "SELECT COUNT(*) FROM NguoiDung WHERE email = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, email);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0; // Trả về true nếu email tồn tại
+            }
+            return false;
         } catch (SQLException e) {
             e.printStackTrace();
-            return false;
+            throw new RuntimeException("Lỗi khi kiểm tra email: " + e.getMessage());
         }
     }
 }

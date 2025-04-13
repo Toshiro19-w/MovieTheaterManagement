@@ -27,6 +27,13 @@ CREATE TABLE IF NOT EXISTS KhachHang (
     FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS ResetToken (
+    token VARCHAR(255) PRIMARY KEY,
+    email NVARCHAR(100) NOT NULL,
+    expiration_time TIMESTAMP NOT NULL,
+    FOREIGN KEY (email) REFERENCES NguoiDung(email) ON DELETE CASCADE
+);
+
 -- Tạo bảng NhanVien (thừa kế từ NguoiDung)
 CREATE TABLE IF NOT EXISTS NhanVien (
     maNguoiDung INT PRIMARY KEY,
@@ -128,6 +135,7 @@ CREATE TABLE IF NOT EXISTS ChiTietHoaDon (
 );
 
 INSERT INTO NguoiDung (hoTen, soDienThoai, email, loaiNguoiDung) VALUES
+('Lê Trần Minh Khôi', '0565321247', 'letranminhkhoi2506@gmail.com', 'KhachHang'),
 ('Nguyễn Văn A', '0901234567', 'nguyenvana@gmail.com', 'KhachHang'),
 ('Trần Thị B', '0912345678', 'tranthib@gmail.com', 'KhachHang'),
 ('Lê Văn C', '0923456789', 'levanc@gmail.com', 'NhanVien'),

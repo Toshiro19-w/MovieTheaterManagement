@@ -1,11 +1,9 @@
 package com.cinema.views;
 
 import com.cinema.controllers.VeController;
-import com.cinema.models.TrangThaiVe;
-import com.cinema.models.Ve;
+import com.cinema.models.*;
 import com.cinema.services.VeService;
-import com.cinema.utils.DatabaseConnection;
-import com.cinema.utils.ValidationUtils;
+import com.cinema.utils.*;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;

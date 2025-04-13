@@ -224,38 +224,32 @@ public class PhimView extends JPanel {
     }
 
     private void themPhim() {
-        try {
-            String tenPhim = txtTenPhim.getText();
-            String tenTheLoai = txtTenTheLoai.getText();
-            int thoiLuong = Integer.parseInt(txtThoiLuong.getText());
-            String ngayKhoiChieuStr = txtNgayKhoiChieu.getText();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-            LocalDate ngayKhoiChieu = LocalDate.parse(ngayKhoiChieuStr, formatter);
-            String nuocSanXuat = txtNuocSanXuat.getText();
-            String dinhDang = txtDinhDang.getText();
-            String moTa = txtMoTa.getText();
-            String daoDien = txtDaoDien.getText();
-            int soSuatChieu = Integer.parseInt(txtSoSuatChieu.getText());
+        String tenPhim = txtTenPhim.getText();
+        String tenTheLoai = txtTenTheLoai.getText();
+        int thoiLuong = Integer.parseInt(txtThoiLuong.getText());
+        String ngayKhoiChieuStr = txtNgayKhoiChieu.getText();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        LocalDate ngayKhoiChieu = LocalDate.parse(ngayKhoiChieuStr, formatter);
+        String nuocSanXuat = txtNuocSanXuat.getText();
+        String dinhDang = txtDinhDang.getText();
+        String moTa = txtMoTa.getText();
+        String daoDien = txtDaoDien.getText();
+        int soSuatChieu = Integer.parseInt(txtSoSuatChieu.getText());
 
-            if (!ValidationUtils.isValidString(tenPhim)) {
-                throw new IllegalArgumentException("Tên phim không được để trống");
-            }
-            ValidationUtils.validatePositive(thoiLuong, "Thời lượng phải là số dương");
+        if (!ValidationUtils.isValidString(tenPhim)) {
+            throw new IllegalArgumentException("Tên phim không được để trống");
+        }
+        ValidationUtils.validatePositive(thoiLuong, "Thời lượng phải là số dương");
 
-            Phim phim = new Phim(0, tenPhim, tenTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien, soSuatChieu);
-            Phim result = controller.savePhim(phim);
+        Phim phim = new Phim(0, tenPhim, tenTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien, soSuatChieu);
+        Phim result = controller.savePhim(phim);
 
-            if (result != null) {
-                JOptionPane.showMessageDialog(this, "Thêm phim thành công!");
-                loadDataToTable();
-                clearForm();
-            } else {
-                JOptionPane.showMessageDialog(this, "Thêm phim thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Thời lượng phải là số!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-        } catch (DateTimeParseException e) {
-            JOptionPane.showMessageDialog(this, "Ngày khởi chiếu không đúng định dạng (yyyy-MM-dd)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        if (result != null) {
+            JOptionPane.showMessageDialog(this, "Thêm phim thành công!");
+            loadDataToTable();
+            clearForm();
+        } else {
+            JOptionPane.showMessageDialog(this, "Thêm phim thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 

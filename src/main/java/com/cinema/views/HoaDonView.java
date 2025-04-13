@@ -123,18 +123,13 @@ public class HoaDonView extends JPanel {
     }
 
     private void loadTenKhachHang() {
-        try {
-            List<String> tenKhachHangList = hoaDonController.getAllTenKhachHang();
-            for (String ten : tenKhachHangList) {
-                tenKhachHangCombo.addItem(ten);
-            }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Lỗi khi tải danh sách tên khách hàng!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        List<String> tenKhachHangList = hoaDonController.getAllTenKhachHang();
+        for (String ten : tenKhachHangList) {
+            tenKhachHangCombo.addItem(ten);
         }
     }
 
     private void xemLichSu() {
-        try {
             String selectedType = (String) searchTypeCombo.getSelectedItem();
             List<HoaDon> hoaDonList;
             DateTimeFormatter ngayLapFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
@@ -192,15 +187,6 @@ public class HoaDonView extends JPanel {
                     }
                 }
             }
-
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập mã khách hàng hợp lệ!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-        } catch (IllegalArgumentException e) {
-            JOptionPane.showMessageDialog(this, e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Lỗi khi tải lịch sử!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
     }
 
     private void exportToExcel() {

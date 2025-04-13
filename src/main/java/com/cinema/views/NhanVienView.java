@@ -123,21 +123,17 @@ public class NhanVienView extends JPanel {
 
     private void loadDataToTable() {
         tableModel.setRowCount(0);
-        try {
-            List<NhanVien> nhanVienList = controller.findAll();
-            for (NhanVien nv : nhanVienList) {
-                tableModel.addRow(new Object[]{
-                        nv.getMaNguoiDung(),
-                        nv.getHoTen(),
-                        nv.getSoDienThoai(),
-                        nv.getEmail(),
-                        nv.getChucVu(),
-                        formatCurrency(nv.getLuong()),
-                        nv.getVaiTro().getValue()
-                });
-            }
-        } catch (SQLException e) {
-//            JOptionPane.showMessageDialog(this, "Lỗi khi tải danh sách nhân viên!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        List<NhanVien> nhanVienList = controller.findAll();
+        for (NhanVien nv : nhanVienList) {
+            tableModel.addRow(new Object[]{
+                    nv.getMaNguoiDung(),
+                    nv.getHoTen(),
+                    nv.getSoDienThoai(),
+                    nv.getEmail(),
+                    nv.getChucVu(),
+                    formatCurrency(nv.getLuong()),
+                    nv.getVaiTro().getValue()
+            });
         }
     }
 
@@ -159,32 +155,28 @@ public class NhanVienView extends JPanel {
     }
 
     private void themNhanVien() {
-        try {
-            String hoTen = txtHoTen.getText();
-            String sdt = txtSDT.getText();
-            String email = txtEmail.getText();
-            String chucVu = txtChucVu.getText();
-            BigDecimal luong = new BigDecimal(txtLuong.getText());
-            VaiTro vaiTro = VaiTro.fromString(vaiTroCombo.getSelectedItem().toString());
+        String hoTen = txtHoTen.getText();
+        String sdt = txtSDT.getText();
+        String email = txtEmail.getText();
+        String chucVu = txtChucVu.getText();
+        BigDecimal luong = new BigDecimal(txtLuong.getText());
+        VaiTro vaiTro = VaiTro.fromString(vaiTroCombo.getSelectedItem().toString());
 
-            if (!ValidationUtils.isValidString(hoTen))
-                throw new IllegalArgumentException("Tên nhân viên không được để trống");
-            if (!ValidationUtils.isValidEmail(email))
-                throw new IllegalArgumentException("Email không hợp lệ");
-            if (!ValidationUtils.isValidPhoneNumber(sdt))
-                throw new IllegalArgumentException("Số điện thoại không hợp lệ (phải có 10 chữ số, bắt đầu từ 0)");
-            if (!ValidationUtils.isPositiveBigDecimal(luong))
-                throw new IllegalArgumentException("Lương phải là số dương!");
+        if (!ValidationUtils.isValidString(hoTen))
+            throw new IllegalArgumentException("Tên nhân viên không được để trống");
+        if (!ValidationUtils.isValidEmail(email))
+            throw new IllegalArgumentException("Email không hợp lệ");
+        if (!ValidationUtils.isValidPhoneNumber(sdt))
+            throw new IllegalArgumentException("Số điện thoại không hợp lệ (phải có 10 chữ số, bắt đầu từ 0)");
+        if (!ValidationUtils.isPositiveBigDecimal(luong))
+            throw new IllegalArgumentException("Lương phải là số dương!");
 
-            NhanVien nhanVien = new NhanVien(0, hoTen, sdt, email, LoaiNguoiDung.NHANVIEN, chucVu, luong, vaiTro);
-            controller.save(nhanVien);
+        NhanVien nhanVien = new NhanVien(0, hoTen, sdt, email, LoaiNguoiDung.NHANVIEN, chucVu, luong, vaiTro);
+        controller.save(nhanVien);
 
-            JOptionPane.showMessageDialog(this, "Thêm nhân viên thành công!");
-            loadDataToTable();
-            clearForm();
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Thêm nhân viên thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
+        JOptionPane.showMessageDialog(this, "Thêm nhân viên thành công!");
+        loadDataToTable();
+        clearForm();
     }
 
     private void suaNhanVien() {
@@ -192,33 +184,28 @@ public class NhanVienView extends JPanel {
             JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên cần sửa!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return;
         }
+        int maND = Integer.parseInt(txtMaND.getText());
+        String hoTen = txtHoTen.getText();
+        String sdt = txtSDT.getText();
+        String email = txtEmail.getText();
+        String chucVu = txtChucVu.getText();
+        BigDecimal luong = new BigDecimal(txtLuong.getText());
+        VaiTro vaiTro = VaiTro.fromString(vaiTroCombo.getSelectedItem().toString());
 
-        try {
-            int maND = Integer.parseInt(txtMaND.getText());
-            String hoTen = txtHoTen.getText();
-            String sdt = txtSDT.getText();
-            String email = txtEmail.getText();
-            String chucVu = txtChucVu.getText();
-            BigDecimal luong = new BigDecimal(txtLuong.getText());
-            VaiTro vaiTro = VaiTro.fromString(vaiTroCombo.getSelectedItem().toString());
+        if (!ValidationUtils.isValidString(hoTen))
+            throw new IllegalArgumentException("Tên nhân viên không được để trống");
+        if (!ValidationUtils.isValidEmail(email))
+            throw new IllegalArgumentException("Email không hợp lệ");
+        if (!ValidationUtils.isValidPhoneNumber(sdt))
+            throw new IllegalArgumentException("Số điện thoại không hợp lệ (phải có 10 chữ số, bắt đầu từ 0)");
+        if (!ValidationUtils.isPositiveBigDecimal(luong))
+            throw new IllegalArgumentException("Lương phải là số dương!");
 
-            if (!ValidationUtils.isValidString(hoTen))
-                throw new IllegalArgumentException("Tên nhân viên không được để trống");
-            if (!ValidationUtils.isValidEmail(email))
-                throw new IllegalArgumentException("Email không hợp lệ");
-            if (!ValidationUtils.isValidPhoneNumber(sdt))
-                throw new IllegalArgumentException("Số điện thoại không hợp lệ (phải có 10 chữ số, bắt đầu từ 0)");
-            if (!ValidationUtils.isPositiveBigDecimal(luong))
-                throw new IllegalArgumentException("Lương phải là số dương!");
+        NhanVien nhanVien = new NhanVien(maND, hoTen, sdt, email, LoaiNguoiDung.NHANVIEN, chucVu, luong, vaiTro);
+        controller.update(nhanVien);
 
-            NhanVien nhanVien = new NhanVien(maND, hoTen, sdt, email, LoaiNguoiDung.NHANVIEN, chucVu, luong, vaiTro);
-            controller.update(nhanVien);
-
-            JOptionPane.showMessageDialog(this, "Cập nhật nhân viên thành công!");
-            loadDataToTable();
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Cập nhật nhân viên thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
+        JOptionPane.showMessageDialog(this, "Cập nhật nhân viên thành công!");
+        loadDataToTable();
     }
 
     private void xoaNhanVien() {
@@ -232,14 +219,10 @@ public class NhanVienView extends JPanel {
                 "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            try {
-                controller.delete(maND);
-                JOptionPane.showMessageDialog(this, "Xóa nhân viên thành công!");
-                loadDataToTable();
-                clearForm();
-            } catch (SQLException e) {
-                JOptionPane.showMessageDialog(this, "Xóa nhân viên thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
+            controller.delete(maND);
+            JOptionPane.showMessageDialog(this, "Xóa nhân viên thành công!");
+            loadDataToTable();
+            clearForm();
         }
     }
 

@@ -6,6 +6,7 @@ import com.cinema.services.PhimService;
 import javax.swing.*;
 import java.awt.*;
 import java.sql.SQLException;
+import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.List;
 
@@ -45,7 +46,10 @@ public class PhimController extends Component {
             System.err.println("Lỗi khi lưu phim: " + e.getMessage());
             return null;
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Giá vé phải là số!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Thời lượng phải là số!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return null;
+        } catch (DateTimeParseException e) {
+            JOptionPane.showMessageDialog(this, "Ngày khởi chiếu không đúng định dạng (dd/MM/yyyy)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return null;
         }
     }
