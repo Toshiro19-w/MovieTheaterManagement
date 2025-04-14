@@ -1,4 +1,4 @@
-﻿  SET FOREIGN_KEY_CHECKS = 0;
+  SET FOREIGN_KEY_CHECKS = 0;
   SET @tables = NULL;
   SELECT GROUP_CONCAT(table_schema, '.', table_name) INTO @tables
     FROM information_schema.tables 

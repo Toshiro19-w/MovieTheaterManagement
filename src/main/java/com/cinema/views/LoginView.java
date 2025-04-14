@@ -13,6 +13,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.nio.charset.StandardCharsets;
 
 public class LoginView extends JFrame {
     private Connection conn;
@@ -200,7 +201,7 @@ public class LoginView extends JFrame {
                 String inputPassHash = hashPassword(password);
                 String role = rs.getString("loaiTaiKhoan"); // Lấy vai trò từ cơ sở dữ liệu
                 //kiểm tra mật khẩu
-                if(storedPassHash.equals(inputPassHash)) {
+                if (storedPassHash.equals(inputPassHash)) {
                     JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
                     if ("admin".equalsIgnoreCase(role)) {
                         openQuanLyView(username); // Mở giao diện admin
@@ -208,13 +209,25 @@ public class LoginView extends JFrame {
                         openNguoiDungView(username); // Mở giao diện khách hàng
                     }
                     dispose(); // Đóng cửa sổ đăng nhập
+                } else {
+                    JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
+                    System.out.println("[" + storedPassHash + "] vs [" + inputPassHash + "]");
+                    System.out.println("Equal? " + storedPassHash.equals(inputPassHash));
+                    System.out.println("Length stored: " + storedPassHash.length());
+                    System.out.println("Length input : " + inputPassHash.length());
+//                    System.out.println(password);
+//                    System.out.println(storedPassHash);
+//                    System.out.println(inputPassHash);
+//                    JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
+//                    if ("admin".equalsIgnoreCase(role)) {
+//                        openQuanLyView(username); // Mở giao diện admin
+//                    } else if ("user".equalsIgnoreCase(role)) {
+//                        openNguoiDungView(username); // Mở giao diện khách hàng
+//                    }
+                    dispose(); // Đóng cửa sổ đăng nhập
                 }
-             else {
-                JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
             }
-        }
-        }
-        catch (SQLException ex) {
+        } catch (SQLException ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Lỗi truy vấn cơ sở dữ liệu: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         } finally {
@@ -256,24 +269,69 @@ public class LoginView extends JFrame {
     }
 
     // Phương thức mở giao diện quên mật khẩu
-    private void handleForgotPassword(){
+    private void handleForgotPassword() {
         ForgotPasswordView forgotPasswordView = new ForgotPasswordView();
         forgotPasswordView.setVisible(true);
         dispose();
     }
+
     // Hàm mã hóa mật khẩu (sử dụng MD5)
     private String hashPassword(String password) {
         try {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-            byte[] hash = md.digest(password.getBytes());
+
+            byte[] hash = md.digest(password.getBytes(StandardCharsets.UTF_8));
+
             StringBuilder hexString = new StringBuilder();
             for (byte b : hash) {
-                hexString.append(Integer.toHexString(0xFF & b));
+                hexString.append(String.format("%02x", b)); // << CHUẨN NHẤT
             }
-            return hexString.toString(); // Trả về mật khẩu đã mã hóa MD5
+            return hexString.toString();
         } catch (Exception ex) {
             ex.printStackTrace();
         }
         return null;
     }
+
+    public void hashAllPasswordsInDatabase() {
+        PreparedStatement selectStmt = null;
+        PreparedStatement updateStmt = null;
+        ResultSet rs = null;
+
+        try {
+            String selectSQL = "SELECT tenDangNhap, matKhau FROM TaiKhoan";
+            selectStmt = conn.prepareStatement(selectSQL);
+            rs = selectStmt.executeQuery();
+
+            String updateSQL = "UPDATE TaiKhoan SET matKhau = ? WHERE tenDangNhap = ?";
+            updateStmt = conn.prepareStatement(updateSQL);
+
+            while (rs.next()) {
+                String username = rs.getString("tenDangNhap");
+                String plainPassword = rs.getString("matKhau");
+
+                // Bỏ qua nếu đã là hash (ví dụ: độ dài đã là 32 ký tự hex của MD5)
+                if (plainPassword.length() == 32 && plainPassword.matches("[a-fA-F0-9]+")) {
+                    continue;
+                }
+
+                String hashedPassword = hashPassword(plainPassword);
+                updateStmt.setString(1, hashedPassword);
+                updateStmt.setString(2, username);
+                updateStmt.executeUpdate();
+
+                System.out.println("Cập nhật mật khẩu cho tài khoản: " + username);
+            }
+
+            System.out.println("✅ Đã hash toàn bộ mật khẩu thành công.");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try { if (rs != null) rs.close(); } catch (SQLException e) { e.printStackTrace(); }
+            try { if (selectStmt != null) selectStmt.close(); } catch (SQLException e) { e.printStackTrace(); }
+            try { if (updateStmt != null) updateStmt.close(); } catch (SQLException e) { e.printStackTrace(); }
+        }
+    }
+
 }

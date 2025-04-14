@@ -5,6 +5,9 @@ import javax.swing.*;
 
 public class App {
     public static void main(String[] args){
-    SwingUtilities.invokeLater(() -> new LoginView().setVisible(true));
+        LoginView loginView = new LoginView(); // Khởi tạo đối tượng
+        loginView.hashAllPasswordsInDatabase(); // Hash mật khẩu
+    SwingUtilities.invokeLater(() ->  new LoginView().setVisible(true));
+
     }
 }
