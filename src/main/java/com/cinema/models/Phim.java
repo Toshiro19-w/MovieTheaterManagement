@@ -41,6 +41,21 @@ public class Phim {
 
     public Phim() {}
 
+    public Phim(int maPhim, String tenPhim, int maTheLoai,
+                String tenTheLoai, int thoiLuong, LocalDate ngayKhoiChieu,
+                String nuocSanXuat, String dinhDang, String moTa, String daoDien, int i) {
+        this.maPhim = maPhim;
+        this.tenPhim = tenPhim;
+        this.maTheLoai = maTheLoai;
+        this.tenTheLoai = tenTheLoai;
+        this.thoiLuong = thoiLuong;
+        this.ngayKhoiChieu = ngayKhoiChieu;
+        this.nuocSanXuat = nuocSanXuat;
+        this.dinhDang = dinhDang;
+        this.moTa = moTa;
+        this.daoDien = daoDien;
+    }
+
     public int getMaPhim() {
         return maPhim;
     }

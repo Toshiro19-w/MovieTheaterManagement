@@ -1,5 +1,6 @@
 package com.cinema.views;
 
+import com.cinema.models.LoaiTaiKhoan;
 import com.cinema.utils.DatabaseConnection;
 import com.formdev.flatlaf.FlatLightLaf;
 
@@ -15,8 +16,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class LoginView extends JFrame {
-    private Connection conn;
-    private DatabaseConnection databaseConnection;
+    private final Connection conn;
     private JTextField usernameField;
     private JPasswordField passwordField;
 
@@ -28,7 +28,7 @@ public class LoginView extends JFrame {
         }
 
         try {
-            databaseConnection = new DatabaseConnection();
+            DatabaseConnection databaseConnection = new DatabaseConnection();
             conn = databaseConnection.getConnection();
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Lỗi khi khởi tạo kết nối cơ sở dữ liệu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -197,11 +197,8 @@ public class LoginView extends JFrame {
                 JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
 
                 // Chuyển hướng dựa trên vai trò
-                if ("admin".equalsIgnoreCase(role)) {
-                    openQuanLyView(username); // Mở giao diện admin
-                } else if ("user".equalsIgnoreCase(role)) {
-                    openNguoiDungView(username); // Mở giao diện khách hàng
-                }
+                if ("admin".equalsIgnoreCase(role)) openMainView(username, LoaiTaiKhoan.admin); // Mở giao diện admin
+                else openMainView(username, LoaiTaiKhoan.user); // Mở giao diện khách hàng
                 dispose(); // Đóng cửa sổ đăng nhập
             } else {
                 JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
@@ -209,6 +206,8 @@ public class LoginView extends JFrame {
         } catch (SQLException ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Lỗi truy vấn cơ sở dữ liệu: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         } finally {
             // Đóng PreparedStatement và ResultSet trong khối finally để đảm bảo chúng luôn được đóng
             if (rs != null) {
@@ -229,15 +228,9 @@ public class LoginView extends JFrame {
     }
 
     // Phương thức mở giao diện admin
-    private void openQuanLyView(String username) {
-        QuanLyView quanLyView = new QuanLyView(username);
-        quanLyView.setVisible(true);
-    }
-
-    // Phương thức mở giao diện khách hàng
-    private void openNguoiDungView(String username) {
-        NguoiDungView nguoiDungView = new NguoiDungView(username);
-        nguoiDungView.setVisible(true);
+    private void openMainView(String username, LoaiTaiKhoan loaiTaiKhoan) throws IOException, SQLException {
+        MainView mainView = new MainView(username, loaiTaiKhoan);
+        mainView.setVisible(true);
     }
 
     // Phương thức mở giao diện đăng ký

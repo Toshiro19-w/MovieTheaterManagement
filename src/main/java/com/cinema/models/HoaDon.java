@@ -9,6 +9,8 @@ public class HoaDon {
     private int maKhachHang;
     private LocalDateTime ngayLap;
     private BigDecimal tongTien;
+    private String tenNhanVien;
+    private String tenKhachHang;
 
     public HoaDon(int maHoaDon, int maNhanVien, int maKhachHang, LocalDateTime ngayLap, BigDecimal tongTien) {
         this.maHoaDon = maHoaDon;
@@ -59,5 +61,13 @@ public class HoaDon {
     public void setTongTien(BigDecimal tongTien) {
         this.tongTien = tongTien;
     }
+
+    public String getTenNhanVien() { return tenNhanVien; }
+
+    public void setTenNhanVien(String tenNhanVien) { this.tenNhanVien = tenNhanVien; }
+
+    public String getTenKhachHang() { return tenKhachHang; }
+
+    public void setTenKhachHang(String tenKhachHang) { this.tenKhachHang = tenKhachHang; }
 }
 

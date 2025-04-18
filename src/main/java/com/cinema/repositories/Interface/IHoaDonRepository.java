@@ -1,12 +1,13 @@
 package com.cinema.repositories.Interface;
 
+import com.cinema.models.ChiTietHoaDon;
 import com.cinema.models.HoaDon;
 
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.List;
 
 public interface IHoaDonRepository {
-    List<HoaDon> getHoaDonByTenKhachHang(String tenKhachHang) throws SQLException;
-    List<HoaDon> findByKhachHang(int maKhachHang) throws SQLException;
-    List<String> getAllTenKhachHang() throws SQLException;
+    List<HoaDon> findAll() throws SQLException;
+    List<HoaDon> search(String id, String idKhachHang, String tenKhachHang) throws SQLException;
+    List<ChiTietHoaDon> findChiTietByMaHoaDon(int maHoaDon) throws SQLException;
 }
