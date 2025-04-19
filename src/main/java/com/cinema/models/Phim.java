@@ -143,4 +143,6 @@ public class Phim {
     public void setSoSuatChieu(int soSuatChieu) {
         this.soSuatChieu = soSuatChieu;
     }
+
+
 }

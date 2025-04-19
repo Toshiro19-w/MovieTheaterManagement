@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -51,11 +52,11 @@ public class BaoCaoView extends JPanel {
         // Panel chọn khoảng thời gian
         JPanel timePanel = new JPanel(new FlowLayout());
         JLabel tuNgayLabel = new JLabel("Từ ngày:");
-        tuNgayField = new JTextField("2025-04-06 00:00", 15);
+        tuNgayField = new JTextField("05/04/2025 00:00:00", 15);
         JLabel denNgayLabel = new JLabel("Đến ngày:");
-        denNgayField = new JTextField("2025-04-07 23:59", 15);
+        denNgayField = new JTextField("07/04/2025 23:59:59", 15);
         JButton xemButton = new JButton("Xem báo cáo");
-        JButton xuatfileButton = new JButton("Xuất CSV"); // Nút xuất CSV
+        JButton xuatfileButton = new JButton("Xuất CSV");
         timePanel.add(tuNgayLabel);
         timePanel.add(tuNgayField);
         timePanel.add(denNgayLabel);
@@ -79,6 +80,10 @@ public class BaoCaoView extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
     }
 
+    private String formatCurrency(double amount) {
+        return String.format("%,.0f VND", amount);
+    }
+
     private void xemBaoCao(){
         try {
             // Validate ngày giờ
@@ -95,7 +100,7 @@ public class BaoCaoView extends JPanel {
                 tableModel.addRow(new Object[]{
                         baoCao.getTenPhim(),
                         baoCao.getSoVeBanRa(),
-                        baoCao.getTongDoanhThu()
+                        formatCurrency(baoCao.getTongDoanhThu())
                 });
             }
         } catch (SQLException ex) {

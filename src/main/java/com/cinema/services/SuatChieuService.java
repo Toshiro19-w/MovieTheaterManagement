@@ -23,10 +23,6 @@ public class SuatChieuService {
         return suatChieuRepository.findAllDetail();
     }
 
-    public SuatChieu getSuatChieuById(int maSuatChieu) throws SQLException {
-        return suatChieuRepository.findById(maSuatChieu);
-    }
-
     public List<SuatChieu> findByMaPhim(int maPhim) throws SQLException {
         return suatChieuRepository.findByMaPhim(maPhim);
     }

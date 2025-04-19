@@ -74,31 +74,6 @@ public class PhimRepository extends BaseRepository<Phim> {
         return list;
     }
 
-    @Override
-    public Phim findById(int id) throws SQLException {
-        String sql = "SELECT p.*, tl.tenTheLoai FROM Phim p JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai WHERE p.maPhim = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return new Phim(
-                        rs.getInt("maPhim"),
-                        rs.getString("tenPhim"),
-                        rs.getInt("maTheLoai"),
-                        rs.getString("tenTheLoai"),
-                        rs.getInt("thoiLuong"),
-                        rs.getDate("ngayKhoiChieu") != null ? rs.getDate("ngayKhoiChieu").toLocalDate() : null,
-                        rs.getString("nuocSanXuat"),
-                        rs.getString("dinhDang"),
-                        rs.getString("moTa"),
-                        rs.getString("daoDien"),
-                        0
-                );
-            }
-        }
-        return null;
-    }
-
     public List<Phim> searchPhim(String tenPhim, String tenTheLoai, String nuocSanXuat, String daoDien) throws SQLException {
         List<Phim> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(

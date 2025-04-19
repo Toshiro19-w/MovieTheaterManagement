@@ -11,7 +11,6 @@ import java.util.List;
 public class BaoCaoService {
     private final BaoCaoRepository baoCaoRepository;
 
-
     public BaoCaoService(DatabaseConnection databaseConnection) {
         this.baoCaoRepository = new BaoCaoRepository(databaseConnection);
     }

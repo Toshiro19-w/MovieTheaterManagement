@@ -88,35 +88,6 @@ public class VeRepository extends BaseRepository<Ve> {
         return result;
     }
 
-
-    @Override
-    public Ve findById(int id) throws SQLException {
-        String sql = "SELECT * FROM Ve WHERE maVe = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            try (ResultSet resultSet = stmt.executeQuery()) {
-                if (resultSet.next()) {
-                    LocalDateTime ngayDat = null;
-                    if (resultSet.getDate("ngayDat") != null) {
-                        ngayDat = resultSet.getDate("ngayDat").toLocalDate().atStartOfDay();
-                    }
-
-                    return new Ve(
-                            resultSet.getInt("maVe"),
-                            resultSet.getInt("maSuatChieu"),
-                            resultSet.getInt("maPhong"),
-                            resultSet.getString("soGhe"),
-                            resultSet.getObject("maHoaDon", Integer.class),
-                            resultSet.getBigDecimal("giaVe"),
-                            TrangThaiVe.fromString(resultSet.getString("trangThai")),
-                            ngayDat
-                    );
-                }
-            }
-        }
-        return null;
-    }
-
     public List<Ve> findByHoaDon(int maHoaDon) throws SQLException {
         List<Ve> list = new ArrayList<>();
         String sql = "SELECT * FROM Ve WHERE maHoaDon = ?";

@@ -60,27 +60,6 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
         return list;
     }
 
-    @Override
-    public SuatChieu findById(int id) throws SQLException {
-        String sql = "SELECT maSuatChieu, maPhim, maPhong, ngayGioChieu FROM SuatChieu WHERE maSuatChieu = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return new SuatChieu(
-                            rs.getInt("maSuatChieu"),
-                            rs.getInt("maPhim"),
-                            rs.getInt("maPhong"),
-                            rs.getTimestamp("ngayGioChieu").toLocalDateTime()
-                    );
-                }
-                return null;
-            }
-        } catch (SQLException e) {
-            throw new SQLException("Lỗi khi truy vấn suất chiếu theo ID: " + id + ". " + e.getMessage(), e);
-        }
-    }
-
     public List<SuatChieu> searchSuatChieuByNgay(LocalDateTime ngayGioChieu) throws SQLException {
         List<SuatChieu> suatChieuList = new ArrayList<>();
         String sql = "SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, " +

@@ -40,10 +40,6 @@ public class PhimService {
         return phimRepo.findAllDetail();
     }
 
-    public Phim getPhimById(int maPhim) throws SQLException {
-        return phimRepo.findById(maPhim);
-    }
-
     public Phim addPhim(Phim phim) throws SQLException {
         // Cần lấy maTheLoai từ tenTheLoai trước khi lưu
         int maTheLoai = getMaTheLoaiByTen(phim.getTenTheLoai());

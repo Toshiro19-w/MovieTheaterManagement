@@ -30,7 +30,7 @@ public class MainView extends JFrame {
     private JSlider thoiLuongSlider;
     private JPanel phimPanel;
     private final String username;
-    private final LoaiTaiKhoan loaiTaiKhoan; // "admin" or "user"
+    private final LoaiTaiKhoan loaiTaiKhoan;
 
     public MainView(String username, LoaiTaiKhoan loaiTaiKhoan) throws IOException, SQLException {
         try {
@@ -68,11 +68,9 @@ public class MainView extends JFrame {
     }
 
     private void initUI() throws IOException, SQLException {
-        // Header
         JPanel headerPanel = createHeaderPanel();
         add(headerPanel, BorderLayout.NORTH);
 
-        // Main Content
         mainContentPanel = new JPanel();
         if (isAdminRole()) {
             cardLayout = new CardLayout();
@@ -85,7 +83,6 @@ public class MainView extends JFrame {
         }
         add(mainContentPanel, BorderLayout.CENTER);
 
-        // Footer (for user role only)
         if (!isAdminRole()) {
             JPanel footerPanel = new JPanel();
             footerPanel.setPreferredSize(new Dimension(1280, 50));
@@ -171,7 +168,6 @@ public class MainView extends JFrame {
     }
 
     private void initializeUserPanels() {
-        // Sidebar (Bộ lọc)
         JPanel sidebarPanel = new JPanel();
         sidebarPanel.setPreferredSize(new Dimension(250, 0));
         sidebarPanel.setBackground(new Color(240, 240, 240));
@@ -216,7 +212,6 @@ public class MainView extends JFrame {
         applyFilterButton.addActionListener(_ -> applyFilters());
         sidebarPanel.add(applyFilterButton);
 
-        // Danh sách phim
         phimPanel = new JPanel(new GridBagLayout());
         mainContentPanel.add(sidebarPanel, BorderLayout.WEST);
         mainContentPanel.add(new JScrollPane(phimPanel), BorderLayout.CENTER);
@@ -313,9 +308,10 @@ public class MainView extends JFrame {
                     new VeService(databaseConnection)
             );
             JDialog dialog = new JDialog(this, "Đặt vé", true);
-            dialog.setSize(600, 400);
+            dialog.setSize(800, 600); // Tăng kích thước để hiển thị sơ đồ ghế
             dialog.setLayout(new BorderLayout());
 
+            // Panel chọn suất chiếu
             JPanel suatChieuPanel = new JPanel(new FlowLayout());
             JLabel suatChieuLabel = new JLabel("Chọn suất chiếu:");
             JComboBox<SuatChieu> suatChieuCombo = new JComboBox<>();
@@ -326,19 +322,61 @@ public class MainView extends JFrame {
             suatChieuPanel.add(suatChieuLabel);
             suatChieuPanel.add(suatChieuCombo);
 
-            JPanel ghePanel = new JPanel(new FlowLayout());
-            JLabel gheLabel = new JLabel("Chọn ghế:");
-            JComboBox<Ghe> gheCombo = new JComboBox<>();
+            // Panel sơ đồ ghế
+            JPanel seatPanel = new JPanel(new GridLayout(5, 10, 5, 5)); // 5 hàng, 10 cột
+            seatPanel.setBorder(BorderFactory.createTitledBorder("Sơ đồ ghế"));
+            JLabel selectedSeatLabel = new JLabel("Ghế đã chọn: None");
+            Ghe[] selectedGhe = {null}; // Lưu ghế đang chọn
+
+            // Cập nhật sơ đồ ghế khi chọn suất chiếu
             suatChieuCombo.addActionListener(_ -> {
-                gheCombo.removeAllItems();
+                seatPanel.removeAll();
+                selectedGhe[0] = null;
+                selectedSeatLabel.setText("Ghế đã chọn: None");
                 SuatChieu selectedSuatChieu = (SuatChieu) suatChieuCombo.getSelectedItem();
                 if (selectedSuatChieu != null) {
                     try {
                         List<Ghe> gheList = datVeController.getGheTrongByPhongAndSuatChieu(
                                 selectedSuatChieu.getMaPhong(), selectedSuatChieu.getMaSuatChieu());
-                        for (Ghe ghe : gheList) {
-                            gheCombo.addItem(ghe);
+                        // Tạo danh sách tất cả ghế (giả sử phòng có 50 ghế: A1-A10, B1-B10, ...)
+                        String[] allSeats = new String[50];
+                        for (int i = 0; i < 5; i++) {
+                            for (int j = 1; j <= 10; j++) {
+                                allSeats[i * 10 + j - 1] = (char) ('A' + i) + String.valueOf(j);
+                            }
                         }
+
+                        for (String seat : allSeats) {
+                            JButton seatButton = new JButton(seat);
+                            seatButton.setPreferredSize(new Dimension(50, 50));
+                            boolean isAvailable = gheList.stream().anyMatch(ghe -> ghe.getSoGhe().equals(seat));
+                            if (isAvailable) {
+                                seatButton.setBackground(Color.GREEN); // Ghế trống
+                                seatButton.addActionListener(_ -> {
+                                    if (selectedGhe[0] != null) {
+                                        // Hủy chọn ghế trước đó
+                                        for (Component comp : seatPanel.getComponents()) {
+                                            if (comp instanceof JButton && ((JButton) comp).getText().equals(selectedGhe[0].getSoGhe())) {
+                                                comp.setBackground(Color.GREEN);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    selectedGhe[0] = gheList.stream()
+                                            .filter(ghe -> ghe.getSoGhe().equals(seat))
+                                            .findFirst()
+                                            .orElse(null);
+                                    seatButton.setBackground(Color.YELLOW); // Ghế đang chọn
+                                    selectedSeatLabel.setText("Ghế đã chọn: " + seat);
+                                });
+                            } else {
+                                seatButton.setBackground(Color.RED); // Ghế đã đặt
+                                seatButton.setEnabled(false);
+                            }
+                            seatPanel.add(seatButton);
+                        }
+                        seatPanel.revalidate();
+                        seatPanel.repaint();
                     } catch (SQLException ex) {
                         JOptionPane.showMessageDialog(dialog,
                                 "Lỗi khi tải danh sách ghế: " + ex.getMessage(),
@@ -346,14 +384,15 @@ public class MainView extends JFrame {
                     }
                 }
             });
-            ghePanel.add(gheLabel);
-            ghePanel.add(gheCombo);
+
+            // Panel hiển thị ghế đã chọn và nút xác nhận
+            JPanel bottomPanel = new JPanel(new BorderLayout());
+            bottomPanel.add(selectedSeatLabel, BorderLayout.NORTH);
 
             JButton confirmButton = new JButton("Xác nhận đặt vé");
             confirmButton.addActionListener(_ -> {
                 SuatChieu selectedSuatChieu = (SuatChieu) suatChieuCombo.getSelectedItem();
-                Ghe selectedGhe = (Ghe) gheCombo.getSelectedItem();
-                if (selectedSuatChieu == null || selectedGhe == null) {
+                if (selectedSuatChieu == null || selectedGhe[0] == null) {
                     JOptionPane.showMessageDialog(dialog, "Vui lòng chọn suất chiếu và ghế!", "Lỗi", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -361,24 +400,31 @@ public class MainView extends JFrame {
                     BigDecimal giaVe = new BigDecimal("50000");
                     datVeController.datVe(
                             selectedSuatChieu.getMaSuatChieu(),
-                            selectedGhe.getMaPhong(),
-                            selectedGhe.getSoGhe(),
+                            selectedGhe[0].getMaPhong(),
+                            selectedGhe[0].getSoGhe(),
                             giaVe
                     );
                     JOptionPane.showMessageDialog(dialog, "Đặt vé thành công!");
                     dialog.dispose();
                 } catch (SQLException ex) {
-                    JOptionPane.showMessageDialog(dialog, "Lỗi khi đặt vé!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(dialog, "Lỗi khi đặt vé: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             });
+            bottomPanel.add(confirmButton, BorderLayout.SOUTH);
 
             dialog.add(suatChieuPanel, BorderLayout.NORTH);
-            dialog.add(ghePanel, BorderLayout.CENTER);
-            dialog.add(confirmButton, BorderLayout.SOUTH);
+            dialog.add(new JScrollPane(seatPanel), BorderLayout.CENTER);
+            dialog.add(bottomPanel, BorderLayout.SOUTH);
             dialog.setLocationRelativeTo(this);
+
+            // Kích hoạt sự kiện chọn suất chiếu đầu tiên (nếu có)
+            if (suatChieuCombo.getItemCount() > 0) {
+                suatChieuCombo.setSelectedIndex(0);
+            }
             dialog.setVisible(true);
         } catch (SQLException e) {
             e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Lỗi khi tải dữ liệu đặt vé!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 

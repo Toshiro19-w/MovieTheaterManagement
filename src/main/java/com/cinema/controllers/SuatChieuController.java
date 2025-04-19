@@ -36,15 +36,6 @@ public class SuatChieuController extends Component {
         }
     }
 
-    public SuatChieu findSuatChieuById(int maSuatChieu) {
-        try {
-            return suatChieuService.getSuatChieuById(maSuatChieu);
-        } catch (SQLException e) {
-            System.err.println("Lỗi khi tìm phim: " + e.getMessage());
-            return null;
-        }
-    }
-
     public SuatChieu saveSuatChieu(SuatChieu suatChieu) {
         try {
 //            if (!ValidationUtils.validatePhim(phim)) {
