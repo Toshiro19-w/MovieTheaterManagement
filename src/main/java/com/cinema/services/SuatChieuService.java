@@ -11,7 +11,7 @@ import java.util.List;
 public class SuatChieuService {
     private final SuatChieuRepository suatChieuRepository;
 
-    public SuatChieuService(DatabaseConnection databaseConnection){
+    public SuatChieuService(DatabaseConnection databaseConnection) {
         this.suatChieuRepository = new SuatChieuRepository(databaseConnection);
     }
 
@@ -23,7 +23,7 @@ public class SuatChieuService {
         return suatChieuRepository.findAllDetail();
     }
 
-    public List<SuatChieu> findByMaPhim(int maPhim) throws SQLException {
+    public List<SuatChieu> getSuatChieuByMaPhim(int maPhim) throws SQLException {
         return suatChieuRepository.findByMaPhim(maPhim);
     }
 
@@ -32,14 +32,23 @@ public class SuatChieuService {
     }
 
     public SuatChieu addSuatChieu(SuatChieu suatChieu) throws SQLException {
+        if (suatChieu.getMaPhim() <= 0 || suatChieu.getMaPhong() <= 0 || suatChieu.getNgayGioChieu() == null) {
+            throw new IllegalArgumentException("Dữ liệu suất chiếu không hợp lệ.");
+        }
         return suatChieuRepository.save(suatChieu);
     }
 
     public SuatChieu updateSuatChieu(SuatChieu suatChieu) throws SQLException {
+        if (suatChieu.getMaSuatChieu() <= 0 || suatChieu.getMaPhim() <= 0 || suatChieu.getMaPhong() <= 0 || suatChieu.getNgayGioChieu() == null) {
+            throw new IllegalArgumentException("Dữ liệu suất chiếu không hợp lệ.");
+        }
         return suatChieuRepository.update(suatChieu);
     }
 
     public void deleteSuatChieu(int maSuatChieu) throws SQLException {
+        if (maSuatChieu <= 0) {
+            throw new IllegalArgumentException("Mã suất chiếu không hợp lệ.");
+        }
         suatChieuRepository.delete(maSuatChieu);
     }
 }

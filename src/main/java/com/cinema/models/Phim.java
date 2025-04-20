@@ -144,5 +144,8 @@ public class Phim {
         this.soSuatChieu = soSuatChieu;
     }
 
-
+    @Override
+    public String toString() {
+        return tenPhim;
+    }
 }

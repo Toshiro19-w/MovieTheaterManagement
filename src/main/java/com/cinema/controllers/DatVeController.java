@@ -20,7 +20,7 @@ public class DatVeController {
     }
 
     public List<SuatChieu> getSuatChieuByPhim(int maPhim) throws SQLException {
-        return suatChieuService.findByMaPhim(maPhim);
+        return suatChieuService.getSuatChieuByMaPhim(maPhim);
     }
 
     public List<Ghe> getGheTrongByPhongAndSuatChieu(int maPhong, int maSuatChieu) throws SQLException {

@@ -107,7 +107,7 @@ public class MainView extends JFrame {
         JPanel menuPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         menuPanel.setOpaque(false);
         if (isAdminRole()) {
-            String[] sections = {"Phim", "Suất chiếu", "Vé", "Nhân viên", "Hoá đơn", "Báo cáo"};
+            String[] sections = {"Phim", "Suất chiếu", "Phòng chiếu", "Vé", "Nhân viên", "Hoá đơn", "Báo cáo"};
             for (String section : sections) {
                 JButton button = new JButton(section);
                 button.setForeground(Color.WHITE);
@@ -161,6 +161,7 @@ public class MainView extends JFrame {
     private void initializeAdminPanels() throws IOException, SQLException {
         mainContentPanel.add(new PhimView(), "Phim");
         mainContentPanel.add(new SuatChieuView(), "Suất chiếu");
+        mainContentPanel.add(new PhongChieuView(), "Phòng chiếu");
         mainContentPanel.add(new VeView(), "Vé");
         mainContentPanel.add(new NhanVienView(), "Nhân viên");
         mainContentPanel.add(new HoaDonView(), "Hoá đơn");
@@ -308,7 +309,7 @@ public class MainView extends JFrame {
                     new VeService(databaseConnection)
             );
             JDialog dialog = new JDialog(this, "Đặt vé", true);
-            dialog.setSize(800, 600); // Tăng kích thước để hiển thị sơ đồ ghế
+            dialog.setSize(800, 600);
             dialog.setLayout(new BorderLayout());
 
             // Panel chọn suất chiếu
@@ -323,10 +324,10 @@ public class MainView extends JFrame {
             suatChieuPanel.add(suatChieuCombo);
 
             // Panel sơ đồ ghế
-            JPanel seatPanel = new JPanel(new GridLayout(5, 10, 5, 5)); // 5 hàng, 10 cột
+            JPanel seatPanel = new JPanel(new GridLayout(5, 10, 5, 5));
             seatPanel.setBorder(BorderFactory.createTitledBorder("Sơ đồ ghế"));
             JLabel selectedSeatLabel = new JLabel("Ghế đã chọn: None");
-            Ghe[] selectedGhe = {null}; // Lưu ghế đang chọn
+            Ghe[] selectedGhe = {null};
 
             // Cập nhật sơ đồ ghế khi chọn suất chiếu
             suatChieuCombo.addActionListener(_ -> {
@@ -338,7 +339,6 @@ public class MainView extends JFrame {
                     try {
                         List<Ghe> gheList = datVeController.getGheTrongByPhongAndSuatChieu(
                                 selectedSuatChieu.getMaPhong(), selectedSuatChieu.getMaSuatChieu());
-                        // Tạo danh sách tất cả ghế (giả sử phòng có 50 ghế: A1-A10, B1-B10, ...)
                         String[] allSeats = new String[50];
                         for (int i = 0; i < 5; i++) {
                             for (int j = 1; j <= 10; j++) {
@@ -351,10 +351,9 @@ public class MainView extends JFrame {
                             seatButton.setPreferredSize(new Dimension(50, 50));
                             boolean isAvailable = gheList.stream().anyMatch(ghe -> ghe.getSoGhe().equals(seat));
                             if (isAvailable) {
-                                seatButton.setBackground(Color.GREEN); // Ghế trống
+                                seatButton.setBackground(Color.GREEN);
                                 seatButton.addActionListener(_ -> {
                                     if (selectedGhe[0] != null) {
-                                        // Hủy chọn ghế trước đó
                                         for (Component comp : seatPanel.getComponents()) {
                                             if (comp instanceof JButton && ((JButton) comp).getText().equals(selectedGhe[0].getSoGhe())) {
                                                 comp.setBackground(Color.GREEN);
@@ -366,11 +365,11 @@ public class MainView extends JFrame {
                                             .filter(ghe -> ghe.getSoGhe().equals(seat))
                                             .findFirst()
                                             .orElse(null);
-                                    seatButton.setBackground(Color.YELLOW); // Ghế đang chọn
+                                    seatButton.setBackground(Color.YELLOW);
                                     selectedSeatLabel.setText("Ghế đã chọn: " + seat);
                                 });
                             } else {
-                                seatButton.setBackground(Color.RED); // Ghế đã đặt
+                                seatButton.setBackground(Color.RED);
                                 seatButton.setEnabled(false);
                             }
                             seatPanel.add(seatButton);
@@ -417,7 +416,6 @@ public class MainView extends JFrame {
             dialog.add(bottomPanel, BorderLayout.SOUTH);
             dialog.setLocationRelativeTo(this);
 
-            // Kích hoạt sự kiện chọn suất chiếu đầu tiên (nếu có)
             if (suatChieuCombo.getItemCount() > 0) {
                 suatChieuCombo.setSelectedIndex(0);
             }
