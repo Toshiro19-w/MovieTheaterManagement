@@ -33,7 +33,6 @@ public class PhimRepository extends BaseRepository<Phim> {
                 phim.setDinhDang(rs.getString("dinhDang"));
                 phim.setMoTa(rs.getString("moTa"));
                 phim.setDaoDien(rs.getString("daoDien"));
-                phim.setSoSuatChieu(0); // không cần thiết nhưng gán mặc định nếu có field này
 
                 list.add(phim);
             }
@@ -66,7 +65,6 @@ public class PhimRepository extends BaseRepository<Phim> {
                 phim.setDinhDang(rs.getString("dinhDang"));
                 phim.setMoTa(rs.getString("moTa"));
                 phim.setDaoDien(rs.getString("daoDien"));
-                phim.setSoSuatChieu(rs.getInt("soSuatChieu")); // không cần thiết nhưng gán mặc định nếu có field này
 
                 list.add(phim);
             }
@@ -126,7 +124,6 @@ public class PhimRepository extends BaseRepository<Phim> {
                 phim.setDinhDang(rs.getString("dinhDang"));
                 phim.setMoTa(rs.getString("moTa"));
                 phim.setDaoDien(rs.getString("daoDien"));
-                phim.setSoSuatChieu(rs.getInt("soSuatChieu"));
                 list.add(phim);
             }
         }
