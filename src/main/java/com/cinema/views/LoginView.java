@@ -1,5 +1,6 @@
 package com.cinema.views;
 
+import com.cinema.models.LoaiTaiKhoan;
 import com.cinema.utils.DatabaseConnection;
 import com.formdev.flatlaf.FlatLightLaf;
 
@@ -15,8 +16,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class LoginView extends JFrame {
-    private Connection conn;
-    private DatabaseConnection databaseConnection;
+    private final Connection conn;
     private JTextField usernameField;
     private JPasswordField passwordField;
 
@@ -28,7 +28,7 @@ public class LoginView extends JFrame {
         }
 
         try {
-            databaseConnection = new DatabaseConnection();
+            DatabaseConnection databaseConnection = new DatabaseConnection();
             conn = databaseConnection.getConnection();
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Lỗi khi khởi tạo kết nối cơ sở dữ liệu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -44,12 +44,15 @@ public class LoginView extends JFrame {
         setTitle("Đăng nhập - Hệ thống quản lý rạp chiếu phim");
         setSize(1280, 700);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setMinimumSize(new Dimension(950, 533));
         setLocationRelativeTo(null);
+
         setResizable(true);
         
         ImageIcon icon = new ImageIcon(getClass().getResource("/img/133864911312596807.jpg"));
         setIconImage(icon.getImage());
+
+        setResizable(false);
+
 
         // Panel nền với gradient
         JPanel backgroundPanel = getBackgroundPanel();
@@ -81,9 +84,8 @@ public class LoginView extends JFrame {
         loginPanel.add(usernameLabel, gbc);
 
         gbc.gridx = 1;
-        usernameField = new JTextField(15);
+        usernameField = new JTextField(20);
         usernameField.setFont(new Font("Arial", Font.PLAIN, 14));
-        gbc.fill = GridBagConstraints.NONE;
         loginPanel.add(usernameField, gbc);
 
         // Password
@@ -94,9 +96,8 @@ public class LoginView extends JFrame {
         loginPanel.add(passwordLabel, gbc);
 
         gbc.gridx = 1;
-        passwordField = new JPasswordField(15);
+        passwordField = new JPasswordField(20);
         passwordField.setFont(new Font("Arial", Font.PLAIN, 14));
-        gbc.fill = GridBagConstraints.NONE;
         loginPanel.add(passwordField, gbc);
 
         // Nút đăng nhập
@@ -111,7 +112,6 @@ public class LoginView extends JFrame {
         loginBtn.setFocusPainted(false);
         loginBtn.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         loginBtn.addActionListener(_ -> handleLogin());
-        getRootPane().setDefaultButton(loginBtn);
         loginPanel.add(loginBtn, gbc);
 
         // Liên kết Forgot Password và Register
@@ -129,7 +129,7 @@ public class LoginView extends JFrame {
         loginPanel.add(forgotLabel, gbc);
 
         gbc.gridy++;
-        JLabel registerLabel = new JLabel("Đăng ký", SwingConstants.CENTER);
+        JLabel registerLabel = new JLabel("Không có tài khoản? Đăng ký", SwingConstants.CENTER);
         registerLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         registerLabel.setForeground(new Color(0, 102, 204));
         registerLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -150,7 +150,7 @@ public class LoginView extends JFrame {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                GradientPaint gp = new GradientPaint(0, 0, new Color(0, 126, 250), 0, getHeight(), new Color(0, 1, 23));
+                GradientPaint gp = new GradientPaint(0, 0, new Color(0, 102, 204), 0, getHeight(), new Color(0, 204, 255));
                 g2d.setPaint(gp);
                 g2d.fillRect(0, 0, getWidth(), getHeight());
             }
@@ -173,7 +173,7 @@ public class LoginView extends JFrame {
         loginPanel.setOpaque(false);
         loginPanel.setBorder(new EmptyBorder(30, 30, 30, 30));
         loginPanel.setLayout(new GridBagLayout());
-        loginPanel.setPreferredSize(new Dimension(350, 350));
+        loginPanel.setPreferredSize(new Dimension(700, 500));
         return loginPanel;
     }
 
@@ -192,34 +192,29 @@ public class LoginView extends JFrame {
         PreparedStatement stmt = null;
         ResultSet rs = null;
         try {
-            String sql = "SELECT loaiTaiKhoan ,matKhau FROM TaiKhoan WHERE tenDangNhap = ?";
+            String sql = "SELECT loaiTaiKhoan FROM TaiKhoan WHERE tenDangNhap = ? AND matKhau = ?";
             stmt = conn.prepareStatement(sql);
             stmt.setString(1, username);
+            stmt.setString(2, password); // Mã hoá mật khẩu (nên mã hóa trước khi lưu vào DB)
             rs = stmt.executeQuery();
 
             // Nếu đăng nhập thành công
             if (rs.next()) {
-                String storedPassHash = rs.getString("matKhau");
-                String inputPassHash = hashPassword(password);
                 String role = rs.getString("loaiTaiKhoan"); // Lấy vai trò từ cơ sở dữ liệu
-                //kiểm tra mật khẩu
-                if(storedPassHash.equals(inputPassHash)) {
-                    JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
-                    if ("admin".equalsIgnoreCase(role)) {
-                        openQuanLyView(username); // Mở giao diện admin
-                    } else if ("user".equalsIgnoreCase(role)) {
-                        openNguoiDungView(username); // Mở giao diện khách hàng
-                    }
-                    dispose(); // Đóng cửa sổ đăng nhập
-                }
-             else {
+                JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
+
+                // Chuyển hướng dựa trên vai trò
+                if ("admin".equalsIgnoreCase(role)) openMainView(username, LoaiTaiKhoan.admin); // Mở giao diện admin
+                else openMainView(username, LoaiTaiKhoan.user); // Mở giao diện khách hàng
+                dispose(); // Đóng cửa sổ đăng nhập
+            } else {
                 JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
             }
-        }
-        }
-        catch (SQLException ex) {
+        } catch (SQLException ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Lỗi truy vấn cơ sở dữ liệu: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         } finally {
             // Đóng PreparedStatement và ResultSet trong khối finally để đảm bảo chúng luôn được đóng
             if (rs != null) {
@@ -240,15 +235,9 @@ public class LoginView extends JFrame {
     }
 
     // Phương thức mở giao diện admin
-    private void openQuanLyView(String username) {
-        QuanLyView quanLyView = new QuanLyView(username);
-        quanLyView.setVisible(true);
-    }
-
-    // Phương thức mở giao diện khách hàng
-    private void openNguoiDungView(String username) {
-        NguoiDungView nguoiDungView = new NguoiDungView(username);
-        nguoiDungView.setVisible(true);
+    private void openMainView(String username, LoaiTaiKhoan loaiTaiKhoan) throws IOException, SQLException {
+        MainView mainView = new MainView(username, loaiTaiKhoan);
+        mainView.setVisible(true);
     }
 
     // Phương thức mở giao diện đăng ký
@@ -264,6 +253,7 @@ public class LoginView extends JFrame {
         forgotPasswordView.setVisible(true);
         dispose();
     }
+
     // Hàm mã hóa mật khẩu (sử dụng MD5)
     private String hashPassword(String password) {
 //        try {

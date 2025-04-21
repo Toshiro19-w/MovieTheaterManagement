@@ -12,7 +12,6 @@ public class Phim {
     private String dinhDang;
     private String moTa;
     private String daoDien;
-    private int soSuatChieu;
 
     public Phim(int maPhim, String tenPhim, int maTheLoai, int thoiLuong, LocalDate ngayKhoiChieu, String nuocSanXuat, String dinhDang, String moTa, String daoDien) {
         this.maPhim = maPhim;
@@ -26,9 +25,14 @@ public class Phim {
         this.daoDien = daoDien;
     }
 
-    public Phim(int maPhim, String tenPhim, String tenTheLoai, int thoiLuong, LocalDate ngayKhoiChieu, String nuocSanXuat, String dinhDang, String moTa, String daoDien, int soSuatChieu) {
+    public Phim() {}
+
+    public Phim(int maPhim, String tenPhim, int maTheLoai,
+                String tenTheLoai, int thoiLuong, LocalDate ngayKhoiChieu,
+                String nuocSanXuat, String dinhDang, String moTa, String daoDien, int i) {
         this.maPhim = maPhim;
         this.tenPhim = tenPhim;
+        this.maTheLoai = maTheLoai;
         this.tenTheLoai = tenTheLoai;
         this.thoiLuong = thoiLuong;
         this.ngayKhoiChieu = ngayKhoiChieu;
@@ -36,10 +40,7 @@ public class Phim {
         this.dinhDang = dinhDang;
         this.moTa = moTa;
         this.daoDien = daoDien;
-        this.soSuatChieu = soSuatChieu;
     }
-
-    public Phim() {}
 
     public int getMaPhim() {
         return maPhim;
@@ -121,11 +122,8 @@ public class Phim {
         this.tenTheLoai = tenTheLoai;
     }
 
-    public int getSoSuatChieu() {
-        return soSuatChieu;
-    }
-
-    public void setSoSuatChieu(int soSuatChieu) {
-        this.soSuatChieu = soSuatChieu;
+    @Override
+    public String toString() {
+        return tenPhim;
     }
 }

@@ -1,261 +1,133 @@
 package com.cinema.views;
 
-import com.cinema.controllers.*;
-import com.cinema.models.*;
-import com.cinema.services.*;
-import com.cinema.utils.*;
+import com.cinema.controllers.NhanVienController;
+import com.cinema.models.LoaiNguoiDung;
+import com.cinema.utils.DatabaseConnection;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 public class NhanVienView extends JPanel {
     private DatabaseConnection databaseConnection;
-    private NhanVienController controller;
+    private JTextField txtSearchMaND, txtSearchHoTen, txtSearchChucVu;
+    private JTextField txtMaND, txtHoTen, txtSDT, txtEmail, txtChucVu, txtLuong;
+    private JComboBox<String> vaiTroCombo;
     private JTable table;
     private DefaultTableModel tableModel;
-    private JTextField txtMaND, txtHoTen, txtSDT, txtEmail, txtChucVu, txtLuong, tenNhanVienField;
-    private JComboBox<String> vaiTroCombo;
     private JButton btnThem, btnSua, btnXoa, btnClear;
 
     public NhanVienView() {
         try {
             databaseConnection = new DatabaseConnection();
-            controller = new NhanVienController(new NhanVienService(databaseConnection));
-            setLayout(new BorderLayout(10, 10));
-            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         } catch (IOException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Không thể đọc file cấu hình cơ sở dữ liệu!");
-            System.exit(1);
+            return;
         }
-        initializeUI();
-        loadDataToTable();
-    }
 
-    private void initializeUI() {
-        // Sidebar tìm kiếm
-        JPanel searchPanel = new JPanel(new GridLayout(2, 1, 5, 5));
-        searchPanel.setBorder(BorderFactory.createTitledBorder("Tìm kiếm nhân viên"));
-        searchPanel.add(new JLabel("Tên nhân viên:"));
-        tenNhanVienField = new JTextField();
-        searchPanel.add(tenNhanVienField);
+        setLayout(new BorderLayout());
+        setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        JButton searchButton = new JButton("Tìm kiếm");
-        searchButton.addActionListener(e -> searchNhanVien());
-        searchPanel.add(searchButton);
+        // Phần tìm kiếm
+        JPanel searchPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+        searchPanel.setBorder(BorderFactory.createTitledBorder("TÌM KIẾM"));
+        searchPanel.add(new JLabel("Mã ND:"));
+        txtSearchMaND = new JTextField();
+        searchPanel.add(txtSearchMaND);
+        searchPanel.add(new JLabel("Họ Tên:"));
+        txtSearchHoTen = new JTextField();
+        searchPanel.add(txtSearchHoTen);
+        searchPanel.add(new JLabel("Chức Vụ:"));
+        txtSearchChucVu = new JTextField();
+        searchPanel.add(txtSearchChucVu);
 
-        add(searchPanel, BorderLayout.WEST);
+        // Phần thông tin nhân viên
+        JPanel infoPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        infoPanel.setBorder(BorderFactory.createTitledBorder("THÔNG TIN NHÂN VIÊN"));
 
-        tableModel = new DefaultTableModel(new Object[]{
-                "Mã ND", "Họ tên", "SĐT", "Email", "Chức vụ", "Lương", "Vai trò"
-        }, 0);
-
-        table = new JTable(tableModel);
-        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        table.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                selectRowToForm();
-            }
-        });
-        JScrollPane scrollPane = new JScrollPane(table);
-
-        JPanel formPanel = new JPanel(new GridLayout(7, 2, 5, 5));
-        formPanel.setBorder(BorderFactory.createTitledBorder("Thông tin Nhân viên"));
-
-        formPanel.add(new JLabel("Mã ND:"));
+        infoPanel.add(new JLabel("Mã ND:"));
         txtMaND = new JTextField();
         txtMaND.setEditable(false);
-        formPanel.add(txtMaND);
+        infoPanel.add(txtMaND);
 
-        formPanel.add(new JLabel("Họ tên:"));
+        infoPanel.add(new JLabel("Họ Tên:"));
         txtHoTen = new JTextField();
-        formPanel.add(txtHoTen);
+        infoPanel.add(txtHoTen);
 
-        formPanel.add(new JLabel("SĐT:"));
+        infoPanel.add(new JLabel("SĐT:"));
         txtSDT = new JTextField();
-        formPanel.add(txtSDT);
+        infoPanel.add(txtSDT);
 
-        formPanel.add(new JLabel("Email:"));
+        infoPanel.add(new JLabel("Email:"));
         txtEmail = new JTextField();
-        formPanel.add(txtEmail);
+        infoPanel.add(txtEmail);
 
-        formPanel.add(new JLabel("Chức vụ:"));
+        infoPanel.add(new JLabel("Chức Vụ:"));
         txtChucVu = new JTextField();
-        formPanel.add(txtChucVu);
+        infoPanel.add(txtChucVu);
 
-        formPanel.add(new JLabel("Lương:"));
+        infoPanel.add(new JLabel("Lương:"));
         txtLuong = new JTextField();
-        formPanel.add(txtLuong);
+        infoPanel.add(txtLuong);
 
-        formPanel.add(new JLabel("Vai trò:"));
+        infoPanel.add(new JLabel("Vai Trò:"));
         vaiTroCombo = new JComboBox<>(new String[]{"Admin", "QuanLy", "ThuNgan", "BanVe"});
-        formPanel.add(vaiTroCombo);
+        infoPanel.add(vaiTroCombo);
 
+        // Phần bảng danh sách nhân viên
+        String[] columns = {"Mã ND", "Họ Tên", "SĐT", "Email", "Chức Vụ", "Lương", "Vai Trò"};
+        tableModel = new DefaultTableModel(columns, 0);
+        table = new JTable(tableModel);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("DANH SÁCH NHÂN VIÊN"));
+
+        // Phần nút thao tác
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        btnThem = new JButton("Thêm");
-        btnSua = new JButton("Sửa");
-        btnXoa = new JButton("Xóa");
-        btnClear = new JButton("Clear");
-
+        btnThem = new JButton("THÊM");
+        btnSua = new JButton("SỬA");
+        btnXoa = new JButton("XÓA");
+        btnClear = new JButton("CLEAR");
         buttonPanel.add(btnThem);
         buttonPanel.add(btnSua);
         buttonPanel.add(btnXoa);
         buttonPanel.add(btnClear);
 
-        btnThem.addActionListener(e -> themNhanVien());
-        btnSua.addActionListener(e -> suaNhanVien());
-        btnXoa.addActionListener(e -> xoaNhanVien());
-        btnClear.addActionListener(e -> clearForm());
+        // Sắp xếp layout
+        JPanel topPanel = new JPanel(new GridLayout(2, 1, 10, 10));
+        topPanel.add(searchPanel);
+        topPanel.add(infoPanel);
 
-        add(scrollPane, BorderLayout.CENTER);
         JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.add(formPanel, BorderLayout.CENTER);
-        bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
+        bottomPanel.add(buttonPanel, BorderLayout.CENTER);
+
+        add(topPanel, BorderLayout.NORTH);
+        add(scrollPane, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
+
+        // Khởi tạo controller
+        new NhanVienController(this);
     }
 
-    private void loadDataToTable() {
-        tableModel.setRowCount(0);
-        List<NhanVien> nhanVienList = controller.findAll();
-        for (NhanVien nv : nhanVienList) {
-            tableModel.addRow(new Object[]{
-                    nv.getMaNguoiDung(),
-                    nv.getHoTen(),
-                    nv.getSoDienThoai(),
-                    nv.getEmail(),
-                    nv.getChucVu(),
-                    formatCurrency(nv.getLuong()),
-                    nv.getVaiTro().getValue()
-            });
-        }
-    }
-
-    private String formatCurrency(BigDecimal amount) {
-        return String.format("%,.0f VND", amount);
-    }
-
-    private void selectRowToForm() {
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow >= 0) {
-            txtMaND.setText(tableModel.getValueAt(selectedRow, 0).toString());
-            txtHoTen.setText(tableModel.getValueAt(selectedRow, 1).toString());
-            txtSDT.setText(tableModel.getValueAt(selectedRow, 2).toString());
-            txtEmail.setText(tableModel.getValueAt(selectedRow, 3).toString());
-            txtChucVu.setText(tableModel.getValueAt(selectedRow, 4).toString());
-            txtLuong.setText(tableModel.getValueAt(selectedRow, 5).toString().replace(" VND", "").replace(",", ""));
-            vaiTroCombo.setSelectedItem(tableModel.getValueAt(selectedRow, 6).toString());
-        }
-    }
-
-    private void themNhanVien() {
-        String hoTen = txtHoTen.getText();
-        String sdt = txtSDT.getText();
-        String email = txtEmail.getText();
-        String chucVu = txtChucVu.getText();
-        BigDecimal luong = new BigDecimal(txtLuong.getText());
-        VaiTro vaiTro = VaiTro.fromString(vaiTroCombo.getSelectedItem().toString());
-
-        if (!ValidationUtils.isValidString(hoTen))
-            throw new IllegalArgumentException("Tên nhân viên không được để trống");
-        if (!ValidationUtils.isValidEmail(email))
-            throw new IllegalArgumentException("Email không hợp lệ");
-        if (!ValidationUtils.isValidPhoneNumber(sdt))
-            throw new IllegalArgumentException("Số điện thoại không hợp lệ (phải có 10 chữ số, bắt đầu từ 0)");
-        if (!ValidationUtils.isPositiveBigDecimal(luong))
-            throw new IllegalArgumentException("Lương phải là số dương!");
-
-        NhanVien nhanVien = new NhanVien(0, hoTen, sdt, email, LoaiNguoiDung.NHANVIEN, chucVu, luong, vaiTro);
-        controller.save(nhanVien);
-
-        JOptionPane.showMessageDialog(this, "Thêm nhân viên thành công!");
-        loadDataToTable();
-        clearForm();
-    }
-
-    private void suaNhanVien() {
-        if (txtMaND.getText().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên cần sửa!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        int maND = Integer.parseInt(txtMaND.getText());
-        String hoTen = txtHoTen.getText();
-        String sdt = txtSDT.getText();
-        String email = txtEmail.getText();
-        String chucVu = txtChucVu.getText();
-        BigDecimal luong = new BigDecimal(txtLuong.getText());
-        VaiTro vaiTro = VaiTro.fromString(vaiTroCombo.getSelectedItem().toString());
-
-        if (!ValidationUtils.isValidString(hoTen))
-            throw new IllegalArgumentException("Tên nhân viên không được để trống");
-        if (!ValidationUtils.isValidEmail(email))
-            throw new IllegalArgumentException("Email không hợp lệ");
-        if (!ValidationUtils.isValidPhoneNumber(sdt))
-            throw new IllegalArgumentException("Số điện thoại không hợp lệ (phải có 10 chữ số, bắt đầu từ 0)");
-        if (!ValidationUtils.isPositiveBigDecimal(luong))
-            throw new IllegalArgumentException("Lương phải là số dương!");
-
-        NhanVien nhanVien = new NhanVien(maND, hoTen, sdt, email, LoaiNguoiDung.NHANVIEN, chucVu, luong, vaiTro);
-        controller.update(nhanVien);
-
-        JOptionPane.showMessageDialog(this, "Cập nhật nhân viên thành công!");
-        loadDataToTable();
-    }
-
-    private void xoaNhanVien() {
-        if (txtMaND.getText().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên cần xóa!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        int maND = Integer.parseInt(txtMaND.getText());
-        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa nhân viên này?",
-                "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            controller.delete(maND);
-            JOptionPane.showMessageDialog(this, "Xóa nhân viên thành công!");
-            loadDataToTable();
-            clearForm();
-        }
-    }
-
-    private void searchNhanVien() {
-        String tenNhanVien = tenNhanVienField.getText();
-        if (!ValidationUtils.isValidString(tenNhanVien)) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập tên nhân viên!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        List<NhanVien> nhanVienList = controller.searchNhanVienByTen(tenNhanVien);
-        tableModel.setRowCount(0);
-        for (NhanVien nv : nhanVienList) {
-            tableModel.addRow(new Object[]{
-                    nv.getMaNguoiDung(),
-                    nv.getHoTen(),
-                    nv.getSoDienThoai(),
-                    nv.getEmail(),
-                    nv.getChucVu(),
-                    formatCurrency(nv.getLuong()),
-                    nv.getVaiTro().getValue()
-            });
-        }
-    }
-
-    private void clearForm() {
-        txtMaND.setText("");
-        txtHoTen.setText("");
-        txtSDT.setText("");
-        txtEmail.setText("");
-        txtChucVu.setText("");
-        txtLuong.setText("");
-        vaiTroCombo.setSelectedIndex(0);
-        table.clearSelection();
-    }
+    // Getter cho controller truy cập
+    public DatabaseConnection getDatabaseConnection() { return databaseConnection; }
+    public JTextField getTxtSearchMaND() { return txtSearchMaND; }
+    public JTextField getTxtSearchHoTen() { return txtSearchHoTen; }
+    public JTextField getTxtSearchChucVu() { return txtSearchChucVu; }
+    public JTextField getTxtMaND() { return txtMaND; }
+    public JTextField getTxtHoTen() { return txtHoTen; }
+    public JTextField getTxtSDT() { return txtSDT; }
+    public JTextField getTxtEmail() { return txtEmail; }
+    public JTextField getTxtChucVu() { return txtChucVu; }
+    public JTextField getTxtLuong() { return txtLuong; }
+    public JComboBox<String> getVaiTroCombo() { return vaiTroCombo; }
+    public JTable getTable() { return table; }
+    public DefaultTableModel getTableModel() { return tableModel; }
+    public JButton getBtnThem() { return btnThem; }
+    public JButton getBtnSua() { return btnSua; }
+    public JButton getBtnXoa() { return btnXoa; }
+    public JButton getBtnClear() { return btnClear; }
 }

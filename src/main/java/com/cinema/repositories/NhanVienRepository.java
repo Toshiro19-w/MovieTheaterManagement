@@ -40,13 +40,7 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
     }
 
     @Override
-    public NhanVien findById(int id) throws SQLException {
-        return null;
-    }
-
-    @Override
     public NhanVien save(NhanVien entity) throws SQLException {
-        // Thêm vào bảng NguoiDung trước
         String sqlNguoiDung = "INSERT INTO NguoiDung (hoTen, soDienThoai, email, loaiNguoiDung) VALUES (?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sqlNguoiDung, PreparedStatement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, entity.getHoTen());
@@ -60,7 +54,6 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
             }
         }
 
-        // Thêm vào bảng NhanVien
         String sqlNhanVien = "INSERT INTO NhanVien (maNguoiDung, chucVu, luong, vaiTro) VALUES (?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sqlNhanVien)) {
             stmt.setInt(1, entity.getMaNguoiDung());
@@ -75,7 +68,6 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
 
     @Override
     public NhanVien update(NhanVien entity) throws SQLException {
-        // Cập nhật bảng NguoiDung
         String sqlNguoiDung = "UPDATE NguoiDung SET hoTen = ?, soDienThoai = ?, email = ? WHERE maNguoiDung = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sqlNguoiDung)) {
             stmt.setString(1, entity.getHoTen());
@@ -85,7 +77,6 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
             stmt.executeUpdate();
         }
 
-        // Cập nhật bảng NhanVien
         String sqlNhanVien = "UPDATE NhanVien SET chucVu = ?, luong = ?, vaiTro = ? WHERE maNguoiDung = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sqlNhanVien)) {
             stmt.setString(1, entity.getChucVu());
@@ -98,6 +89,7 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
         return entity;
     }
 
+    @Override
     public void delete(int maNguoiDung) throws SQLException {
         String sql = "DELETE FROM NguoiDung WHERE maNguoiDung = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -106,15 +98,34 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
         }
     }
 
-    public List<NhanVien> findByTen(String hoTen) throws SQLException {
+    public List<NhanVien> searchNhanVien(Integer maNguoiDung, String hoTen, String chucVu) throws SQLException {
         List<NhanVien> nhanVienList = new ArrayList<>();
-        String sql = "SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email, nd.loaiNguoiDung,  \n" +
-                "nv.chucVu, nv.luong, nv.vaiTro \n" +
-                "FROM NguoiDung nd  \n" +
-                "JOIN NhanVien nv ON nd.maNguoiDung = nv.maNguoiDung\n" +
-                "WHERE nd.loaiNguoiDung = 'NhanVien' AND nd.hoTen LIKE ?;";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, "%" + hoTen + "%");
+        StringBuilder sql = new StringBuilder(
+                "SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email, nd.loaiNguoiDung, " +
+                        "nv.chucVu, nv.luong, nv.vaiTro " +
+                        "FROM NguoiDung nd " +
+                        "JOIN NhanVien nv ON nd.maNguoiDung = nv.maNguoiDung " +
+                        "WHERE nd.loaiNguoiDung = 'NhanVien'"
+        );
+
+        List<Object> params = new ArrayList<>();
+        if (maNguoiDung != null && maNguoiDung > 0) {
+            sql.append(" AND nd.maNguoiDung = ?");
+            params.add(maNguoiDung);
+        }
+        if (hoTen != null && !hoTen.trim().isEmpty()) {
+            sql.append(" AND nd.hoTen LIKE ?");
+            params.add("%" + hoTen.trim() + "%");
+        }
+        if (chucVu != null && !chucVu.trim().isEmpty()) {
+            sql.append(" AND nv.chucVu LIKE ?");
+            params.add("%" + chucVu.trim() + "%");
+        }
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                stmt.setObject(i + 1, params.get(i));
+            }
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 nhanVienList.add(new NhanVien(

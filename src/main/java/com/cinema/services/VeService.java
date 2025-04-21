@@ -23,10 +23,6 @@ public class VeService{
         return veRepository.findAllDetail();
     }
 
-    public Ve getVeById(int maVe) throws SQLException {
-        return veRepository.findById(maVe);
-    }
-
     public List<Ve> findByHoaDon(Integer maHoaDon) throws SQLException {
         return veRepository.findByHoaDon(maHoaDon);
     }

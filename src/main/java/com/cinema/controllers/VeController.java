@@ -32,15 +32,6 @@ public class VeController {
         }
     }
 
-    public Ve findVeById(int maVe) {
-        try {
-            return veService.getVeById(maVe);
-        } catch (SQLException e) {
-            System.err.println("Lỗi khi tìm vé: " + e.getMessage());
-            return null;
-        }
-    }
-
     public List<Ve> searchVeBySoGhe(String soGhe){
         try {
             return veService.findBySoGhe(soGhe);

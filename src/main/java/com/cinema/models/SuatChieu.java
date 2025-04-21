@@ -15,15 +15,7 @@ public class SuatChieu {
     private int thoiLuongPhim;
     private String dinhDangPhim;
 
-    public SuatChieu(int maSuatChieu, String tenPhim, String tenPhong, LocalDateTime ngayGioChieu, int thoiLuongPhim, String dinhDangPhim) {
-        this.maSuatChieu = maSuatChieu;
-        this.tenPhim = tenPhim;
-        this.tenPhong = tenPhong;
-        this.ngayGioChieu = ngayGioChieu;
-        this.thoiLuongPhim = thoiLuongPhim;
-        this.dinhDangPhim = dinhDangPhim;
-    }
-
+    // Constructor cho dữ liệu cơ bản
     public SuatChieu(int maSuatChieu, int maPhim, int maPhong, LocalDateTime ngayGioChieu) {
         this.maSuatChieu = maSuatChieu;
         this.maPhim = maPhim;
@@ -31,19 +23,23 @@ public class SuatChieu {
         this.ngayGioChieu = ngayGioChieu;
     }
 
-    public SuatChieu(int maSuatChieu, String tenPhim, int thoiLuongPhim, String dinhDangPhim,
-                     String tenPhong, int maPhong, LocalDateTime ngayGioChieu) {
+    // Constructor cho dữ liệu chi tiết (từ JOIN)
+    public SuatChieu(int maSuatChieu, int maPhim, String tenPhim, int maPhong, String tenPhong,
+                     LocalDateTime ngayGioChieu, int thoiLuongPhim, String dinhDangPhim) {
         this.maSuatChieu = maSuatChieu;
+        this.maPhim = maPhim;
         this.tenPhim = tenPhim != null ? tenPhim : "Unknown Film";
+        this.maPhong = maPhong;
+        this.tenPhong = tenPhong != null ? tenPhong : "Unknown Room";
+        this.ngayGioChieu = ngayGioChieu;
         this.thoiLuongPhim = thoiLuongPhim;
         this.dinhDangPhim = dinhDangPhim != null ? dinhDangPhim : "Unknown Format";
-        this.tenPhong = tenPhong != null ? tenPhong : "Unknown Room";
-        this.maPhong = maPhong;
-        this.ngayGioChieu = ngayGioChieu;
     }
 
+    // Constructor mặc định
     public SuatChieu() {}
 
+    // Getters và Setters
     public int getMaSuatChieu() {
         return maSuatChieu;
     }
@@ -111,7 +107,9 @@ public class SuatChieu {
     @Override
     public String toString() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        return tenPhim + " - " + tenPhong + " - " +
-                (ngayGioChieu != null ? ngayGioChieu.format(formatter) : "N/A");
+        return String.format("%s - Phòng %s - %s",
+                tenPhim != null ? tenPhim : "N/A",
+                tenPhong != null ? tenPhong : "N/A",
+                ngayGioChieu != null ? ngayGioChieu.format(formatter) : "N/A");
     }
 }
