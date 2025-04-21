@@ -47,6 +47,9 @@ public class LoginView extends JFrame {
         setMinimumSize(new Dimension(950, 533));
         setLocationRelativeTo(null);
         setResizable(true);
+        
+        ImageIcon icon = new ImageIcon(getClass().getResource("/img/133864911312596807.jpg"));
+        setIconImage(icon.getImage());
 
         // Panel nền với gradient
         JPanel backgroundPanel = getBackgroundPanel();
@@ -263,17 +266,18 @@ public class LoginView extends JFrame {
     }
     // Hàm mã hóa mật khẩu (sử dụng MD5)
     private String hashPassword(String password) {
-        try {
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-            byte[] hash = md.digest(password.getBytes());
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                hexString.append(Integer.toHexString(0xFF & b));
-            }
-            return hexString.toString(); // Trả về mật khẩu đã mã hóa MD5
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return null;
+//        try {
+//            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+//            byte[] hash = md.digest(password.getBytes());
+//            StringBuilder hexString = new StringBuilder();
+//            for (byte b : hash) {
+//                hexString.append(Integer.toHexString(0xFF & b));
+//            }
+//            return hexString.toString(); // Trả về mật khẩu đã mã hóa MD5
+//        } catch (Exception ex) {
+//            ex.printStackTrace();
+//        }
+//        return null;
+    	return password;
     }
 }
