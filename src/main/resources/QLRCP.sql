@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS Phim (
     dinhDang NVARCHAR(20) NOT NULL,
     moTa TEXT,
     daoDien NVARCHAR(100) NOT NULL,
+    duongDanPoster TEXT,
     FOREIGN KEY (maTheLoai) REFERENCES TheLoaiPhim(maTheLoai) ON DELETE CASCADE
 );
 
@@ -189,6 +190,17 @@ INSERT INTO TheLoaiPhim (tenTheLoai) VALUES
 ('Tài liệu'),
 ('Cổ trang');
 
+UPDATE Phim SET duongDanPoster = 'FastAndFurious.jpg' WHERE maPhim = 1;
+UPDATE Phim SET duongDanPoster = 'Titanic.jpg' WHERE maPhim = 2;
+UPDATE Phim SET duongDanPoster = 'TheConjuring.jpg' WHERE maPhim = 3;
+UPDATE Phim SET duongDanPoster = 'HomeAlone.jpg' WHERE maPhim = 4;
+UPDATE Phim SET duongDanPoster = 'Interstellar.jpg' WHERE maPhim = 5;
+UPDATE Phim SET duongDanPoster = 'Coco.jpg' WHERE maPhim = 6;
+UPDATE Phim SET duongDanPoster = 'Joker.jpg' WHERE maPhim = 7;
+UPDATE Phim SET duongDanPoster = 'Avatar.jpg' WHERE maPhim = 8;
+UPDATE Phim SET duongDanPoster = 'PlanetEarth.jpg' WHERE maPhim = 9;
+UPDATE Phim SET duongDanPoster = 'TamQuocDienNghia.jpg' WHERE maPhim = 10;
+
 -- Dữ liệu cho bảng Phim
 INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien) VALUES
 ('Fast & Furious 9', 1, 143, '2021-06-25', 'Mỹ', '2D', 'Phim hành động tốc độ cao', 'Justin Lin'),
@@ -243,7 +255,7 @@ INSERT INTO SuatChieu (maPhim, maPhong, ngayGioChieu) VALUES
 (2, 2, '2025-04-06 16:00:00'),
 (3, 3, '2025-04-06 20:00:00'),
 (4, 4, '2025-04-07 10:00:00'),
-(5, 5, '2025-04-07 15:00:00');
+(5, 5, '2025-04-07 15:00:00'),
 (6, 1, '2025-04-07 17:00:00'), -- Coco
 (7, 2, '2025-04-07 19:00:00'), -- Joker
 (8, 3, '2025-04-07 21:00:00'), -- Avatar
