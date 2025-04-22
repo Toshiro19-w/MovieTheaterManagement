@@ -1,6 +1,6 @@
 package com.cinema.services;
 
-import com.cinema.repositories.TaiKhoanRepository;
+import com.cinema.models.repositories.TaiKhoanRepository;
 import com.cinema.utils.DatabaseConnection;
 
 public class TaiKhoanService {

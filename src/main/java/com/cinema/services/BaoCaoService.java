@@ -1,7 +1,7 @@
 package com.cinema.services;
 
 import com.cinema.models.BaoCao;
-import com.cinema.repositories.BaoCaoRepository;
+import com.cinema.models.repositories.BaoCaoRepository;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.SQLException;

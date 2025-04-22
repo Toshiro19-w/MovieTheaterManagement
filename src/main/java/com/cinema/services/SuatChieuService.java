@@ -1,7 +1,7 @@
 package com.cinema.services;
 
 import com.cinema.models.SuatChieu;
-import com.cinema.repositories.SuatChieuRepository;
+import com.cinema.models.repositories.SuatChieuRepository;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.SQLException;

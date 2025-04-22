@@ -1,7 +1,7 @@
-package com.cinema.repositories;
+package com.cinema.models.repositories;
 
 import com.cinema.models.Ghe;
-import com.cinema.repositories.Interface.IGheRepository;
+import com.cinema.models.repositories.Interface.IGheRepository;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.Connection;

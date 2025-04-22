@@ -1,7 +1,7 @@
 package com.cinema.services;
 
 import com.cinema.models.Phim;
-import com.cinema.repositories.PhimRepository;
+import com.cinema.models.repositories.PhimRepository;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.Connection;

@@ -1,4 +1,4 @@
-package com.cinema.repositories;
+package com.cinema.models.repositories;
 
 import com.cinema.models.TrangThaiVe;
 import com.cinema.models.Ve;

@@ -1,13 +1,11 @@
-package com.cinema.repositories;
+package com.cinema.models.repositories;
 
 import com.cinema.models.HoaDon;
 import com.cinema.models.ChiTietHoaDon;
-import com.cinema.repositories.Interface.IHoaDonRepository;
+import com.cinema.models.repositories.Interface.IHoaDonRepository;
 import com.cinema.utils.DatabaseConnection;
 
-import java.math.BigDecimal;
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
