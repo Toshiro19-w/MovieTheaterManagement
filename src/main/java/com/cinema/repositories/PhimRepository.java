@@ -33,6 +33,7 @@ public class PhimRepository extends BaseRepository<Phim> {
                 phim.setDinhDang(rs.getString("dinhDang"));
                 phim.setMoTa(rs.getString("moTa"));
                 phim.setDaoDien(rs.getString("daoDien"));
+                phim.setDuongDanPoster(rs.getString("duongDanPoster"));
 
                 list.add(phim);
             }
@@ -43,7 +44,7 @@ public class PhimRepository extends BaseRepository<Phim> {
     public List<Phim> findAllDetail() throws SQLException {
         List<Phim> list = new ArrayList<>();
         String sql = "SELECT p.maPhim, p.tenPhim, p.maTheLoai, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu, " +
-                "p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien, COUNT(sc.maSuatChieu) AS soSuatChieu " +
+                "p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien, p.duongDanPoster, COUNT(sc.maSuatChieu) AS soSuatChieu " +
                 "FROM Phim p " +
                 "JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai " +
                 "LEFT JOIN SuatChieu sc ON p.maPhim = sc.maPhim " +
@@ -65,6 +66,7 @@ public class PhimRepository extends BaseRepository<Phim> {
                 phim.setDinhDang(rs.getString("dinhDang"));
                 phim.setMoTa(rs.getString("moTa"));
                 phim.setDaoDien(rs.getString("daoDien"));
+                phim.setDuongDanPoster(rs.getString("duongDanPoster"));
 
                 list.add(phim);
             }
@@ -76,7 +78,7 @@ public class PhimRepository extends BaseRepository<Phim> {
         List<Phim> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
                 "SELECT p.maPhim, p.tenPhim, p.maTheLoai, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu, " +
-                        "p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien, COUNT(sc.maSuatChieu) AS soSuatChieu " +
+                        "p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien, p.duongDanPoster, COUNT(sc.maSuatChieu) AS soSuatChieu " +
                         "FROM Phim p " +
                         "JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai " +
                         "LEFT JOIN SuatChieu sc ON p.maPhim = sc.maPhim " +
@@ -102,7 +104,7 @@ public class PhimRepository extends BaseRepository<Phim> {
         }
 
         sql.append(" GROUP BY p.maPhim, p.tenPhim, p.maTheLoai, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu, " +
-                "p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien " +
+                "p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien, p.duongDanPoster " +
                 "ORDER BY p.ngayKhoiChieu DESC, p.tenPhim");
 
         try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
@@ -124,6 +126,7 @@ public class PhimRepository extends BaseRepository<Phim> {
                 phim.setDinhDang(rs.getString("dinhDang"));
                 phim.setMoTa(rs.getString("moTa"));
                 phim.setDaoDien(rs.getString("daoDien"));
+                phim.setDuongDanPoster(rs.getString("duongDanPoster"));
                 list.add(phim);
             }
         }
@@ -132,7 +135,7 @@ public class PhimRepository extends BaseRepository<Phim> {
 
     @Override
     public Phim save(Phim entity) throws SQLException {
-        String sql = "INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien, duongDanPoster) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, entity.getTenPhim());
             stmt.setInt(2, entity.getMaTheLoai());
@@ -142,6 +145,7 @@ public class PhimRepository extends BaseRepository<Phim> {
             stmt.setString(6, entity.getDinhDang());
             stmt.setString(7, entity.getMoTa());
             stmt.setString(8, entity.getDaoDien());
+            stmt.setString(9, entity.getDuongDanPoster());
             stmt.executeUpdate();
             ResultSet rs = stmt.getGeneratedKeys();
             if (rs.next()) {
@@ -153,7 +157,7 @@ public class PhimRepository extends BaseRepository<Phim> {
 
     @Override
     public Phim update(Phim entity) throws SQLException {
-        String sql = "UPDATE Phim SET tenPhim=?, maTheLoai=?, thoiLuong=?, ngayKhoiChieu=?, nuocSanXuat=?, dinhDang=?, moTa=?, daoDien=? WHERE maPhim=?";
+        String sql = "UPDATE Phim SET tenPhim=?, maTheLoai=?, thoiLuong=?, ngayKhoiChieu=?, nuocSanXuat=?, dinhDang=?, moTa=?, daoDien=?, duongDanPoster=? WHERE maPhim=?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, entity.getTenPhim());
             stmt.setInt(2, entity.getMaTheLoai());
@@ -163,7 +167,8 @@ public class PhimRepository extends BaseRepository<Phim> {
             stmt.setString(6, entity.getDinhDang());
             stmt.setString(7, entity.getMoTa());
             stmt.setString(8, entity.getDaoDien());
-            stmt.setInt(9, entity.getMaPhim());
+            stmt.setString(9, entity.getDuongDanPoster());
+            stmt.setInt(10, entity.getMaPhim());
             stmt.executeUpdate();
         }
         return entity;

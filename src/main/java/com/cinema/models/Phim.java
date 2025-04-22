@@ -12,17 +12,19 @@ public class Phim {
     private String dinhDang;
     private String moTa;
     private String daoDien;
+    private String duongDanPoster;
 
-    public Phim(int maPhim, String tenPhim, int maTheLoai, int thoiLuong, LocalDate ngayKhoiChieu, String nuocSanXuat, String dinhDang, String moTa, String daoDien) {
+    public Phim(int maPhim, String tenPhim, String tenTheLoai, int thoiLuong, LocalDate ngayKhoiChieu, String nuocSanXuat, String dinhDang, String moTa, String daoDien, String duongDanPoster) {
         this.maPhim = maPhim;
         this.tenPhim = tenPhim;
-        this.maTheLoai = maTheLoai;
+        this.tenTheLoai = tenTheLoai;
         this.thoiLuong = thoiLuong;
         this.ngayKhoiChieu = ngayKhoiChieu;
         this.nuocSanXuat = nuocSanXuat;
         this.dinhDang = dinhDang;
         this.moTa = moTa;
         this.daoDien = daoDien;
+        this.duongDanPoster = duongDanPoster;
     }
 
     public Phim() {}
@@ -40,6 +42,14 @@ public class Phim {
         this.dinhDang = dinhDang;
         this.moTa = moTa;
         this.daoDien = daoDien;
+    }
+
+    public String getDuongDanPoster() {
+        return duongDanPoster;
+    }
+
+    public void setDuongDanPoster(String duongDanPoster) {
+        this.duongDanPoster = duongDanPoster;
     }
 
     public int getMaPhim() {
