@@ -6,10 +6,13 @@ import com.cinema.views.PhimView;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Objects;
 
 public class PhimController {
     private final PhimView view;
@@ -23,6 +26,15 @@ public class PhimController {
         addListeners();
     }
 
+    private void initView() {
+        try {
+            loadPhimList(service.getAllPhimDetail());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(view, "Lỗi khi tải dữ liệu phim!");
+        }
+    }
+
     public List<Phim> getAllPhimDetail() {
         try {
             return service.getAllPhimDetail();
@@ -33,20 +45,12 @@ public class PhimController {
         }
     }
 
-    private void initView() {
-        try {
-            loadPhimList(service.getAllPhimDetail());
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(view, "Lỗi khi tải danh sách phim!");
-        }
-    }
-
     private void addListeners() {
-        // Tìm kiếm
         view.getTxtSearchTenPhim().addActionListener(e -> searchPhim());
+        view.getTxtSearchTenTheLoai().addActionListener(e -> searchPhim());
+        view.getTxtSearchNuocSanXuat().addActionListener(e -> searchPhim());
+        view.getTxtSearchDaoDien().addActionListener(e -> searchPhim());
 
-        // Chọn phim
         view.getTable().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = view.getTable().getSelectedRow();
@@ -56,41 +60,36 @@ public class PhimController {
             }
         });
 
-        // Nút thêm
-        view.getBtnThem().addActionListener(_ -> themPhim());
-
-        // Nút sửa
-        view.getBtnSua().addActionListener(_ -> suaPhim());
-
-        // Nút xóa
-        view.getBtnXoa().addActionListener(_ -> xoaPhim());
-
-        // Nút clear
-        view.getBtnClear().addActionListener(_ -> clearForm());
+        view.getBtnThem().addActionListener(e -> themPhim());
+        view.getBtnSua().addActionListener(e -> suaPhim());
+        view.getBtnXoa().addActionListener(e -> xoaPhim());
+        view.getBtnClear().addActionListener(e -> clearForm());
     }
 
     private void searchPhim() {
         String tenPhim = view.getTxtSearchTenPhim().getText().trim();
         String tenTheLoai = view.getTxtSearchTenTheLoai().getText().trim();
-        String nuocSanXuat = view.getTxtNuocSanXuat().getText().trim();
-        String daoDien = view.getTxtDaoDien().getText().trim();
+        String nuocSanXuat = view.getTxtSearchNuocSanXuat().getText().trim();
+        String daoDien = view.getTxtSearchDaoDien().getText().trim();
+
         try {
-            loadPhimList(service.getPhimByTen(tenPhim, tenTheLoai, nuocSanXuat, daoDien));
+            List<Phim> phimList = service.getPhimByTen(tenPhim, tenTheLoai, nuocSanXuat, daoDien);
+            loadPhimList(phimList);
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(view, "Lỗi khi tìm kiếm phim!");
         }
     }
 
-    private void loadPhimList(List<Phim> phims) {
+    private void loadPhimList(List<Phim> phimList) {
         DefaultTableModel model = view.getTableModel();
         model.setRowCount(0);
-        for (Phim phim : phims) {
+        for (Phim phim : phimList) {
             model.addRow(new Object[]{
                     phim.getMaPhim(),
                     phim.getTenPhim(),
                     phim.getTenTheLoai(),
-                    phim.getThoiLuong() + " phút",
+                    phim.getThoiLuong(),
                     phim.getNgayKhoiChieu() != null ? phim.getNgayKhoiChieu().format(formatter) : "",
                     phim.getNuocSanXuat(),
                     phim.getDinhDang(),
@@ -102,33 +101,71 @@ public class PhimController {
 
     private void displayPhimInfo(int row) {
         DefaultTableModel model = view.getTableModel();
-        view.getTxtMaPhim().setText(model.getValueAt(row, 0).toString());
-        view.getTxtTenPhim().setText(model.getValueAt(row, 1).toString());
-        view.getTxtTenTheLoai().setText(model.getValueAt(row, 2).toString());
-        view.getTxtThoiLuong().setText(model.getValueAt(row, 3).toString().replace(" phút", ""));
-        view.getTxtNgayKhoiChieu().setText(model.getValueAt(row, 4).toString());
-        view.getTxtNuocSanXuat().setText(model.getValueAt(row, 5).toString());
-        view.getTxtDinhDang().setText(model.getValueAt(row, 6).toString());
-        view.getTxtMoTa().setText(model.getValueAt(row, 7).toString());
-        view.getTxtDaoDien().setText(model.getValueAt(row, 8).toString());
+        String maPhim = model.getValueAt(row, 0).toString();
+        String tenPhim = model.getValueAt(row, 1).toString();
+        String theLoai = model.getValueAt(row, 2).toString();
+        String thoiLuong = model.getValueAt(row, 3).toString();
+        String ngayKhoiChieu = model.getValueAt(row, 4).toString();
+        String nuocSanXuat = model.getValueAt(row, 5).toString();
+        String dinhDang = model.getValueAt(row, 6).toString();
+        String moTa = model.getValueAt(row, 7).toString();
+        String daoDien = model.getValueAt(row, 8).toString();
+
+        view.getTxtMaPhim().setText(maPhim);
+        view.getTxtTenPhim().setText(tenPhim);
+        view.getTxtTenTheLoai().setText(theLoai);
+        view.getTxtThoiLuong().setText(thoiLuong);
+        view.getTxtNgayKhoiChieu().setText(ngayKhoiChieu);
+        view.getTxtNuocSanXuat().setText(nuocSanXuat);
+        view.getTxtDinhDang().setText(dinhDang);
+        view.getTxtMoTa().setText(moTa);
+        view.getTxtDaoDien().setText(daoDien);
+
+        // Tìm phim để lấy posterPath
+        try {
+            List<Phim> phimList = service.getAllPhimDetail();
+            Phim selectedPhim = null;
+            for (Phim phim : phimList) {
+                if (phim.getMaPhim() == Integer.parseInt(maPhim)) {
+                    selectedPhim = phim;
+                    break;
+                }
+            }
+
+            // Hiển thị ảnh
+            if (selectedPhim != null && selectedPhim.getDuongDanPoster() != null && !selectedPhim.getDuongDanPoster().isEmpty()) {
+                try {
+                    ImageIcon posterIcon = new ImageIcon(Objects.requireNonNull(getClass().getClassLoader().getResource("images/posters/" + selectedPhim.getDuongDanPoster())));
+                    Image scaledImage = posterIcon.getImage().getScaledInstance(150, 200, Image.SCALE_SMOOTH);
+                    view.getPosterLabel().setIcon(new ImageIcon(scaledImage));
+                    view.getPosterLabel().setText("");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    view.getPosterLabel().setIcon(null);
+                    view.getPosterLabel().setText("Không tìm thấy ảnh");
+                }
+            } else {
+                view.getPosterLabel().setIcon(null);
+                view.getPosterLabel().setText("Không có ảnh");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(view, "Lỗi khi tải thông tin phim!");
+        }
     }
 
     private void themPhim() {
         try {
             Phim phim = createPhimFromForm();
-            Phim result = service.addPhim(phim);
-            if (result != null) {
-                JOptionPane.showMessageDialog(view, "Thêm phim thành công!");
-                loadPhimList(service.getAllPhimDetail());
-                clearForm();
-            } else {
-                JOptionPane.showMessageDialog(view, "Thêm phim thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
+            service.addPhim(phim);
+            JOptionPane.showMessageDialog(view, "Thêm phim thành công!");
+            loadPhimList(service.getAllPhimDetail());
+            clearForm();
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(view, "Lỗi khi thêm phim: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(view, "Thời lượng phải là số!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        } catch (DateTimeParseException e) {
+            JOptionPane.showMessageDialog(view, "Ngày khởi chiếu không đúng định dạng (dd/MM/yyyy)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         } catch (IllegalArgumentException e) {
             JOptionPane.showMessageDialog(view, e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -142,19 +179,17 @@ public class PhimController {
             }
             Phim phim = createPhimFromForm();
             phim.setMaPhim(Integer.parseInt(view.getTxtMaPhim().getText()));
-            Phim result = service.updatePhim(phim);
-            if (result != null) {
-                JOptionPane.showMessageDialog(view, "Cập nhật phim thành công!");
-                loadPhimList(service.getAllPhimDetail());
-                clearForm();
-            } else {
-                JOptionPane.showMessageDialog(view, "Cập nhật phim thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
+            service.updatePhim(phim);
+            JOptionPane.showMessageDialog(view, "Cập nhật phim thành công!");
+            loadPhimList(service.getAllPhimDetail());
+            clearForm();
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(view, "Lỗi khi cập nhật phim: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(view, "Thời lượng phải là số!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(view, "Mã phim không hợp lệ!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        } catch (DateTimeParseException e) {
+            JOptionPane.showMessageDialog(view, "Ngày khởi chiếu không đúng định dạng (dd/MM/yyyy)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         } catch (IllegalArgumentException e) {
             JOptionPane.showMessageDialog(view, e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -169,14 +204,10 @@ public class PhimController {
         int confirm = JOptionPane.showConfirmDialog(view, "Bạn có chắc chắn muốn xóa phim này?", "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-                boolean result = service.deletePhim(maPhim);
-                if (result) {
-                    JOptionPane.showMessageDialog(view, "Xóa phim thành công!");
-                    loadPhimList(service.getAllPhimDetail());
-                    clearForm();
-                } else {
-                    JOptionPane.showMessageDialog(view, "Xóa phim thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                }
+                service.deletePhim(maPhim);
+                JOptionPane.showMessageDialog(view, "Xóa phim thành công!");
+                loadPhimList(service.getAllPhimDetail());
+                clearForm();
             } catch (SQLException e) {
                 e.printStackTrace();
                 JOptionPane.showMessageDialog(view, "Lỗi khi xóa phim: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -194,6 +225,9 @@ public class PhimController {
         view.getTxtDinhDang().setText("");
         view.getTxtMoTa().setText("");
         view.getTxtDaoDien().setText("");
+        view.getPosterLabel().setIcon(null);
+        view.getPosterLabel().setText("");
+        view.clearSelectedPosterPath();
         view.getTable().clearSelection();
     }
 
@@ -206,19 +240,27 @@ public class PhimController {
         String dinhDang = view.getTxtDinhDang().getText().trim();
         String moTa = view.getTxtMoTa().getText().trim();
         String daoDien = view.getTxtDaoDien().getText().trim();
+        String posterPath = view.getSelectedPosterPath();
 
-        if (tenPhim.isEmpty()) {
-            throw new IllegalArgumentException("Tên phim không được để trống!");
+        if (tenPhim.isEmpty() || tenTheLoai.isEmpty() || thoiLuongStr.isEmpty() || ngayKhoiChieuStr.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng nhập đầy đủ thông tin bắt buộc!");
         }
-        if (tenTheLoai.isEmpty()) {
-            throw new IllegalArgumentException("Thể loại không được để trống!");
-        }
-        int thoiLuong = Integer.parseInt(thoiLuongStr);
-        if (thoiLuong <= 0) {
-            throw new IllegalArgumentException("Thời lượng phải là số dương!");
-        }
-        LocalDate ngayKhoiChieu = ngayKhoiChieuStr.isEmpty() ? null : LocalDate.parse(ngayKhoiChieuStr, formatter);
 
-        return new Phim(0, tenPhim, 0, tenTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien, 0);
+        int thoiLuong;
+        try {
+            thoiLuong = Integer.parseInt(thoiLuongStr);
+            if (thoiLuong <= 0) {
+                throw new IllegalArgumentException("Thời lượng phải lớn hơn 0!");
+            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Thời lượng phải là số nguyên!");
+        }
+
+        LocalDate ngayKhoiChieu = LocalDate.parse(ngayKhoiChieuStr, formatter);
+        if (ngayKhoiChieu.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Ngày khởi chiếu phải sau ngày hiện tại!");
+        }
+
+        return new Phim(0, tenPhim, tenTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien, posterPath);
     }
 }

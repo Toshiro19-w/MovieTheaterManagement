@@ -17,7 +17,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class MainView extends JFrame {
@@ -31,6 +33,7 @@ public class MainView extends JFrame {
     private JPanel phimPanel;
     private final String username;
     private final LoaiTaiKhoan loaiTaiKhoan;
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     public MainView(String username, LoaiTaiKhoan loaiTaiKhoan) throws IOException, SQLException {
         try {
@@ -220,7 +223,15 @@ public class MainView extends JFrame {
 
     private void loadPhimList() {
         phimPanel.removeAll();
-        List<Phim> phimList = phimController.getAllPhimDetail();
+        List<Phim> phimList;
+        try {
+            phimList = phimController.getAllPhimDetail();
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Lỗi khi tải danh sách phim!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -241,7 +252,14 @@ public class MainView extends JFrame {
 
     private void applyFilters() {
         phimPanel.removeAll();
-        List<Phim> phimList = phimController.getAllPhimDetail();
+        List<Phim> phimList;
+        try {
+            phimList = phimController.getAllPhimDetail();
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Lỗi khi tải danh sách phim!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
         String selectedTheLoai = (String) theLoaiCombo.getSelectedItem();
         if (!"Tất cả".equals(selectedTheLoai)) {
@@ -255,7 +273,7 @@ public class MainView extends JFrame {
             try {
                 LocalDate ngayChieu = LocalDate.parse(ngayChieuText);
                 phimList = phimList.stream()
-                        .filter(phim -> phim.getNgayKhoiChieu().equals(ngayChieu))
+                        .filter(phim -> phim.getNgayKhoiChieu() != null && phim.getNgayKhoiChieu().equals(ngayChieu))
                         .collect(Collectors.toList());
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(this, "Ngày chiếu không hợp lệ (yyyy-MM-dd)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -290,15 +308,116 @@ public class MainView extends JFrame {
     }
 
     private JPanel createPhimCard(Phim phim) {
-        JPanel phimCard = new JPanel(new BorderLayout());
+        JPanel phimCard = new JPanel(new BorderLayout(5, 5));
         phimCard.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-        JLabel phimLabel = new JLabel("<html><b>" + phim.getTenPhim() + "</b><br>" +
-                phim.getTenTheLoai() + " | " + phim.getThoiLuong() + " phút</html>", SwingConstants.CENTER);
+        phimCard.setPreferredSize(new Dimension(200, 350));
+
+        // Thêm ảnh poster
+        JLabel posterLabel = new JLabel();
+        posterLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        if (phim.getDuongDanPoster() != null && !phim.getDuongDanPoster().isEmpty()) {
+            try {
+                ImageIcon posterIcon = new ImageIcon(Objects.requireNonNull(getClass().getClassLoader().getResource("images/posters/" + phim.getDuongDanPoster())));
+                Image scaledImage = posterIcon.getImage().getScaledInstance(200, 250, Image.SCALE_SMOOTH);
+                posterLabel.setIcon(new ImageIcon(scaledImage));
+            } catch (Exception e) {
+                e.printStackTrace();
+                posterLabel.setText("Không có ảnh");
+            }
+        } else {
+            posterLabel.setText("Không có ảnh");
+        }
+        phimCard.add(posterLabel, BorderLayout.NORTH);
+
+        // Thông tin phim
+        JLabel phimLabel = new JLabel("<html><center><b>" + phim.getTenPhim() + "</b><br>" +
+                phim.getTenTheLoai() + " | " + phim.getThoiLuong() + " phút</center></html>", SwingConstants.CENTER);
         phimCard.add(phimLabel, BorderLayout.CENTER);
+
+        // Nút đặt vé
         JButton datVeButton = new JButton("Đặt vé");
         datVeButton.addActionListener(_ -> datVe(phim.getMaPhim()));
         phimCard.add(datVeButton, BorderLayout.SOUTH);
+
+        // Thêm sự kiện nhấn chuột để hiển thị chi tiết phim
+        phimCard.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                // Chỉ mở chi tiết phim nếu không nhấn vào nút "Đặt vé"
+                if (e.getSource() == phimCard && !datVeButton.getBounds().contains(e.getPoint())) {
+                    showPhimDetail(phim);
+                }
+            }
+        });
+
         return phimCard;
+    }
+
+    private void showPhimDetail(Phim phim) {
+        JDialog detailDialog = new JDialog(this, "Chi tiết phim: " + phim.getTenPhim(), true);
+        detailDialog.setSize(600, 500);
+        detailDialog.setLayout(new BorderLayout(10, 10));
+        detailDialog.setLocationRelativeTo(this);
+
+        // Panel chứa ảnh poster
+        JLabel detailPosterLabel = new JLabel();
+        detailPosterLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        if (phim.getDuongDanPoster() != null && !phim.getDuongDanPoster().isEmpty()) {
+            try {
+                ImageIcon posterIcon = new ImageIcon(Objects.requireNonNull(getClass().getClassLoader().getResource("images/posters/" + phim.getDuongDanPoster())));
+                Image scaledImage = posterIcon.getImage().getScaledInstance(300, 350, Image.SCALE_SMOOTH);
+                detailPosterLabel.setIcon(new ImageIcon(scaledImage));
+            } catch (Exception e) {
+                e.printStackTrace();
+                detailPosterLabel.setText("Không có ảnh");
+            }
+        } else {
+            detailPosterLabel.setText("Không có ảnh");
+        }
+
+        // Panel chứa thông tin chi tiết
+        JPanel infoPanel = new JPanel(new GridLayout(8, 2, 10, 10));
+        infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        infoPanel.add(new JLabel("Tên phim:"));
+        infoPanel.add(new JLabel(phim.getTenPhim()));
+
+        infoPanel.add(new JLabel("Thể loại:"));
+        infoPanel.add(new JLabel(phim.getTenTheLoai()));
+
+        infoPanel.add(new JLabel("Thời lượng:"));
+        infoPanel.add(new JLabel(phim.getThoiLuong() + " phút"));
+
+        infoPanel.add(new JLabel("Ngày khởi chiếu:"));
+        infoPanel.add(new JLabel(phim.getNgayKhoiChieu() != null ? phim.getNgayKhoiChieu().format(formatter) : "N/A"));
+
+        infoPanel.add(new JLabel("Nước sản xuất:"));
+        infoPanel.add(new JLabel(phim.getNuocSanXuat() != null ? phim.getNuocSanXuat() : "N/A"));
+
+        infoPanel.add(new JLabel("Định dạng:"));
+        infoPanel.add(new JLabel(phim.getDinhDang() != null ? phim.getDinhDang() : "N/A"));
+
+        infoPanel.add(new JLabel("Đạo diễn:"));
+        infoPanel.add(new JLabel(phim.getDaoDien() != null ? phim.getDaoDien() : "N/A"));
+
+        infoPanel.add(new JLabel("Mô tả:"));
+        infoPanel.add(new JLabel(phim.getMoTa() != null ? phim.getMoTa() : "N/A"));
+
+        // Kết hợp ảnh và thông tin
+        JPanel mainDetailPanel = new JPanel(new BorderLayout(10, 10));
+        mainDetailPanel.add(detailPosterLabel, BorderLayout.WEST);
+        mainDetailPanel.add(infoPanel, BorderLayout.CENTER);
+
+        // Nút đặt vé trong cửa sổ chi tiết
+        JButton datVeButton = new JButton("Đặt vé");
+        datVeButton.addActionListener(_ -> {
+            detailDialog.dispose();
+            datVe(phim.getMaPhim());
+        });
+
+        detailDialog.add(mainDetailPanel, BorderLayout.CENTER);
+        detailDialog.add(datVeButton, BorderLayout.SOUTH);
+        detailDialog.setVisible(true);
     }
 
     private void datVe(int maPhim) {
