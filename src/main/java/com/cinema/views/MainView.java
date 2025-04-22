@@ -4,6 +4,7 @@ import com.cinema.controllers.DatVeController;
 import com.cinema.controllers.PhimController;
 import com.cinema.models.*;
 import com.cinema.services.GheService;
+import com.cinema.services.StaticQRPaymentService;
 import com.cinema.services.SuatChieuService;
 import com.cinema.services.VeService;
 import com.cinema.utils.DatabaseConnection;
@@ -13,6 +14,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -20,6 +22,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class MainView extends JFrame {
@@ -34,6 +37,7 @@ public class MainView extends JFrame {
     private final String username;
     private final LoaiTaiKhoan loaiTaiKhoan;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private final StaticQRPaymentService qrPaymentService;
 
     public MainView(String username, LoaiTaiKhoan loaiTaiKhoan) throws IOException, SQLException {
         try {
@@ -44,6 +48,7 @@ public class MainView extends JFrame {
 
         this.username = username;
         this.loaiTaiKhoan = loaiTaiKhoan;
+        this.qrPaymentService = new StaticQRPaymentService();
 
         try {
             databaseConnection = new DatabaseConnection();
@@ -312,7 +317,6 @@ public class MainView extends JFrame {
         phimCard.setBorder(BorderFactory.createLineBorder(Color.GRAY));
         phimCard.setPreferredSize(new Dimension(200, 350));
 
-        // Thêm ảnh poster
         JLabel posterLabel = new JLabel();
         posterLabel.setHorizontalAlignment(SwingConstants.CENTER);
         if (phim.getDuongDanPoster() != null && !phim.getDuongDanPoster().isEmpty()) {
@@ -329,21 +333,17 @@ public class MainView extends JFrame {
         }
         phimCard.add(posterLabel, BorderLayout.NORTH);
 
-        // Thông tin phim
         JLabel phimLabel = new JLabel("<html><center><b>" + phim.getTenPhim() + "</b><br>" +
                 phim.getTenTheLoai() + " | " + phim.getThoiLuong() + " phút</center></html>", SwingConstants.CENTER);
         phimCard.add(phimLabel, BorderLayout.CENTER);
 
-        // Nút đặt vé
         JButton datVeButton = new JButton("Đặt vé");
         datVeButton.addActionListener(_ -> datVe(phim.getMaPhim()));
         phimCard.add(datVeButton, BorderLayout.SOUTH);
 
-        // Thêm sự kiện nhấn chuột để hiển thị chi tiết phim
         phimCard.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // Chỉ mở chi tiết phim nếu không nhấn vào nút "Đặt vé"
                 if (e.getSource() == phimCard && !datVeButton.getBounds().contains(e.getPoint())) {
                     showPhimDetail(phim);
                 }
@@ -359,7 +359,6 @@ public class MainView extends JFrame {
         detailDialog.setLayout(new BorderLayout(10, 10));
         detailDialog.setLocationRelativeTo(this);
 
-        // Panel chứa ảnh poster
         JLabel detailPosterLabel = new JLabel();
         detailPosterLabel.setHorizontalAlignment(SwingConstants.CENTER);
         if (phim.getDuongDanPoster() != null && !phim.getDuongDanPoster().isEmpty()) {
@@ -375,7 +374,6 @@ public class MainView extends JFrame {
             detailPosterLabel.setText("Không có ảnh");
         }
 
-        // Panel chứa thông tin chi tiết
         JPanel infoPanel = new JPanel(new GridLayout(8, 2, 10, 10));
         infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -403,12 +401,10 @@ public class MainView extends JFrame {
         infoPanel.add(new JLabel("Mô tả:"));
         infoPanel.add(new JLabel(phim.getMoTa() != null ? phim.getMoTa() : "N/A"));
 
-        // Kết hợp ảnh và thông tin
         JPanel mainDetailPanel = new JPanel(new BorderLayout(10, 10));
         mainDetailPanel.add(detailPosterLabel, BorderLayout.WEST);
         mainDetailPanel.add(infoPanel, BorderLayout.CENTER);
 
-        // Nút đặt vé trong cửa sổ chi tiết
         JButton datVeButton = new JButton("Đặt vé");
         datVeButton.addActionListener(_ -> {
             detailDialog.dispose();
@@ -431,7 +427,6 @@ public class MainView extends JFrame {
             dialog.setSize(800, 600);
             dialog.setLayout(new BorderLayout());
 
-            // Panel chọn suất chiếu
             JPanel suatChieuPanel = new JPanel(new FlowLayout());
             JLabel suatChieuLabel = new JLabel("Chọn suất chiếu:");
             JComboBox<SuatChieu> suatChieuCombo = new JComboBox<>();
@@ -442,13 +437,11 @@ public class MainView extends JFrame {
             suatChieuPanel.add(suatChieuLabel);
             suatChieuPanel.add(suatChieuCombo);
 
-            // Panel sơ đồ ghế
             JPanel seatPanel = new JPanel(new GridLayout(5, 10, 5, 5));
             seatPanel.setBorder(BorderFactory.createTitledBorder("Sơ đồ ghế"));
             JLabel selectedSeatLabel = new JLabel("Ghế đã chọn: None");
             Ghe[] selectedGhe = {null};
 
-            // Cập nhật sơ đồ ghế khi chọn suất chiếu
             suatChieuCombo.addActionListener(_ -> {
                 seatPanel.removeAll();
                 selectedGhe[0] = null;
@@ -503,7 +496,6 @@ public class MainView extends JFrame {
                 }
             });
 
-            // Panel hiển thị ghế đã chọn và nút xác nhận
             JPanel bottomPanel = new JPanel(new BorderLayout());
             bottomPanel.add(selectedSeatLabel, BorderLayout.NORTH);
 
@@ -522,9 +514,56 @@ public class MainView extends JFrame {
                             selectedGhe[0].getSoGhe(),
                             giaVe
                     );
-                    JOptionPane.showMessageDialog(dialog, "Đặt vé thành công!");
-                    dialog.dispose();
-                } catch (SQLException ex) {
+
+                    // Tạo transaction ID
+                    String transactionId = UUID.randomUUID().toString();
+                    String orderInfo = "Thanh toán vé xem phim - " + selectedSuatChieu.getMaSuatChieu();
+                    String accountId = "0565321247"; // Thay bằng accountId của bạn từ MoMo
+
+                    // Tạo QR code tĩnh bằng StaticQRPaymentService
+                    BufferedImage qrImage = qrPaymentService.generateStaticPaymentQR(
+                            "momo", accountId, giaVe, orderInfo);
+
+                    // Hiển thị QR code
+                    JDialog qrDialog = new JDialog(this, "Thanh toán bằng MoMo", true);
+                    qrDialog.setSize(300, 400);
+                    qrDialog.setLayout(new BorderLayout());
+                    qrDialog.setLocationRelativeTo(this);
+
+                    JLabel qrLabel = new JLabel(new ImageIcon(qrImage));
+                    qrLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                    qrDialog.add(qrLabel, BorderLayout.CENTER);
+
+                    JLabel instructionLabel = new JLabel("Quét QR code để thanh toán", SwingConstants.CENTER);
+                    qrDialog.add(instructionLabel, BorderLayout.NORTH);
+
+                    JLabel statusLabel = new JLabel("Đang chờ thanh toán...", SwingConstants.CENTER);
+                    qrDialog.add(statusLabel, BorderLayout.SOUTH);
+
+                    // Kiểm tra trạng thái thanh toán trong luồng riêng (mô phỏng)
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(10000); // Chờ 10 giây
+                            boolean paymentSuccess = true; // Giả định thanh toán thành công
+                            if (paymentSuccess) {
+                                statusLabel.setText("Thanh toán thành công!");
+                                JOptionPane.showMessageDialog(qrDialog, "Thanh toán thành công! Vé đã được xác nhận.");
+                            } else {
+                                statusLabel.setText("Thanh toán thất bại!");
+                                JOptionPane.showMessageDialog(qrDialog, "Thanh toán thất bại! Vui lòng thử lại.");
+                            }
+                        } catch (InterruptedException e) {
+                            statusLabel.setText("Lỗi kiểm tra thanh toán!");
+                            JOptionPane.showMessageDialog(qrDialog, "Lỗi kiểm tra thanh toán: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        } finally {
+                            qrDialog.dispose();
+                            dialog.dispose();
+                        }
+                    }).start();
+
+                    qrDialog.setVisible(true);
+
+                } catch (Exception ex) {
                     JOptionPane.showMessageDialog(dialog, "Lỗi khi đặt vé: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             });
