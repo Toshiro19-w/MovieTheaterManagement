@@ -1,7 +1,7 @@
 package com.cinema.services;
 
 import com.cinema.models.NhanVien;
-import com.cinema.repositories.NhanVienRepository;
+import com.cinema.models.repositories.NhanVienRepository;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.SQLException;

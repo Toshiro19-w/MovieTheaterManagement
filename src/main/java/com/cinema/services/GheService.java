@@ -1,7 +1,7 @@
 package com.cinema.services;
 
 import com.cinema.models.Ghe;
-import com.cinema.repositories.GheRepository;
+import com.cinema.models.repositories.GheRepository;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.SQLException;

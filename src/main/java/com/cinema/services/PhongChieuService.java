@@ -1,7 +1,7 @@
 package com.cinema.services;
 
 import com.cinema.models.PhongChieu;
-import com.cinema.repositories.PhongChieuRepository;
+import com.cinema.models.repositories.PhongChieuRepository;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.SQLException;

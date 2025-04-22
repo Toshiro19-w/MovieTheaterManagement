@@ -1,7 +1,7 @@
-package com.cinema.repositories;
+package com.cinema.models.repositories;
 
 import com.cinema.models.PhongChieu;
-import com.cinema.repositories.Interface.IPhongChieuRepository;
+import com.cinema.models.repositories.Interface.IPhongChieuRepository;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.*;

@@ -1,7 +1,7 @@
 package com.cinema.services;
 
 import com.cinema.models.Ve;
-import com.cinema.repositories.VeRepository;
+import com.cinema.models.repositories.VeRepository;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.SQLException;

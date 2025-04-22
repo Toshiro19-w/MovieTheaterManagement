@@ -2,7 +2,7 @@ package com.cinema.services;
 
 import com.cinema.models.HoaDon;
 import com.cinema.models.ChiTietHoaDon;
-import com.cinema.repositories.HoaDonRepository;
+import com.cinema.models.repositories.HoaDonRepository;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.SQLException;
