@@ -9,7 +9,7 @@ public class KhachHang extends NguoiDung {
         this.maKhachHang = maKhachHang;
         this.diemTichLuy = diemTichLuy;
     }
-
+    
     public KhachHang() {
         super();
     }

@@ -23,6 +23,9 @@ public class KhachHangRepository {
             throw new RuntimeException("Không thể lấy kết nối cơ sở dữ liệu", e);
         }
     }
+    
+    
+   
 
     public List<KhachHang> getAllKhachHang() {
         List<KhachHang> list = new ArrayList<>();
@@ -62,4 +65,27 @@ public class KhachHangRepository {
         }
         return -1;
     }
+    public KhachHang getKhachHangInfoById(int maKhachHang) {
+        String sql = "SELECT nd.hoTen nd.email, nd.soDienThoai, kh.diemTichLuy " +
+                     "FROM KhachHang kh " +
+                     "JOIN NguoiDung nd ON kh.maNguoiDung = nd.maNguoiDung " +
+                     "WHERE kh.maKhachHang = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maKhachHang);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    KhachHang kh = new KhachHang();
+                    kh.setHoTen(rs.getString("hoTen"));
+                    kh.setEmail(rs.getString("email"));
+                    kh.setSoDienThoai(rs.getString("soDienThoai"));
+                    kh.setDiemTichLuy(rs.getInt("diemTichLuy"));
+                    return kh;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }

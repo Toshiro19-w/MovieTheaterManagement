@@ -8,6 +8,7 @@ import com.cinema.services.SuatChieuService;
 import com.cinema.services.VeService;
 import com.cinema.utils.DatabaseConnection;
 import com.formdev.flatlaf.FlatLightLaf;
+import com.toedter.calendar.JDateChooser;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,7 +18,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -28,7 +31,7 @@ public class MainView extends JFrame {
     private PhimController phimController;
     private DatabaseConnection databaseConnection;
     private JComboBox<String> theLoaiCombo;
-    private JTextField ngayChieuField;
+    private JDateChooser ngayChieuField;
     private JSlider thoiLuongSlider;
     private JPanel phimPanel;
     private final String username;
@@ -129,6 +132,12 @@ public class MainView extends JFrame {
                 if (menu.equals("Phim đang chiếu")) {
                     button.addActionListener(_ -> loadPhimList());
                 }
+                if (menu.equals("Đặt vé")) {
+                	button.addActionListener(_ -> loadPhimList());
+                }
+                if (menu.equals("Thông tin cá nhân")) {
+                	
+                }
                 menuPanel.add(button);
             }
         }
@@ -192,12 +201,16 @@ public class MainView extends JFrame {
         sidebarPanel.add(theLoaiCombo);
         sidebarPanel.add(Box.createVerticalStrut(10));
 
-        JLabel ngayChieuLabel = new JLabel("Ngày chiếu (yyyy-MM-dd):");
+        JLabel ngayChieuLabel = new JLabel("Ngày chiếu:");
         ngayChieuLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         sidebarPanel.add(ngayChieuLabel);
-        ngayChieuField = new JTextField();
+
+        // Thay JTextField bằng JDateChooser
+        ngayChieuField = new JDateChooser();
+        ngayChieuField.setDateFormatString("yyyy-MM-dd");
         ngayChieuField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
         sidebarPanel.add(ngayChieuField);
+
         sidebarPanel.add(Box.createVerticalStrut(10));
 
         JLabel thoiLuongLabel = new JLabel("Thời lượng (phút):");
@@ -231,6 +244,7 @@ public class MainView extends JFrame {
             JOptionPane.showMessageDialog(this, "Lỗi khi tải danh sách phim!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return;
         }
+        
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
@@ -249,6 +263,19 @@ public class MainView extends JFrame {
         phimPanel.revalidate();
         phimPanel.repaint();
     }
+    
+    private void loadThongtinKH() {
+ 	   phimPanel.removeAll();
+ 	   NguoiDung ND = new NguoiDung();
+ 	   KhachHang kh = new KhachHang();
+ 	   try {
+ 		   
+ 	   }catch (Exception e) {
+		// TODO: handle exception
+	}
+ 	   return;
+    }
+    
 
     private void applyFilters() {
         phimPanel.removeAll();
@@ -268,19 +295,23 @@ public class MainView extends JFrame {
                     .collect(Collectors.toList());
         }
 
-        String ngayChieuText = ngayChieuField.getText().trim();
-        if (!ngayChieuText.isEmpty()) {
-            try {
-                LocalDate ngayChieu = LocalDate.parse(ngayChieuText);
-                phimList = phimList.stream()
-                        .filter(phim -> phim.getNgayKhoiChieu() != null && phim.getNgayKhoiChieu().equals(ngayChieu))
-                        .collect(Collectors.toList());
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(this, "Ngày chiếu không hợp lệ (yyyy-MM-dd)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                loadPhimList();
+        Date date = ngayChieuField.getDate();
+        if (date != null) {
+            LocalDate ngayChieu = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            phimList = phimList.stream()
+                    .filter(phim -> phim.getNgayKhoiChieu() != null && phim.getNgayKhoiChieu().equals(ngayChieu))
+                    .collect(Collectors.toList());
+
+            if (phimList.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Không có phim nào khởi chiếu vào ngày này!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                loadPhimList(); // hoặc bạn reset lại list gốc nếu muốn
                 return;
             }
         }
+
+
+
+        
 
         int maxThoiLuong = thoiLuongSlider.getValue();
         if (maxThoiLuong > 0) {
