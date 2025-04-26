@@ -1,6 +1,8 @@
 package com.cinema.services;
 
+import com.cinema.models.KhachHang;
 import com.cinema.models.Ve;
+import com.cinema.models.repositories.KhachHangRepository;
 import com.cinema.models.repositories.VeRepository;
 import com.cinema.utils.DatabaseConnection;
 
@@ -10,9 +12,11 @@ import java.util.List;
 public class VeService{
 
     private final VeRepository veRepository;
+    private final KhachHangRepository khachHangRepository;
 
     public VeService(DatabaseConnection databaseConnection) {
         this.veRepository = new VeRepository(databaseConnection);
+        this.khachHangRepository = new KhachHangRepository(databaseConnection);
     }
 
     public List<Ve> getAllVe() throws SQLException {
@@ -45,5 +49,13 @@ public class VeService{
 
     public void updateVeStatus(int maVe, String trangThai, Integer maHoaDon) throws SQLException {
         updateVeStatus(maVe, trangThai, maHoaDon);
+    }
+
+    public List<KhachHang> getAllKhachHang() throws SQLException {
+        return khachHangRepository.getAllKhachHang();
+    }
+
+    public KhachHang getKhachHangByMaVe(int maVe) throws SQLException {
+        return khachHangRepository.getKhachHangByMaVe(maVe);
     }
 }

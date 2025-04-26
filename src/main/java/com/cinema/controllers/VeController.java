@@ -1,5 +1,6 @@
 package com.cinema.controllers;
 
+import com.cinema.models.KhachHang;
 import com.cinema.models.Ve;
 import com.cinema.services.VeService;
 import com.cinema.utils.ValidationUtils;
@@ -28,6 +29,24 @@ public class VeController {
             return veService.getAllVeDetail();
         } catch (SQLException e) {
             System.err.println("Lỗi khi tìm vé: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public List<KhachHang> findAllKhachHang() {
+        try {
+            return veService.getAllKhachHang();
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi tìm khách hàng: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public KhachHang getKhachHangByMaVe(int maVe) {
+        try {
+            return veService.getKhachHangByMaVe(maVe);
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi tìm khách hàng: " + e.getMessage());
             return null;
         }
     }
