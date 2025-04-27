@@ -7,7 +7,7 @@ public class KhachHang extends NguoiDung {
         super(maNguoiDung, hoTen, soDienThoai, email, loaiNguoiDung);
         this.diemTichLuy = diemTichLuy;
     }
-
+    
     public KhachHang() {
         super();
     }
