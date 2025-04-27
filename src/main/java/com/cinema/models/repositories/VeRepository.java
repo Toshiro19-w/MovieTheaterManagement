@@ -1,4 +1,4 @@
-package com.cinema.repositories;
+package com.cinema.models.repositories;
 
 import com.cinema.models.TrangThaiVe;
 import com.cinema.models.Ve;
@@ -44,20 +44,21 @@ public class VeRepository extends BaseRepository<Ve> {
     }
 
     public List<Ve> findAllDetail() throws SQLException {
-        String sql = "SELECT \n" +
-                "    Ve.maVe,\n" +
-                "    Ve.trangThai,\n" +
-                "    Ve.giaVe,\n" +
-                "    Ve.soGhe,\n" +
-                "    Ve.ngayDat,\n" +
-                "    PhongChieu.tenPhong,\n" +
-                "    SuatChieu.ngayGioChieu,\n" +
-                "    Phim.tenPhim\n" +
-                "FROM Ve\n" +
-                "LEFT JOIN SuatChieu ON Ve.maSuatChieu = SuatChieu.maSuatChieu\n" +
-                "LEFT JOIN PhongChieu ON Ve.maPhong = PhongChieu.maPhong\n" +
-                "LEFT JOIN Phim ON SuatChieu.maPhim = Phim.maPhim\n" +
-                "ORDER BY Ve.maVe;";
+        String sql = """
+                SELECT 
+                    Ve.maVe,
+                    Ve.trangThai,
+                    Ve.giaVe,
+                    Ve.soGhe,
+                    Ve.ngayDat,
+                    PhongChieu.tenPhong,
+                    SuatChieu.ngayGioChieu,
+                    Phim.tenPhim
+                FROM Ve
+                LEFT JOIN SuatChieu ON Ve.maSuatChieu = SuatChieu.maSuatChieu
+                LEFT JOIN PhongChieu ON Ve.maPhong = PhongChieu.maPhong
+                LEFT JOIN Phim ON SuatChieu.maPhim = Phim.maPhim
+                ORDER BY Ve.maVe;""";
 
         List<Ve> result = new ArrayList<>();
         try (PreparedStatement stmt = conn.prepareStatement(sql);
@@ -113,21 +114,22 @@ public class VeRepository extends BaseRepository<Ve> {
 
     public List<Ve> findBySoGhe(String soGhe) throws SQLException {
         List<Ve> veList = new ArrayList<>();
-        String sql = "SELECT \n" +
-                "    Ve.maVe,\n" +
-                "    Ve.trangThai,\n" +
-                "    Ve.giaVe,\n" +
-                "    Ve.soGhe,\n" +
-                "    Ve.ngayDat,\n" +
-                "    PhongChieu.tenPhong,\n" +
-                "    SuatChieu.ngayGioChieu,\n" +
-                "    Phim.tenPhim\n" +
-                "FROM Ve\n" +
-                "LEFT JOIN SuatChieu ON Ve.maSuatChieu = SuatChieu.maSuatChieu\n" +
-                "LEFT JOIN PhongChieu ON Ve.maPhong = PhongChieu.maPhong\n" +
-                "LEFT JOIN Phim ON SuatChieu.maPhim = Phim.maPhim\n" +
-                "WHERE soGhe = ?\n" +
-                "ORDER BY Ve.maVe;";
+        String sql = """
+                SELECT 
+                    Ve.maVe,
+                    Ve.trangThai,
+                    Ve.giaVe,
+                    Ve.soGhe,
+                    Ve.ngayDat,
+                    PhongChieu.tenPhong,
+                    SuatChieu.ngayGioChieu,
+                    Phim.tenPhim
+                FROM Ve
+                LEFT JOIN SuatChieu ON Ve.maSuatChieu = SuatChieu.maSuatChieu
+                LEFT JOIN PhongChieu ON Ve.maPhong = PhongChieu.maPhong
+                LEFT JOIN Phim ON SuatChieu.maPhim = Phim.maPhim
+                WHERE soGhe = ?
+                ORDER BY Ve.maVe;""";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, soGhe);
             ResultSet rs = stmt.executeQuery();
@@ -158,19 +160,27 @@ public class VeRepository extends BaseRepository<Ve> {
 
     @Override
     public Ve save(Ve ve) throws SQLException {
+        // Kiểm tra tính hợp lệ của maSuatChieu và maPhong
+        if (isSuatChieuExists(ve.getMaSuatChieu())) {
+            throw new SQLException("Suất chiếu với mã " + ve.getMaSuatChieu() + " không tồn tại");
+        }
+        if (isPhongExists(ve.getMaPhong())) {
+            throw new SQLException("Phòng chiếu với mã " + ve.getMaPhong() + " không tồn tại");
+        }
+
         String sql = "INSERT INTO Ve (maSuatChieu, maPhong, soGhe, maHoaDon, giaVe, trangThai, ngayDat) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setInt(1, ve.getMaSuatChieu());
             stmt.setInt(2, ve.getMaPhong());
             stmt.setString(3, ve.getSoGhe());
-            stmt.setObject(4, ve.getMaHoaDon(), Types.INTEGER); // Xử lý maHoaDon có thể null
+            stmt.setObject(4, null, Types.INTEGER); // maHoaDon mặc định là null
             stmt.setBigDecimal(5, ve.getGiaVe());
             stmt.setString(6, ve.getTrangThai().toString());
             stmt.setObject(7, ve.getNgayDat() != null ? Timestamp.valueOf(ve.getNgayDat()) : null, Types.TIMESTAMP);
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
-                throw new SQLException("Creating Ve failed, no rows affected.");
+                throw new SQLException("Tạo vé thất bại, không có dòng nào được thêm.");
             }
 
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
@@ -178,7 +188,7 @@ public class VeRepository extends BaseRepository<Ve> {
                     ve.setMaVe(generatedKeys.getInt(1));
                     return ve;
                 } else {
-                    throw new SQLException("Creating Ve failed, no generated key obtained.");
+                    throw new SQLException("Tạo vé thất bại, không lấy được khóa chính.");
                 }
             }
         }
@@ -186,12 +196,20 @@ public class VeRepository extends BaseRepository<Ve> {
 
     @Override
     public Ve update(Ve ve) throws SQLException {
+        // Kiểm tra tính hợp lệ của maSuatChieu và maPhong
+        if (isSuatChieuExists(ve.getMaSuatChieu())) {
+            throw new SQLException("Suất chiếu với mã " + ve.getMaSuatChieu() + " không tồn tại");
+        }
+        if (isPhongExists(ve.getMaPhong())) {
+            throw new SQLException("Phòng chiếu với mã " + ve.getMaPhong() + " không tồn tại");
+        }
+
         String sql = "UPDATE Ve SET maSuatChieu = ?, maPhong = ?, soGhe = ?, maHoaDon = ?, giaVe = ?, trangThai = ?, ngayDat = ? WHERE maVe = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, ve.getMaSuatChieu());
             stmt.setInt(2, ve.getMaPhong());
             stmt.setString(3, ve.getSoGhe());
-            stmt.setObject(4, ve.getMaHoaDon(), Types.INTEGER);
+            stmt.setObject(4, null, Types.INTEGER);
             stmt.setBigDecimal(5, ve.getGiaVe());
             stmt.setString(6, ve.getTrangThai().toString());
             stmt.setObject(7, ve.getNgayDat() != null ? Timestamp.valueOf(ve.getNgayDat()) : null, Types.TIMESTAMP);
@@ -201,8 +219,8 @@ public class VeRepository extends BaseRepository<Ve> {
             if (affectedRows > 0) {
                 return ve;
             }
+            return null;
         }
-        return null;
     }
 
     public void updateVeStatus(int maVe, String trangThai, Integer maHoaDon) throws SQLException {
@@ -221,6 +239,26 @@ public class VeRepository extends BaseRepository<Ve> {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);
             stmt.executeUpdate();
+        }
+    }
+
+    private boolean isSuatChieuExists(int maSuatChieu) throws SQLException {
+        String sql = "SELECT 1 FROM SuatChieu WHERE maSuatChieu = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maSuatChieu);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return !rs.next();
+            }
+        }
+    }
+
+    private boolean isPhongExists(int maPhong) throws SQLException {
+        String sql = "SELECT 1 FROM PhongChieu WHERE maPhong = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maPhong);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return !rs.next();
+            }
         }
     }
 }

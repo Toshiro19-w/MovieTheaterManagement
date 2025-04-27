@@ -1,7 +1,7 @@
-package com.cinema.repositories;
+package com.cinema.models.repositories;
 
 import com.cinema.models.BaoCao;
-import com.cinema.repositories.Interface.IBaoCaoRepository;
+import com.cinema.models.repositories.Interface.IBaoCaoRepository;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.Connection;

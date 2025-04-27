@@ -1,6 +1,6 @@
-package com.cinema.repositories;
+package com.cinema.models.repositories;
 
-import com.cinema.repositories.Interface.IRepository;
+import com.cinema.models.repositories.Interface.IRepository;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.Connection;

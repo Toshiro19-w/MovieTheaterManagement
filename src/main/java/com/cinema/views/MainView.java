@@ -1,7 +1,12 @@
 package com.cinema.views;
 
 import com.cinema.controllers.DatVeController;
+import com.cinema.controllers.PaymentController;
 import com.cinema.controllers.PhimController;
+import com.cinema.dto.PaymentRequest;
+import com.cinema.dto.PaymentResponse;
+import com.cinema.enums.PaymentMethod;
+import com.cinema.enums.PaymentStatus;
 import com.cinema.models.*;
 import com.cinema.services.GheService;
 import com.cinema.services.SuatChieuService;
@@ -12,23 +17,30 @@ import com.toedter.calendar.JDateChooser;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class MainView extends JFrame {
     private JPanel mainContentPanel;
     private CardLayout cardLayout;
     private PhimController phimController;
+    private PaymentController paymentController;
     private DatabaseConnection databaseConnection;
     private JComboBox<String> theLoaiCombo;
     private JDateChooser ngayChieuField;
@@ -37,6 +49,9 @@ public class MainView extends JFrame {
     private final String username;
     private final LoaiTaiKhoan loaiTaiKhoan;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private SuatChieu selectedSuatChieu;
+    private Ghe selectedGhe;
+    private BigDecimal giaVe;
 
     public MainView(String username, LoaiTaiKhoan loaiTaiKhoan) throws IOException, SQLException {
         try {
@@ -47,6 +62,7 @@ public class MainView extends JFrame {
 
         this.username = username;
         this.loaiTaiKhoan = loaiTaiKhoan;
+        this.paymentController = new PaymentController();
 
         try {
             databaseConnection = new DatabaseConnection();
@@ -343,7 +359,6 @@ public class MainView extends JFrame {
         phimCard.setBorder(BorderFactory.createLineBorder(Color.GRAY));
         phimCard.setPreferredSize(new Dimension(200, 350));
 
-        // Thêm ảnh poster
         JLabel posterLabel = new JLabel();
         posterLabel.setHorizontalAlignment(SwingConstants.CENTER);
         if (phim.getDuongDanPoster() != null && !phim.getDuongDanPoster().isEmpty()) {
@@ -360,21 +375,17 @@ public class MainView extends JFrame {
         }
         phimCard.add(posterLabel, BorderLayout.NORTH);
 
-        // Thông tin phim
         JLabel phimLabel = new JLabel("<html><center><b>" + phim.getTenPhim() + "</b><br>" +
                 phim.getTenTheLoai() + " | " + phim.getThoiLuong() + " phút</center></html>", SwingConstants.CENTER);
         phimCard.add(phimLabel, BorderLayout.CENTER);
 
-        // Nút đặt vé
         JButton datVeButton = new JButton("Đặt vé");
         datVeButton.addActionListener(_ -> datVe(phim.getMaPhim()));
         phimCard.add(datVeButton, BorderLayout.SOUTH);
 
-        // Thêm sự kiện nhấn chuột để hiển thị chi tiết phim
         phimCard.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // Chỉ mở chi tiết phim nếu không nhấn vào nút "Đặt vé"
                 if (e.getSource() == phimCard && !datVeButton.getBounds().contains(e.getPoint())) {
                     showPhimDetail(phim);
                 }
@@ -390,7 +401,6 @@ public class MainView extends JFrame {
         detailDialog.setLayout(new BorderLayout(10, 10));
         detailDialog.setLocationRelativeTo(this);
 
-        // Panel chứa ảnh poster
         JLabel detailPosterLabel = new JLabel();
         detailPosterLabel.setHorizontalAlignment(SwingConstants.CENTER);
         if (phim.getDuongDanPoster() != null && !phim.getDuongDanPoster().isEmpty()) {
@@ -406,7 +416,6 @@ public class MainView extends JFrame {
             detailPosterLabel.setText("Không có ảnh");
         }
 
-        // Panel chứa thông tin chi tiết
         JPanel infoPanel = new JPanel(new GridLayout(8, 2, 10, 10));
         infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -434,12 +443,10 @@ public class MainView extends JFrame {
         infoPanel.add(new JLabel("Mô tả:"));
         infoPanel.add(new JLabel(phim.getMoTa() != null ? phim.getMoTa() : "N/A"));
 
-        // Kết hợp ảnh và thông tin
         JPanel mainDetailPanel = new JPanel(new BorderLayout(10, 10));
         mainDetailPanel.add(detailPosterLabel, BorderLayout.WEST);
         mainDetailPanel.add(infoPanel, BorderLayout.CENTER);
 
-        // Nút đặt vé trong cửa sổ chi tiết
         JButton datVeButton = new JButton("Đặt vé");
         datVeButton.addActionListener(_ -> {
             detailDialog.dispose();
@@ -462,7 +469,6 @@ public class MainView extends JFrame {
             dialog.setSize(800, 600);
             dialog.setLayout(new BorderLayout());
 
-            // Panel chọn suất chiếu
             JPanel suatChieuPanel = new JPanel(new FlowLayout());
             JLabel suatChieuLabel = new JLabel("Chọn suất chiếu:");
             JComboBox<SuatChieu> suatChieuCombo = new JComboBox<>();
@@ -473,18 +479,16 @@ public class MainView extends JFrame {
             suatChieuPanel.add(suatChieuLabel);
             suatChieuPanel.add(suatChieuCombo);
 
-            // Panel sơ đồ ghế
             JPanel seatPanel = new JPanel(new GridLayout(5, 10, 5, 5));
             seatPanel.setBorder(BorderFactory.createTitledBorder("Sơ đồ ghế"));
             JLabel selectedSeatLabel = new JLabel("Ghế đã chọn: None");
-            Ghe[] selectedGhe = {null};
+            Ghe[] selectedGheArray = {null};
 
-            // Cập nhật sơ đồ ghế khi chọn suất chiếu
             suatChieuCombo.addActionListener(_ -> {
                 seatPanel.removeAll();
-                selectedGhe[0] = null;
+                selectedGheArray[0] = null;
                 selectedSeatLabel.setText("Ghế đã chọn: None");
-                SuatChieu selectedSuatChieu = (SuatChieu) suatChieuCombo.getSelectedItem();
+                selectedSuatChieu = (SuatChieu) suatChieuCombo.getSelectedItem();
                 if (selectedSuatChieu != null) {
                     try {
                         List<Ghe> gheList = datVeController.getGheTrongByPhongAndSuatChieu(
@@ -503,20 +507,21 @@ public class MainView extends JFrame {
                             if (isAvailable) {
                                 seatButton.setBackground(Color.GREEN);
                                 seatButton.addActionListener(_ -> {
-                                    if (selectedGhe[0] != null) {
+                                    if (selectedGheArray[0] != null) {
                                         for (Component comp : seatPanel.getComponents()) {
-                                            if (comp instanceof JButton && ((JButton) comp).getText().equals(selectedGhe[0].getSoGhe())) {
+                                            if (comp instanceof JButton && ((JButton) comp).getText().equals(selectedGheArray[0].getSoGhe())) {
                                                 comp.setBackground(Color.GREEN);
                                                 break;
                                             }
                                         }
                                     }
-                                    selectedGhe[0] = gheList.stream()
+                                    selectedGheArray[0] = gheList.stream()
                                             .filter(ghe -> ghe.getSoGhe().equals(seat))
                                             .findFirst()
                                             .orElse(null);
                                     seatButton.setBackground(Color.YELLOW);
                                     selectedSeatLabel.setText("Ghế đã chọn: " + seat);
+                                    selectedGhe = selectedGheArray[0];
                                 });
                             } else {
                                 seatButton.setBackground(Color.RED);
@@ -534,28 +539,167 @@ public class MainView extends JFrame {
                 }
             });
 
-            // Panel hiển thị ghế đã chọn và nút xác nhận
             JPanel bottomPanel = new JPanel(new BorderLayout());
             bottomPanel.add(selectedSeatLabel, BorderLayout.NORTH);
 
             JButton confirmButton = new JButton("Xác nhận đặt vé");
             confirmButton.addActionListener(_ -> {
-                SuatChieu selectedSuatChieu = (SuatChieu) suatChieuCombo.getSelectedItem();
-                if (selectedSuatChieu == null || selectedGhe[0] == null) {
+                selectedSuatChieu = (SuatChieu) suatChieuCombo.getSelectedItem();
+                selectedGhe = selectedGheArray[0];
+                if (selectedSuatChieu == null || selectedGhe == null) {
                     JOptionPane.showMessageDialog(dialog, "Vui lòng chọn suất chiếu và ghế!", "Lỗi", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
                 try {
-                    BigDecimal giaVe = new BigDecimal("50000");
+                    giaVe = new BigDecimal("50000");
                     datVeController.datVe(
                             selectedSuatChieu.getMaSuatChieu(),
-                            selectedGhe[0].getMaPhong(),
-                            selectedGhe[0].getSoGhe(),
+                            selectedGhe.getMaPhong(),
+                            selectedGhe.getSoGhe(),
                             giaVe
                     );
-                    JOptionPane.showMessageDialog(dialog, "Đặt vé thành công!");
-                    dialog.dispose();
-                } catch (SQLException ex) {
+
+                    // Tạo transaction ID
+                    String transactionId = UUID.randomUUID().toString();
+                    String orderInfo = "Thanh toán vé xem phim - " + selectedSuatChieu.getMaSuatChieu();
+                    String accountId = "0565321247"; // Thay bằng accountId của bạn từ MoMo
+
+                    // Tạo yêu cầu thanh toán
+                    PaymentRequest request = new PaymentRequest(
+                            accountId,
+                            giaVe,
+                            orderInfo,
+                            PaymentMethod.MOMO
+                    );
+
+                    // Gọi PaymentController để tạo QR code
+                    PaymentResponse response = paymentController.createPayment(request, transactionId);
+
+                    // Hiển thị QR code
+                    JDialog qrDialog = new JDialog(this, "Thanh toán bằng MoMo", true);
+                    qrDialog.setSize(350, 500);
+                    qrDialog.setLayout(new BorderLayout(0, 10));
+                    qrDialog.setLocationRelativeTo(this);
+
+                    // Panel chứa QR code
+                    JPanel qrPanel = new JPanel(new BorderLayout());
+                    JLabel qrLabel = new JLabel(new ImageIcon(response.getQrImage()));
+                    qrLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                    qrPanel.add(qrLabel, BorderLayout.CENTER);
+                    qrDialog.add(qrPanel, BorderLayout.CENTER);
+
+                    // Panel chứa hướng dẫn và thông tin
+                    JPanel infoPanel = new JPanel();
+                    infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+                    infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+                    JLabel instructionLabel = new JLabel("<html><div style='text-align: center;'>Quét mã QR để thanh toán<br>Số tiền: "
+                            + NumberFormat.getCurrencyInstance(new Locale("vi", "VN")).format(giaVe) + "</div></html>", SwingConstants.CENTER);
+                    instructionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    infoPanel.add(instructionLabel);
+
+                    infoPanel.add(Box.createVerticalStrut(10));
+
+                    JLabel timerLabel = new JLabel("Thời gian còn lại: 05:00", SwingConstants.CENTER);
+                    timerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    timerLabel.setFont(new Font(timerLabel.getFont().getName(), Font.BOLD, 14));
+                    infoPanel.add(timerLabel);
+
+                    infoPanel.add(Box.createVerticalStrut(10));
+
+                    JLabel statusLabel = new JLabel("Đang chờ thanh toán...", SwingConstants.CENTER);
+                    statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    infoPanel.add(statusLabel);
+
+                    qrDialog.add(infoPanel, BorderLayout.NORTH);
+
+                    // Panel chứa các nút
+                    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+
+                    JButton refreshButton = new JButton("Kiểm tra thanh toán");
+                    refreshButton.addActionListener(e -> checkPaymentStatus(transactionId, statusLabel, qrDialog, dialog));
+                    buttonPanel.add(refreshButton);
+
+                    JButton cancelButton = new JButton("Hủy");
+                    cancelButton.addActionListener(e -> {
+                        int option = JOptionPane.showConfirmDialog(qrDialog,
+                                "Bạn có chắc muốn hủy thanh toán này?",
+                                "Xác nhận hủy",
+                                JOptionPane.YES_NO_OPTION);
+                        if (option == JOptionPane.YES_OPTION) {
+                            qrDialog.dispose();
+                        }
+                    });
+                    buttonPanel.add(cancelButton);
+
+                    qrDialog.add(buttonPanel, BorderLayout.SOUTH);
+
+                    // Đếm ngược thời gian
+                    final int[] timeRemaining = {300}; // 5 phút = 300 giây
+                    Timer timer = new Timer(1000, new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            timeRemaining[0]--;
+                            int minutes = timeRemaining[0] / 60;
+                            int seconds = timeRemaining[0] % 60;
+                            timerLabel.setText(String.format("Thời gian còn lại: %02d:%02d", minutes, seconds));
+
+                            if (timeRemaining[0] <= 0) {
+                                ((Timer) e.getSource()).stop();
+                                statusLabel.setText("Hết thời gian thanh toán!");
+                                JOptionPane.showMessageDialog(qrDialog,
+                                        "Đã hết thời gian thanh toán. Vui lòng thử lại.",
+                                        "Hết hạn",
+                                        JOptionPane.WARNING_MESSAGE);
+                                qrDialog.dispose();
+                            }
+                        }
+                    });
+                    timer.start();
+
+                    // Kiểm tra trạng thái thanh toán định kỳ
+                    ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+                    final ScheduledFuture<?> paymentChecker = scheduler.scheduleAtFixedRate(() -> {
+                        try {
+                            PaymentStatus status = paymentController.checkPaymentStatus(transactionId);
+
+                            if (status == PaymentStatus.COMPLETED) {
+                                timer.stop();
+                                scheduler.shutdown();
+                                SwingUtilities.invokeLater(() -> {
+                                    statusLabel.setText("Thanh toán thành công!");
+                                    try {
+                                        saveDatVe(selectedSuatChieu, selectedGhe, giaVe, transactionId);
+                                        JOptionPane.showMessageDialog(qrDialog,
+                                                "Thanh toán thành công! Vé đã được xác nhận.",
+                                                "Thành công",
+                                                JOptionPane.INFORMATION_MESSAGE);
+                                        qrDialog.dispose();
+                                        dialog.dispose();
+                                    } catch (Exception ex) {
+                                        JOptionPane.showMessageDialog(qrDialog,
+                                                "Thanh toán thành công nhưng có lỗi khi lưu vé: " + ex.getMessage(),
+                                                "Lỗi",
+                                                JOptionPane.ERROR_MESSAGE);
+                                    }
+                                });
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }, 5, 5, TimeUnit.SECONDS);
+
+                    qrDialog.addWindowListener(new WindowAdapter() {
+                        @Override
+                        public void windowClosing(WindowEvent e) {
+                            timer.stop();
+                            scheduler.shutdown();
+                        }
+                    });
+
+                    qrDialog.setVisible(true);
+
+                } catch (Exception ex) {
                     JOptionPane.showMessageDialog(dialog, "Lỗi khi đặt vé: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             });
@@ -574,6 +718,55 @@ public class MainView extends JFrame {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Lỗi khi tải dữ liệu đặt vé!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void checkPaymentStatus(String transactionId, JLabel statusLabel, JDialog qrDialog, JDialog parentDialog) {
+        try {
+            PaymentStatus status = paymentController.checkPaymentStatus(transactionId);
+
+            if (status == PaymentStatus.COMPLETED) {
+                statusLabel.setText("Thanh toán thành công!");
+                saveDatVe(selectedSuatChieu, selectedGhe, giaVe, transactionId);
+                JOptionPane.showMessageDialog(qrDialog,
+                        "Thanh toán thành công! Vé đã được xác nhận.",
+                        "Thành công",
+                        JOptionPane.INFORMATION_MESSAGE);
+                qrDialog.dispose();
+                parentDialog.dispose();
+            } else if (status == PaymentStatus.FAILED) {
+                statusLabel.setText("Thanh toán thất bại!");
+                JOptionPane.showMessageDialog(qrDialog,
+                        "Thanh toán thất bại! Vui lòng thử lại.",
+                        "Thất bại",
+                        JOptionPane.ERROR_MESSAGE);
+            } else if (status == PaymentStatus.EXPIRED) {
+                statusLabel.setText("Thanh toán đã hết hạn!");
+                JOptionPane.showMessageDialog(qrDialog,
+                        "Thanh toán đã hết hạn! Vui lòng tạo giao dịch mới.",
+                        "Hết hạn",
+                        JOptionPane.WARNING_MESSAGE);
+                qrDialog.dispose();
+            } else {
+                statusLabel.setText("Đang chờ thanh toán...");
+                JOptionPane.showMessageDialog(qrDialog,
+                        "Chưa nhận được thanh toán. Vui lòng quét mã QR và hoàn tất thanh toán.",
+                        "Đang chờ",
+                        JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (Exception e) {
+            statusLabel.setText("Lỗi kiểm tra thanh toán!");
+            JOptionPane.showMessageDialog(qrDialog,
+                    "Lỗi kiểm tra thanh toán: " + e.getMessage(),
+                    "Lỗi",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void saveDatVe(SuatChieu suatChieu, Ghe ghe, BigDecimal giaVe, String transactionId) throws SQLException {
+        System.out.println("Lưu vé: Suất chiếu - " + suatChieu.getMaSuatChieu() +
+                ", Ghế - " + ghe.getSoGhe() +
+                ", Số tiền - " + giaVe +
+                ", Transaction ID - " + transactionId);
     }
 
     @Override

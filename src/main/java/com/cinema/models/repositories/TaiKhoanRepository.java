@@ -1,6 +1,5 @@
-package com.cinema.repositories;
+package com.cinema.models.repositories;
 
-import com.cinema.models.LoaiNguoiDung;
 import com.cinema.models.LoaiTaiKhoan;
 import com.cinema.models.TaiKhoan;
 import com.cinema.utils.DatabaseConnection;

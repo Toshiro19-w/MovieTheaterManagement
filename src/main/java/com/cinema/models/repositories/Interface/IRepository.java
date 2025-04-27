@@ -1,4 +1,4 @@
-package com.cinema.repositories.Interface;
+package com.cinema.models.repositories.Interface;
 
 import java.sql.SQLException;
 import java.util.List;

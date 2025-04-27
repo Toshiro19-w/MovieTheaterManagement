@@ -1,10 +1,9 @@
-package com.cinema.repositories;
+package com.cinema.models.repositories;
 
 import com.cinema.models.KhachHang;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,17 +28,24 @@ public class KhachHangRepository {
 
     public List<KhachHang> getAllKhachHang() {
         List<KhachHang> list = new ArrayList<>();
-        String sql = "SELECT \n" + "nd.maNguoiDung,\n" + "kh.maKhachHang,\n" + "nd.hoTen,\n" +
-                "nd.soDienThoai,\n" + "nd.email,\n" + "kh.diemTichLuy\n" +
-                "FROM \n" + "NguoiDung nd\n" +
-                "JOIN \n" + "KhachHang kh ON nd.maNguoiDung = kh.maNguoiDung\n" +
-                "WHERE \n" + "nd.loaiNguoiDung = 'KhachHang';";
+        String sql = """
+                SELECT\s
+                nd.maNguoiDung,
+                nd.hoTen,
+                nd.soDienThoai,
+                nd.email,
+                kh.diemTichLuy
+                FROM\s
+                NguoiDung nd
+                JOIN\s
+                KhachHang kh ON nd.maNguoiDung = kh.maNguoiDung
+                WHERE\s
+                nd.loaiNguoiDung = 'KhachHang';""";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 KhachHang khachHang = new KhachHang();
                 khachHang.setMaNguoiDung(rs.getInt("maNguoiDung"));
-                khachHang.setMaKhachHang(rs.getInt("maKhachHang"));
                 khachHang.setHoTen(rs.getString("hoTen"));
                 khachHang.setSoDienThoai(rs.getString("soDienThoai"));
                 khachHang.setEmail(rs.getString("email"));
@@ -51,19 +57,28 @@ public class KhachHangRepository {
         return list;
     }
 
-    public int getIdByEmail(String email) {
-        String sql = "SELECT maKhachHang FROM KhachHang WHERE email = ?";
+    public KhachHang getKhachHangByMaVe(int maVe) throws SQLException {
+        // Giả lập: Truy vấn cơ sở dữ liệu để lấy thông tin khách hàng qua maHoaDon
+        String sql = """
+                SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email\s
+                FROM NguoiDung nd\s
+                JOIN HoaDon hd ON nd.maNguoiDung = hd.maKhachHang
+                JOIN Ve v ON v.maHoaDon = hd.maHoaDon
+                WHERE v.maVe = ?;""";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, email);
+            stmt.setInt(1, maVe);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getInt("maKhachHang");
+                    KhachHang khachHang = new KhachHang();
+                    khachHang.setMaNguoiDung(rs.getInt("maNguoiDung"));
+                    khachHang.setHoTen(rs.getString("hoTen"));
+                    khachHang.setSoDienThoai(rs.getString("soDienThoai"));
+                    khachHang.setEmail(rs.getString("email"));
+                    return khachHang;
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
-        return -1;
+        return null; // Nếu không tìm thấy khách hàng
     }
     public KhachHang getKhachHangInfoById(int maKhachHang) {
         String sql = "SELECT nd.hoTen nd.email, nd.soDienThoai, kh.diemTichLuy " +
