@@ -217,7 +217,7 @@ public class MainView extends JFrame {
         sidebarPanel.add(theLoaiCombo);
         sidebarPanel.add(Box.createVerticalStrut(10));
 
-        JLabel ngayChieuLabel = new JLabel("Ngày chiếu:");
+        JLabel ngayChieuLabel = new JLabel("Ngày chiếu (yyyy-MM-dd):");
         ngayChieuLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         sidebarPanel.add(ngayChieuLabel);
 
