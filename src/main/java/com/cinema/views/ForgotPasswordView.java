@@ -5,88 +5,161 @@ import com.cinema.services.TaiKhoanService;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.ValidationUtils;
 
-import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
-import javax.mail.*;
-import javax.mail.internet.*;
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.io.*;
-import java.util.Base64;
-import java.util.Properties;
-import java.util.UUID;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class ForgotPasswordView extends JFrame {
+    private final JTextField usernameField = new JTextField(20);
     private final JTextField emailField = new JTextField(20);
+    private final JTextField phoneField = new JTextField(20);
+    private final JPasswordField passwordField = new JPasswordField(20);
     private TaiKhoanController controller;
-    private static String senderEmail;
-    private static String senderPassword;
-    private static final String ENCRYPTION_KEY = "MySecretKey12345"; // 16 ký tự
+    private Connection conn;
 
     public ForgotPasswordView() {
         initController();
         initUI();
-        loadEmailConfig();
-
-        if (senderEmail == null || senderPassword == null) {
-            showEmailConfigDialog();
-        }
     }
 
     private void initController() {
         try {
-            controller = new TaiKhoanController(new TaiKhoanService(new DatabaseConnection()));
+            DatabaseConnection databaseConnection = new DatabaseConnection();
+            conn = databaseConnection.getConnection();
+            controller = new TaiKhoanController(new TaiKhoanService(databaseConnection));
         } catch (IOException e) {
-            showError("Không thể kết nối cơ sở dữ liệu!", true);
+            showError("Không thể đọc cấu hình cơ sở dữ liệu: " + e.getMessage(), true);
+        } catch (SQLException e) {
+            showError("Không thể kết nối cơ sở dữ liệu: " + e.getMessage(), true);
+        } catch (Exception e) {
+            showError("Lỗi khởi tạo kết nối: " + e.getMessage(), true);
         }
     }
 
     private void initUI() {
         setTitle("Quên Mật Khẩu");
-        setSize(400, 300);
+        setSize(500, 700);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
 
-        JPanel panel = new JPanel(new GridBagLayout());
+        // Panel nền với ảnh nen1.jpg
+        JPanel backgroundPanel = new JPanel() {
+            Image background = new ImageIcon(getClass().getResource("/img/nen1.jpg")).getImage();
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                g.drawImage(background, 0, 0, getWidth(), getHeight(), this);
+            }
+        };
+        backgroundPanel.setLayout(new GridBagLayout());
+        setContentPane(backgroundPanel);
+
+        // Panel nội dung trong suốt
+        JPanel innerPanel = new JPanel(new GridBagLayout());
+        innerPanel.setOpaque(true);
+        innerPanel.setBackground(new Color(255, 255, 255, 100));
+        innerPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        innerPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        innerPanel.setPreferredSize(new Dimension(320, 400));
+
+        GridBagConstraints panelGbc = new GridBagConstraints();
+        panelGbc.gridx = 0;
+        panelGbc.gridy = 0;
+        panelGbc.anchor = GridBagConstraints.CENTER;
+        backgroundPanel.add(innerPanel, panelGbc);
+
         GridBagConstraints gbc = createGBC();
 
-        panel.add(new JLabel("Nhập email để khôi phục mật khẩu:"), updateGBC(gbc, 0, 0, 2));
-        panel.add(emailField, updateGBC(gbc, 0, 1, 2));
+        // Tiêu đề
+        JLabel titleLabel = new JLabel("Quên Mật Khẩu", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        innerPanel.add(titleLabel, updateGBC(gbc, 0, 0, 2, GridBagConstraints.CENTER, 0));
 
+        // Tên tài khoản
+        innerPanel.add(new JLabel("Tên tài khoản:"), updateGBC(gbc, 0, 1, 2, GridBagConstraints.WEST, 0));
+        usernameField.setFont(new Font("Arial", Font.PLAIN, 14));
+        usernameField.setEditable(true);
+        innerPanel.add(usernameField, updateGBC(gbc, 0, 2, 2, GridBagConstraints.HORIZONTAL, 1.0));
+
+        // Email
+        innerPanel.add(new JLabel("Email:"), updateGBC(gbc, 0, 3, 2, GridBagConstraints.WEST, 0));
+        emailField.setFont(new Font("Arial", Font.PLAIN, 14));
+        emailField.setEditable(true);
+        innerPanel.add(emailField, updateGBC(gbc, 0, 4, 2, GridBagConstraints.HORIZONTAL, 1.0));
+
+        // Số điện thoại
+        innerPanel.add(new JLabel("Số điện thoại:"), updateGBC(gbc, 0, 5, 2, GridBagConstraints.WEST, 0));
+        phoneField.setFont(new Font("Arial", Font.PLAIN, 14));
+        phoneField.setEditable(true);
+        innerPanel.add(phoneField, updateGBC(gbc, 0, 6, 2, GridBagConstraints.HORIZONTAL, 1.0));
+
+        // Mật khẩu mới
+        innerPanel.add(new JLabel("Mật khẩu mới:"), updateGBC(gbc, 0, 7, 2, GridBagConstraints.WEST, 0));
+        passwordField.setFont(new Font("Arial", Font.PLAIN, 14));
+        passwordField.setEditable(true);
+        innerPanel.add(passwordField, updateGBC(gbc, 0, 8, 2, GridBagConstraints.HORIZONTAL, 1.0));
+
+        // Nút Gửi Yêu Cầu
         JButton submitButton = new JButton("Gửi Yêu Cầu");
-        JButton backButton = new JButton("Quay Lại");
-
-        panel.add(submitButton, updateGBC(gbc, 0, 2, 1));
-        panel.add(backButton, updateGBC(gbc, 1, 2, 1));
-
+        submitButton.setFont(new Font("Arial", Font.BOLD, 14));
+        submitButton.setBackground(new Color(0, 102, 204));
+        submitButton.setForeground(Color.WHITE);
+        submitButton.setFocusPainted(false);
+        submitButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         submitButton.addActionListener(e -> handlePasswordReset());
+        innerPanel.add(submitButton, updateGBC(gbc, 0, 9, 1, GridBagConstraints.NONE, 0));
+
+        // Nút Quay Lại
+        JButton backButton = new JButton("Quay Lại");
+        backButton.setFont(new Font("Arial", Font.BOLD, 14));
+        backButton.setBackground(new Color(0, 102, 204));
+        backButton.setForeground(Color.WHITE);
+        backButton.setFocusPainted(false);
+        backButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         backButton.addActionListener(e -> {
             new LoginView().setVisible(true);
             dispose();
         });
+        innerPanel.add(backButton, updateGBC(gbc, 1, 9, 1, GridBagConstraints.NONE, 0));
 
-        add(panel);
+        // Đặt biểu tượng cho frame
+        ImageIcon icon = new ImageIcon(getClass().getResource("/img/nen1.jpg"));
+        setIconImage(icon.getImage());
     }
 
     private GridBagConstraints createGBC() {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.anchor = GridBagConstraints.CENTER;
         return gbc;
     }
 
-    private GridBagConstraints updateGBC(GridBagConstraints gbc, int x, int y, int width) {
+    private GridBagConstraints updateGBC(GridBagConstraints gbc, int x, int y, int width, int fill, double weightx) {
         gbc.gridx = x;
         gbc.gridy = y;
         gbc.gridwidth = width;
+        gbc.fill = fill;
+        gbc.weightx = weightx;
         return gbc;
     }
 
     private void handlePasswordReset() {
+        String username = usernameField.getText().trim();
         String email = emailField.getText().trim();
+        String phone = phoneField.getText().trim();
+        String password = new String(passwordField.getPassword()).trim();
 
-        if (!ValidationUtils.isValidString(email)) {
-            showError("Vui lòng nhập email!", false);
+        // Kiểm tra dữ liệu nhập
+        if (!ValidationUtils.isValidString(username) || !ValidationUtils.isValidString(email) ||
+            !ValidationUtils.isValidString(phone) || !ValidationUtils.isValidString(password)) {
+            showError("Vui lòng nhập đầy đủ thông tin!", false);
             return;
         }
 
@@ -95,137 +168,77 @@ public class ForgotPasswordView extends JFrame {
             return;
         }
 
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
         try {
-            if (!controller.isEmailExists(email)) {
-                showError("Email không tồn tại trong hệ thống!", false);
+            // Kiểm tra thông tin khớp với cơ sở dữ liệu
+            String sql = "SELECT t.tenDangNhap FROM TaiKhoan t " +
+                        "JOIN NguoiDung n ON t.maNguoiDung = n.maNguoiDung " +
+                        "WHERE t.tenDangNhap = ? AND n.email = ? AND n.soDienThoai = ?";
+            stmt = conn.prepareStatement(sql);
+            stmt.setString(1, username);
+            stmt.setString(2, email);
+            stmt.setString(3, phone);
+            rs = stmt.executeQuery();
+
+            if (!rs.next()) {
+                showError("Thông tin tài khoản, email hoặc số điện thoại không đúng!", false);
                 return;
             }
 
-            String token = UUID.randomUUID().toString();
-            controller.saveResetTokenToDB(email, token);
-            sendResetEmail(email, token);
+            // Cập nhật mật khẩu mới
+            String hashedPassword = hashPassword(password);
+            String updateSql = "UPDATE TaiKhoan SET matKhau = ? WHERE tenDangNhap = ?";
+            stmt = conn.prepareStatement(updateSql);
+            stmt.setString(1, hashedPassword);
+            stmt.setString(2, username);
+            int rowsAffected = stmt.executeUpdate();
 
-            JOptionPane.showMessageDialog(this, "Yêu cầu đã được gửi! Vui lòng kiểm tra email.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            new LoginView().setVisible(true);
-            dispose();
-
-        } catch (Exception ex) {
-            showError("Có lỗi xảy ra: " + ex.getMessage(), false);
-        }
-    }
-
-    private void sendResetEmail(String recipientEmail, String token) {
-        if (senderEmail == null || senderPassword == null) {
-            throw new IllegalStateException("Chưa cấu hình email gửi");
-        }
-
-        Properties props = new Properties();
-        props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.smtp.host", "smtp.gmail.com");
-        props.put("mail.smtp.port", "587");
-
-        Session session = Session.getInstance(props, new Authenticator() {
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(senderEmail, senderPassword);
-            }
-        });
-
-        try {
-            Message message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(senderEmail));
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail));
-            message.setSubject("Yêu cầu đặt lại mật khẩu");
-
-            String resetLink = "http://localhost/reset?token=" + token;
-            String content = String.format("Chào bạn,\n\nBạn đã yêu cầu đặt lại mật khẩu. Vui lòng nhấn vào liên kết sau:\n%s\n\nLiên kết có hiệu lực trong 24 giờ.\nNếu không phải bạn yêu cầu, hãy bỏ qua email này.\n\nTrân trọng,\nCinema Team", resetLink);
-            message.setText(content);
-
-            Transport.send(message);
-        } catch (MessagingException e) {
-            throw new RuntimeException("Không thể gửi email: " + e.getMessage());
-        }
-    }
-
-    private void showEmailConfigDialog() {
-        JDialog dialog = new JDialog(this, "Cấu hình Email Gửi", true);
-        dialog.setSize(1280, 700);
-        dialog.setLayout(new GridBagLayout());
-        dialog.setLocationRelativeTo(this);
-
-        JTextField emailInput = new JTextField(senderEmail != null ? senderEmail : "", 20);
-        JPasswordField passInput = new JPasswordField(senderPassword != null ? senderPassword : "", 20);
-        JButton saveButton = new JButton("Lưu");
-
-        GridBagConstraints gbc = createGBC();
-        dialog.add(new JLabel("Email gửi:"), updateGBC(gbc, 0, 0, 1));
-        dialog.add(emailInput, updateGBC(gbc, 1, 0, 1));
-
-        dialog.add(new JLabel("Mật khẩu ứng dụng:"), updateGBC(gbc, 0, 1, 1));
-        dialog.add(passInput, updateGBC(gbc, 1, 1, 1));
-
-        dialog.add(saveButton, updateGBC(gbc, 1, 2, 1));
-
-        saveButton.addActionListener(_ -> {
-            String email = emailInput.getText().trim();
-            String pass = new String(passInput.getPassword()).trim();
-
-            if (!ValidationUtils.isValidEmail(email) || pass.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "Email hoặc mật khẩu không hợp lệ!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                return;
+            if (rowsAffected > 0) {
+                JOptionPane.showMessageDialog(this, "Mật khẩu đã được cập nhật! Vui lòng đăng nhập.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                new LoginView().setVisible(true);
+                dispose();
+            } else {
+                showError("Không thể cập nhật mật khẩu!", false);
             }
 
-            senderEmail = email;
-            senderPassword = pass;
-            saveEmailConfig(email, pass);
-            dialog.dispose();
-        });
-
-        dialog.setVisible(true);
-    }
-
-    private void loadEmailConfig() {
-        try (InputStream input = getClass().getClassLoader().getResourceAsStream("mail.properties")) {
-            if (input != null) {
-                Properties props = new Properties();
-                props.load(input);
-                senderEmail = props.getProperty("mail.sender.email");
-                String encryptedPass = props.getProperty("mail.sender.password");
-                if (encryptedPass != null) senderPassword = decrypt(encryptedPass);
+        } catch (SQLException ex) {
+            showError("Lỗi cơ sở dữ liệu: " + ex.getMessage(), false);
+        } finally {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
-        } catch (Exception e) {
-            System.err.println("Lỗi khi tải cấu hình email: " + e.getMessage());
-        }
-    }
-
-    private void saveEmailConfig(String email, String password) {
-        try {
-            Properties props = new Properties();
-            props.setProperty("mail.sender.email", email);
-            props.setProperty("mail.sender.password", encrypt(password));
-
-            try (FileOutputStream out = new FileOutputStream("src/main/resources/mail.properties")) {
-                props.store(out, "Email Configuration");
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
-        } catch (Exception e) {
-            showError("Không thể lưu cấu hình: " + e.getMessage(), false);
         }
-    }
-
-    private String encrypt(String data) throws Exception {
-        Cipher cipher = Cipher.getInstance("AES");
-        cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(ENCRYPTION_KEY.getBytes(), "AES"));
-        return Base64.getEncoder().encodeToString(cipher.doFinal(data.getBytes()));
-    }
-
-    private String decrypt(String encrypted) throws Exception {
-        Cipher cipher = Cipher.getInstance("AES");
-        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(ENCRYPTION_KEY.getBytes(), "AES"));
-        return new String(cipher.doFinal(Base64.getDecoder().decode(encrypted)));
     }
 
     private void showError(String msg, boolean exitAfter) {
         JOptionPane.showMessageDialog(this, msg, "Lỗi", JOptionPane.ERROR_MESSAGE);
         if (exitAfter) System.exit(1);
     }
+
+    private String hashPassword(String password) {
+    	 try {
+             java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+             byte[] hash = md.digest(password.getBytes());
+             StringBuilder hexString = new StringBuilder();
+             for (byte b : hash) {
+                 hexString.append(Integer.toHexString(0xFF & b));
+             }
+             return hexString.toString(); // Trả về mật khẩu đã mã hóa MD5
+         } catch (Exception ex) {
+             ex.printStackTrace();
+         }
+         return null;
+     }
 }

@@ -2,7 +2,6 @@ package com.cinema.views;
 
 import com.cinema.models.LoaiTaiKhoan;
 import com.cinema.utils.DatabaseConnection;
-import com.formdev.flatlaf.FlatLightLaf;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -14,6 +13,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import com.formdev.flatlaf.FlatLightLaf;
 
 public class LoginView extends JFrame {
     private final Connection conn;
@@ -24,17 +24,17 @@ public class LoginView extends JFrame {
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());
         } catch (Exception ex) {
-            System.err.println("không thể khởi tạo flatLaf");
+            System.err.println("Không thể khởi tạo FlatLaf");
         }
 
         try {
             DatabaseConnection databaseConnection = new DatabaseConnection();
             conn = databaseConnection.getConnection();
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Lỗi khi khởi tạo kết nối cơ sở dữ liệu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Lỗi khi đọc cấu hình cơ sở dữ liệu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             throw new RuntimeException(e);
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Lỗi khi lấy kết nối cơ sở dữ liệu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Lỗi khi kết nối cơ sở dữ liệu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             throw new RuntimeException(e);
         }
         initUI();
@@ -66,24 +66,20 @@ public class LoginView extends JFrame {
 
         // Panel đăng nhập với nền trong suốt
         JPanel loginPanel = new JPanel();
-        loginPanel.setOpaque(false); // Trong suốt hoàn toàn
+        loginPanel.setOpaque(false);
         loginPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
         loginPanel.setLayout(new GridBagLayout());
-        
-        // Thêm một panel con với nền trắng trong suốt nhẹ
+
+        // Panel con với nền trắng trong suốt nhẹ
         JPanel innerPanel = new JPanel();
         innerPanel.setOpaque(true);
-        innerPanel.setBackground(new Color(255, 255, 255, 100)); // Trắng với độ trong suốt cao
+        innerPanel.setBackground(new Color(255, 255, 255, 100));
         innerPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         innerPanel.setLayout(new GridBagLayout());
-        
-        // Đặt kích thước cho panel đăng nhập
         innerPanel.setPreferredSize(new Dimension(320, 400));
-        
+
         // Thêm innerPanel vào loginPanel
         loginPanel.add(innerPanel, new GridBagConstraints());
-        
-        // Thêm loginPanel vào background
         backgroundPanel.add(loginPanel, BorderLayout.CENTER);
 
         // Set bố cục cho innerPanel
@@ -109,18 +105,22 @@ public class LoginView extends JFrame {
 
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1;
         usernameField = new JTextField(15);
         usernameField.setFont(new Font("Arial", Font.PLAIN, 14));
         innerPanel.add(usernameField, gbc);
 
         // Password
         gbc.gridx = 0;
+        gbc.weightx = 0.0;
         gbc.gridy++;
         JLabel passwordLabel = new JLabel("Mật khẩu:");
         passwordLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         innerPanel.add(passwordLabel, gbc);
 
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1;
         passwordField = new JPasswordField(15);
         passwordField.setFont(new Font("Arial", Font.PLAIN, 14));
         innerPanel.add(passwordField, gbc);
@@ -170,7 +170,7 @@ public class LoginView extends JFrame {
 
     private void handleLogin() {
         String username = usernameField.getText().trim();
-        String password = new String(passwordField.getPassword());
+        String password = new String(passwordField.getPassword()).trim();
 
         if (username.isEmpty() || password.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
@@ -183,7 +183,7 @@ public class LoginView extends JFrame {
             String sql = "SELECT loaiTaiKhoan FROM TaiKhoan WHERE tenDangNhap = ? AND matKhau = ?";
             stmt = conn.prepareStatement(sql);
             stmt.setString(1, username);
-            stmt.setString(2, password);
+            stmt.setString(2, hashPassword(password)); // Băm mật khẩu trước khi so sánh
             rs = stmt.executeQuery();
 
             if (rs.next()) {
@@ -237,6 +237,17 @@ public class LoginView extends JFrame {
     }
 
     private String hashPassword(String password) {
-        return password;
-    }
+    	 try {
+             java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+             byte[] hash = md.digest(password.getBytes());
+             StringBuilder hexString = new StringBuilder();
+             for (byte b : hash) {
+                 hexString.append(Integer.toHexString(0xFF & b));
+             }
+             return hexString.toString(); // Trả về mật khẩu đã mã hóa MD5
+         } catch (Exception ex) {
+             ex.printStackTrace();
+         }
+         return null;
+     }
 }
