@@ -86,7 +86,7 @@ public class MainView extends JFrame {
     }
 
     private boolean isAdminRole() {
-        return loaiTaiKhoan == LoaiTaiKhoan.admin;
+        return loaiTaiKhoan == LoaiTaiKhoan.ADMIN;
     }
 
     private void initUI() throws IOException, SQLException {

@@ -2,11 +2,15 @@ package com.cinema.controllers;
 
 import com.cinema.models.LoaiNguoiDung;
 import com.cinema.models.NhanVien;
+import com.cinema.models.TaiKhoan;
 import com.cinema.models.VaiTro;
 import com.cinema.services.NhanVienService;
+import com.cinema.services.TaiKhoanService;
 import com.cinema.views.NhanVienView;
 
 import javax.swing.table.DefaultTableModel;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
@@ -16,12 +20,48 @@ import javax.swing.JOptionPane;
 public class NhanVienController {
     private final NhanVienView view;
     private final NhanVienService service;
+    private final TaiKhoanService taiKhoanService;
 
     public NhanVienController(NhanVienView view) {
         this.view = view;
         this.service = new NhanVienService(view.getDatabaseConnection());
+        this.taiKhoanService = new TaiKhoanService(view.getDatabaseConnection());
         initView();
         addListeners();
+    }
+
+
+    private void initListeners() {
+        view.getBtnTaoTaiKhoan().addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                taoTaiKhoan();
+            }
+        });
+    }
+
+    private void taoTaiKhoan() {
+        try {
+            String tenDangNhap = view.getTxtTenDangNhap().getText();
+            String matKhau = new String(view.getTxtMatKhau().getPassword());
+            String loaiTaiKhoan = (String) view.getCmbLoaiTaiKhoan().getSelectedItem();
+            Integer maNhanVien = view.getSelectedMaNV();
+
+            if (maNhanVien == null) {
+                JOptionPane.showMessageDialog(view, "Vui lòng chọn nhân viên!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            TaiKhoan taiKhoan = new TaiKhoan(tenDangNhap, matKhau, loaiTaiKhoan, maNhanVien);
+            taiKhoanService.createTaiKhoan(taiKhoan);
+
+            JOptionPane.showMessageDialog(view, "Tạo tài khoản thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+            clearForm();
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(view, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(view, "Lỗi cơ sở dữ liệu: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void initView() {
@@ -34,7 +74,7 @@ public class NhanVienController {
     }
 
     private void addListeners() {
-        view.getTxtSearchHoTen().addActionListener(_ -> searchNhanVien());
+        view.getSearchField().addActionListener(_ -> searchNhanVien());
         view.getTable().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = view.getTable().getSelectedRow();
@@ -50,11 +90,9 @@ public class NhanVienController {
     }
 
     private void searchNhanVien() {
-        Integer maNguoiDung = Integer.parseInt(view.getTxtMaND().getText());
-        String hoTen = view.getTxtSearchHoTen().getText().trim();
-        String chucVu = view.getTxtSearchChucVu().getText().trim();
+        String hoTen = view.getSearchText().trim();
         try {
-            loadNhanVienList(service.searchNhanVien(maNguoiDung, hoTen, chucVu));
+            loadNhanVienList(service.searchNhanVien(hoTen));
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(view, "Lỗi khi tìm kiếm nhân viên!");
@@ -70,7 +108,6 @@ public class NhanVienController {
                     nv.getHoTen(),
                     nv.getSoDienThoai(),
                     nv.getEmail(),
-                    nv.getChucVu(),
                     formatCurrency(nv.getLuong()),
                     nv.getVaiTro().getValue()
             });
@@ -87,9 +124,8 @@ public class NhanVienController {
         view.getTxtHoTen().setText(model.getValueAt(row, 1).toString());
         view.getTxtSDT().setText(model.getValueAt(row, 2).toString());
         view.getTxtEmail().setText(model.getValueAt(row, 3).toString());
-        view.getTxtChucVu().setText(model.getValueAt(row, 4).toString());
-        view.getTxtLuong().setText(model.getValueAt(row, 5).toString().replace(" VND", "").replace(",", ""));
-        view.getVaiTroCombo().setSelectedItem(model.getValueAt(row, 6).toString());
+        view.getTxtLuong().setText(model.getValueAt(row, 4).toString().replace(" VND", "").replace(",", ""));
+        view.getVaiTroCombo().setSelectedItem(model.getValueAt(row, 5).toString());
     }
 
     private void themNhanVien() {
@@ -156,7 +192,6 @@ public class NhanVienController {
         view.getTxtHoTen().setText("");
         view.getTxtSDT().setText("");
         view.getTxtEmail().setText("");
-        view.getTxtChucVu().setText("");
         view.getTxtLuong().setText("");
         view.getVaiTroCombo().setSelectedIndex(0);
         view.getTable().clearSelection();
@@ -166,7 +201,6 @@ public class NhanVienController {
         String hoTen = view.getTxtHoTen().getText().trim();
         String sdt = view.getTxtSDT().getText().trim();
         String email = view.getTxtEmail().getText().trim();
-        String chucVu = view.getTxtChucVu().getText().trim();
         String luongStr = view.getTxtLuong().getText().trim();
         VaiTro vaiTro = VaiTro.fromString(Objects.requireNonNull(view.getVaiTroCombo().getSelectedItem()).toString());
 
@@ -184,7 +218,7 @@ public class NhanVienController {
             throw new IllegalArgumentException("Lương phải là số dương!");
         }
 
-        return new NhanVien(0, hoTen, sdt, email, LoaiNguoiDung.NHANVIEN, chucVu, luong, vaiTro);
+        return new NhanVien(0, hoTen, sdt, email, LoaiNguoiDung.NHANVIEN, luong, vaiTro);
     }
 
     private boolean isValidEmail(String email) {

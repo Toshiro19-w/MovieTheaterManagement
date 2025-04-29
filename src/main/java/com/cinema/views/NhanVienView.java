@@ -1,127 +1,237 @@
 package com.cinema.views;
 
 import com.cinema.controllers.NhanVienController;
-import com.cinema.models.LoaiNguoiDung;
 import com.cinema.utils.DatabaseConnection;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
+/**
+ * NhanVienView is a JPanel that provides a GUI for managing employee information
+ * and creating accounts for employees.
+ */
 public class NhanVienView extends JPanel {
     private DatabaseConnection databaseConnection;
-    private JTextField txtSearchMaND, txtSearchHoTen, txtSearchChucVu;
-    private JTextField txtMaND, txtHoTen, txtSDT, txtEmail, txtChucVu, txtLuong;
-    private JComboBox<String> vaiTroCombo;
+    private JTextField searchField, txtTenDangNhap, txtHoTen, txtSDT, txtEmail, txtLuong;
+    private JComboBox<String> vaiTroCombo, cmbLoaiTaiKhoan;
+    private JLabel txtMaND;
     private JTable table;
     private DefaultTableModel tableModel;
-    private JButton btnThem, btnSua, btnXoa, btnClear;
+    private JButton btnThem, btnSua, btnXoa, btnClear, btnTaoTaiKhoan;
+    private JPasswordField txtMatKhau;
+    private Integer selectedMaNV;
+    private TableRowSorter<DefaultTableModel> sorter;
 
-    public NhanVienView() {
+    public NhanVienView() throws SQLException {
+        initializeDatabase();
+        initializeUI();
+        new NhanVienController(this);
+    }
+
+    /**
+     * Initializes the database connection
+     */
+    private void initializeDatabase() {
         try {
             databaseConnection = new DatabaseConnection();
         } catch (IOException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Không thể đọc file cấu hình cơ sở dữ liệu!");
-            return;
+            showError("Không thể kết nối cơ sở dữ liệu: " + e.getMessage());
         }
+    }
 
-        setLayout(new BorderLayout());
+    /**
+     * Initializes the user interface components
+     */
+    private void initializeUI() {
+        setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        // Phần tìm kiếm
-        JPanel searchPanel = new JPanel(new GridLayout(3, 2, 10, 10));
-        searchPanel.setBorder(BorderFactory.createTitledBorder("TÌM KIẾM"));
-        searchPanel.add(new JLabel("Mã ND:"));
-        txtSearchMaND = new JTextField();
-        searchPanel.add(txtSearchMaND);
-        searchPanel.add(new JLabel("Họ Tên:"));
-        txtSearchHoTen = new JTextField();
-        searchPanel.add(txtSearchHoTen);
-        searchPanel.add(new JLabel("Chức Vụ:"));
-        txtSearchChucVu = new JTextField();
-        searchPanel.add(txtSearchChucVu);
+        // Initialize panels
+        JPanel topPanel = new JPanel(new BorderLayout(10, 10));
+        JPanel accountPanel = createAccountPanel();
+        JPanel infoPanel = createInfoPanel();
+        JPanel tablePanel = createTablePanel();
+        JPanel buttonPanel = createButtonPanel();
 
-        // Phần thông tin nhân viên
-        JPanel infoPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        // Combine info and account panels
+        topPanel.add(accountPanel, BorderLayout.NORTH);
+        topPanel.add(infoPanel, BorderLayout.CENTER);
+
+        // Add components to main panel
+        add(topPanel, BorderLayout.NORTH);
+        add(tablePanel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+    }
+
+    /**
+     * Creates the account creation panel
+     */
+    private JPanel createAccountPanel() {
+        JPanel panel = new JPanel(new GridLayout(4, 2, 10, 10));
+        panel.setBorder(BorderFactory.createTitledBorder("TẠO TÀI KHOẢN NHÂN VIÊN"));
+
+        panel.add(new JLabel("Tên Đăng Nhập:"));
+        txtTenDangNhap = new JTextField();
+        panel.add(txtTenDangNhap);
+
+        panel.add(new JLabel("Mật Khẩu:"));
+        txtMatKhau = new JPasswordField();
+        panel.add(txtMatKhau);
+
+        panel.add(new JLabel("Loại Tài Khoản:"));
+        cmbLoaiTaiKhoan = new JComboBox<>(new String[]{"admin", "user"});
+        panel.add(cmbLoaiTaiKhoan);
+
+        panel.add(new JLabel(""));
+        btnTaoTaiKhoan = new JButton("TẠO TÀI KHOẢN");
+        panel.add(btnTaoTaiKhoan);
+
+        return panel;
+    }
+
+    /**
+     * Creates the employee information panel
+     */
+    private JPanel createInfoPanel() {
+        JPanel infoPanel = new JPanel(new BorderLayout(10, 10));
         infoPanel.setBorder(BorderFactory.createTitledBorder("THÔNG TIN NHÂN VIÊN"));
 
-        infoPanel.add(new JLabel("Mã ND:"));
-        txtMaND = new JTextField();
-        txtMaND.setEditable(false);
-        infoPanel.add(txtMaND);
+        JPanel fieldsPanel = new JPanel(new GridLayout(7, 2, 10, 10));
+        initializeFields(fieldsPanel);
 
-        infoPanel.add(new JLabel("Họ Tên:"));
+        infoPanel.add(fieldsPanel, BorderLayout.CENTER);
+        return infoPanel;
+    }
+
+    /**
+     * Initializes input fields for employee information
+     */
+    private void initializeFields(JPanel fieldsPanel) {
+        txtMaND = new JLabel();
         txtHoTen = new JTextField();
-        infoPanel.add(txtHoTen);
-
-        infoPanel.add(new JLabel("SĐT:"));
         txtSDT = new JTextField();
-        infoPanel.add(txtSDT);
-
-        infoPanel.add(new JLabel("Email:"));
         txtEmail = new JTextField();
-        infoPanel.add(txtEmail);
-
-        infoPanel.add(new JLabel("Chức Vụ:"));
-        txtChucVu = new JTextField();
-        infoPanel.add(txtChucVu);
-
-        infoPanel.add(new JLabel("Lương:"));
         txtLuong = new JTextField();
-        infoPanel.add(txtLuong);
-
-        infoPanel.add(new JLabel("Vai Trò:"));
         vaiTroCombo = new JComboBox<>(new String[]{"Admin", "QuanLy", "ThuNgan", "BanVe"});
-        infoPanel.add(vaiTroCombo);
+        searchField = new JTextField();
 
-        // Phần bảng danh sách nhân viên
-        String[] columns = {"Mã ND", "Họ Tên", "SĐT", "Email", "Chức Vụ", "Lương", "Vai Trò"};
+        addField(fieldsPanel, "Mã Nhân Viên:", txtMaND);
+        addField(fieldsPanel, "Họ Tên:", txtHoTen);
+        addField(fieldsPanel, "Số Điện Thoại:", txtSDT);
+        addField(fieldsPanel, "Email:", txtEmail);
+        addField(fieldsPanel, "Lương:", txtLuong);
+        addField(fieldsPanel, "Vai Trò:", vaiTroCombo);
+        addField(fieldsPanel, "Tìm Kiếm:", searchField);
+
+        // Add search functionality
+        searchField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                String searchText = searchField.getText();
+                if (searchText.trim().length() == 0) {
+                    sorter.setRowFilter(null);
+                } else {
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + searchText));
+                }
+            }
+        });
+    }
+
+    /**
+     * Adds a label and component to the fields panel
+     */
+    private void addField(JPanel panel, String labelText, JComponent component) {
+        panel.add(new JLabel(labelText));
+        panel.add(component);
+    }
+
+    /**
+     * Creates the table panel for displaying employees
+     */
+    private JPanel createTablePanel() {
+        String[] columns = {"Mã Nhân Viên", "Họ Tên", "SĐT", "Email", "Lương", "Vai Trò"};
         tableModel = new DefaultTableModel(columns, 0);
         table = new JTable(tableModel);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        sorter = new TableRowSorter<>(tableModel);
+        table.setRowSorter(sorter);
+
+        // Handle table selection
+        table.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int selectedRow = table.getSelectedRow();
+                if (selectedRow >= 0) {
+                    selectedMaNV = (Integer) tableModel.getValueAt(selectedRow, 0);
+                } else {
+                    selectedMaNV = null;
+                }
+            }
+        });
+
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createTitledBorder("DANH SÁCH NHÂN VIÊN"));
+        return new JPanel(new BorderLayout()) {{ add(scrollPane, BorderLayout.CENTER); }};
+    }
 
-        // Phần nút thao tác
+    /**
+     * Creates the button panel for CRUD operations
+     */
+    private JPanel createButtonPanel() {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         btnThem = new JButton("THÊM");
         btnSua = new JButton("SỬA");
         btnXoa = new JButton("XÓA");
         btnClear = new JButton("CLEAR");
+
         buttonPanel.add(btnThem);
         buttonPanel.add(btnSua);
         buttonPanel.add(btnXoa);
         buttonPanel.add(btnClear);
-
-        // Sắp xếp layout
-        JPanel topPanel = new JPanel(new GridLayout(2, 1, 10, 10));
-        topPanel.add(searchPanel);
-        topPanel.add(infoPanel);
-
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.add(buttonPanel, BorderLayout.CENTER);
-
-        add(topPanel, BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
-        add(bottomPanel, BorderLayout.SOUTH);
-
-        // Khởi tạo controller
-        new NhanVienController(this);
+        return buttonPanel;
     }
 
-    // Getter cho controller truy cập
+    /**
+     * Clears the employee and account forms
+     */
+    public void clearForms() {
+        txtMaND.setText("");
+        txtHoTen.setText("");
+        txtSDT.setText("");
+        txtEmail.setText("");
+        txtLuong.setText("");
+        vaiTroCombo.setSelectedIndex(0);
+        txtTenDangNhap.setText("");
+        txtMatKhau.setText("");
+        cmbLoaiTaiKhoan.setSelectedIndex(0);
+        searchField.setText("");
+        selectedMaNV = null;
+        table.clearSelection();
+    }
+
+    /**
+     * Shows an error message dialog
+     */
+    private void showError(String message) {
+        JOptionPane.showMessageDialog(this, message, "Lỗi", JOptionPane.ERROR_MESSAGE);
+    }
+
+    // Getters
     public DatabaseConnection getDatabaseConnection() { return databaseConnection; }
-    public JTextField getTxtSearchMaND() { return txtSearchMaND; }
-    public JTextField getTxtSearchHoTen() { return txtSearchHoTen; }
-    public JTextField getTxtSearchChucVu() { return txtSearchChucVu; }
-    public JTextField getTxtMaND() { return txtMaND; }
+    public JLabel getTxtMaND() { return txtMaND; }
     public JTextField getTxtHoTen() { return txtHoTen; }
     public JTextField getTxtSDT() { return txtSDT; }
     public JTextField getTxtEmail() { return txtEmail; }
-    public JTextField getTxtChucVu() { return txtChucVu; }
     public JTextField getTxtLuong() { return txtLuong; }
     public JComboBox<String> getVaiTroCombo() { return vaiTroCombo; }
     public JTable getTable() { return table; }
@@ -130,4 +240,11 @@ public class NhanVienView extends JPanel {
     public JButton getBtnSua() { return btnSua; }
     public JButton getBtnXoa() { return btnXoa; }
     public JButton getBtnClear() { return btnClear; }
+    public JTextField getTxtTenDangNhap() { return txtTenDangNhap; }
+    public JPasswordField getTxtMatKhau() { return txtMatKhau; }
+    public JComboBox<String> getCmbLoaiTaiKhoan() { return cmbLoaiTaiKhoan; }
+    public JButton getBtnTaoTaiKhoan() { return btnTaoTaiKhoan; }
+    public Integer getSelectedMaNV() { return selectedMaNV; }
+    public JTextField getSearchField() { return searchField; }
+    public String getSearchText() { return searchField.getText(); }
 }

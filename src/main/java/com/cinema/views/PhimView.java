@@ -6,7 +6,10 @@ import com.cinema.utils.DatabaseConnection;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,171 +17,236 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 
+/**
+ * PhimView is a JPanel that provides a GUI for managing movie information.
+ * It includes input fields for movie details, a table for displaying movies,
+ * and buttons for CRUD operations.
+ */
 public class PhimView extends JPanel {
     private DatabaseConnection databaseConnection;
-    private JTextField txtSearchTenPhim;
+    private JTextField searchField;
     private JTextField txtTenPhim, txtTenTheLoai, txtThoiLuong,
             txtNgayKhoiChieu, txtNuocSanXuat, txtDinhDang, txtMoTa,
-            txtDaoDien, txtSearchTenTheLoai, txtSearchNuocSanXuat, txtSearchDaoDien;
+            txtDaoDien;
     private JLabel txtMaPhim, posterLabel;
-    private JButton btnChonAnh; // Nút chọn ảnh
-    private String selectedPosterPath; // Lưu tên file ảnh đã chọn
+    private JButton btnChonAnh;
+    private String selectedPosterPath;
     private JTable table;
     private DefaultTableModel tableModel;
     private JButton btnThem, btnSua, btnXoa, btnClear;
+    private TableRowSorter<DefaultTableModel> sorter;
 
     public PhimView() throws SQLException {
+        initializeDatabase();
+        initializeUI();
+        new PhimController(this);
+    }
+
+    /**
+     * Initializes the database connection
+     */
+    private void initializeDatabase() {
         try {
             databaseConnection = new DatabaseConnection();
         } catch (IOException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Không thể đọc file cấu hình cơ sở dữ liệu!");
-            return;
+            showError("Không thể kết nối cơ sở dữ liệu: " + e.getMessage());
         }
+    }
 
-        setLayout(new BorderLayout());
-        setBorder(new EmptyBorder(10, 10, 10, 10));
+    /**
+     * Initializes the user interface components
+     */
+    private void initializeUI() {
+        setLayout(new BorderLayout(10, 10));
+        setBorder((((new EmptyBorder(10, 10, 10, 10)))));
 
-        // Phần tìm kiếm
-        JPanel searchPanel = new JPanel(new GridLayout(4, 2, 10, 10));
-        searchPanel.setBorder(BorderFactory.createTitledBorder("TÌM KIẾM"));
-        searchPanel.add(new JLabel("Tên Phim:"));
-        txtSearchTenPhim = new JTextField();
-        searchPanel.add(txtSearchTenPhim);
-        searchPanel.add(new JLabel("Thể Loại:"));
-        txtSearchTenTheLoai = new JTextField();
-        searchPanel.add(txtSearchTenTheLoai);
-        searchPanel.add(new JLabel("Nước Sản Xuất:"));
-        txtSearchNuocSanXuat = new JTextField();
-        searchPanel.add(txtSearchNuocSanXuat);
-        searchPanel.add(new JLabel("Đạo diễn:"));
-        txtSearchDaoDien = new JTextField();
-        searchPanel.add(txtSearchDaoDien);
+        // Initialize info panel
+        JPanel infoPanel = createInfoPanel();
 
-        // Phần thông tin phim
+        // Initialize table
+        JPanel tablePanel = createTablePanel();
+
+        // Initialize button panel
+        JPanel buttonPanel = createButtonPanel();
+
+        // Combine panels
+        add(infoPanel, BorderLayout.NORTH);
+        add(tablePanel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+    }
+
+    /**
+     * Creates the information input panel
+     */
+    private JPanel createInfoPanel() {
         JPanel infoPanel = new JPanel(new BorderLayout(10, 10));
         infoPanel.setBorder(BorderFactory.createTitledBorder("THÔNG TIN PHIM"));
 
-        // Panel chứa các trường thông tin
-        JPanel fieldsPanel = new JPanel(new GridLayout(5, 2, 10, 10));
-        fieldsPanel.add(new JLabel("Mã Phim:"));
-        txtMaPhim = new JLabel();
-        fieldsPanel.add(txtMaPhim);
+        JPanel fieldsPanel = new JPanel(new GridLayout(6, 2, 10, 10));
 
-        fieldsPanel.add(new JLabel("Tên Phim:"));
-        txtTenPhim = new JTextField();
-        fieldsPanel.add(txtTenPhim);
+        // Initialize fields
+        initializeFields(fieldsPanel);
 
-        fieldsPanel.add(new JLabel("Thể Loại:"));
-        txtTenTheLoai = new JTextField();
-        fieldsPanel.add(txtTenTheLoai);
-
-        fieldsPanel.add(new JLabel("Thời Lượng:"));
-        txtThoiLuong = new JTextField();
-        fieldsPanel.add(txtThoiLuong);
-
-        fieldsPanel.add(new JLabel("Ngày Khởi Chiếu:"));
-        txtNgayKhoiChieu = new JTextField();
-        fieldsPanel.add(txtNgayKhoiChieu);
-
-        fieldsPanel.add(new JLabel("Nước Sản Xuất:"));
-        txtNuocSanXuat = new JTextField();
-        fieldsPanel.add(txtNuocSanXuat);
-
-        fieldsPanel.add(new JLabel("Định Dạng:"));
-        txtDinhDang = new JTextField();
-        fieldsPanel.add(txtDinhDang);
-
-        fieldsPanel.add(new JLabel("Mô Tả:"));
-        txtMoTa = new JTextField();
-        fieldsPanel.add(txtMoTa);
-
-        fieldsPanel.add(new JLabel("Đạo Diễn:"));
-        txtDaoDien = new JTextField();
-        fieldsPanel.add(txtDaoDien);
-
-        // Panel chứa nút chọn ảnh
-        JPanel chonAnhPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        btnChonAnh = new JButton("Chọn Ảnh");
-        btnChonAnh.addActionListener(e -> chonAnh());
-        chonAnhPanel.add(btnChonAnh);
-        fieldsPanel.add(chonAnhPanel);
-
-        // Thêm posterLabel để hiển thị ảnh
+        // Initialize poster
         posterLabel = new JLabel();
         posterLabel.setPreferredSize(new Dimension(150, 200));
         posterLabel.setHorizontalAlignment(SwingConstants.CENTER);
         posterLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 
-        // Kết hợp fieldsPanel và posterLabel
         infoPanel.add(fieldsPanel, BorderLayout.CENTER);
         infoPanel.add(posterLabel, BorderLayout.EAST);
+        return infoPanel;
+    }
 
-        // Kết hợp searchPanel và infoPanel
-        JPanel northPanel = new JPanel(new GridLayout(2, 1, 10, 10));
-        northPanel.add(searchPanel);
-        northPanel.add(infoPanel);
+    /**
+     * Initializes input fields and their labels
+     */
+    private void initializeFields(JPanel fieldsPanel) {
+        txtMaPhim = new JLabel();
+        txtTenPhim = new JTextField();
+        txtTenTheLoai = new JTextField();
+        txtThoiLuong = new JTextField();
+        txtNgayKhoiChieu = new JTextField();
+        txtNuocSanXuat = new JTextField();
+        txtDinhDang = new JTextField();
+        txtMoTa = new JTextField();
+        txtDaoDien = new JTextField();
+        searchField = new JTextField();
 
-        // Phần bảng danh sách phim
-        String[] columns = {"Mã Phim", "Tên Phim", "Thể Loại", "Thời Lượng", "Ngày Khởi Chiếu", "Nước Sản Xuất", "Định Dạng", "Mô Tả", "Đạo Diễn"};
+        // Add components to panel
+        addField(fieldsPanel, "Mã Phim:", txtMaPhim);
+        addField(fieldsPanel, "Tên Phim:", txtTenPhim);
+        addField(fieldsPanel, "Thể Loại:", txtTenTheLoai);
+        addField(fieldsPanel, "Thời Lượng:", txtThoiLuong);
+        addField(fieldsPanel, "Ngày Khởi Chiếu:", txtNgayKhoiChieu);
+        addField(fieldsPanel, "Nước Sản Xuất:", txtNuocSanXuat);
+        addField(fieldsPanel, "Định Dạng:", txtDinhDang);
+        addField(fieldsPanel, "Mô Tả:", txtMoTa);
+        addField(fieldsPanel, "Đạo Diễn:", txtDaoDien);
+        addField(fieldsPanel, "Tìm Kiếm:", searchField);
+
+        // Add image selection button
+        JPanel chonAnhPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        btnChonAnh = new JButton("Chọn Ảnh");
+        btnChonAnh.addActionListener(e -> chonAnh());
+        chonAnhPanel.add(btnChonAnh);
+        fieldsPanel.add(new JLabel("Poster:"));
+        fieldsPanel.add(chonAnhPanel);
+
+        // Add search functionality
+        searchField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                String searchText = searchField.getText();
+                if (searchText.trim().length() == 0) {
+                    sorter.setRowFilter(null);
+                } else {
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + searchText));
+                }
+            }
+        });
+    }
+
+    /**
+     * Adds a label and component to the fields panel
+     */
+    private void addField(JPanel panel, String labelText, JComponent component) {
+        panel.add(new JLabel(labelText));
+        panel.add(component);
+    }
+
+    /**
+     * Creates the table panel
+     */
+    private JPanel createTablePanel() {
+        String[] columns = {"Mã Phim", "Tên Phim", "Thể Loại", "Thời Lượng",
+                "Ngày Khởi Chiếu", "Nước Sản Xuất", "Định Dạng",
+                "Mô Tả", "Đạo Diễn"};
         tableModel = new DefaultTableModel(columns, 0);
         table = new JTable(tableModel);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        sorter = new TableRowSorter<>(tableModel);
+        table.setRowSorter(sorter);
+
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createTitledBorder("DANH SÁCH PHIM"));
+        return new JPanel(new BorderLayout()) {{ add(scrollPane, BorderLayout.CENTER); }};
+    }
 
-        // Phần nút thao tác
+    /**
+     * Creates the button panel
+     */
+    private JPanel createButtonPanel() {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         btnThem = new JButton("THÊM");
         btnSua = new JButton("SỬA");
         btnXoa = new JButton("XÓA");
         btnClear = new JButton("CLEAR");
+
         buttonPanel.add(btnThem);
         buttonPanel.add(btnSua);
         buttonPanel.add(btnXoa);
         buttonPanel.add(btnClear);
-
-        // Sắp xếp layout
-        add(northPanel, BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH); // Sửa "bottomPanel" thành "buttonPanel"
-
-        // Khởi tạo controller
-        new PhimController(this);
+        return buttonPanel;
     }
 
+    /**
+     * Handles image selection and display
+     */
     private void chonAnh() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Chọn ảnh phim");
         fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Image files", "jpg", "png", "jpeg", "gif"));
+        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+                "Image files", "jpg", "png", "jpeg", "gif"));
+
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = fileChooser.getSelectedFile();
-            selectedPosterPath = selectedFile.getName(); // Chỉ lưu tên file
             try {
-                // Sao chép file vào resources/images/posters/
+                File selectedFile = fileChooser.getSelectedFile();
+                selectedPosterPath = selectedFile.getName();
+
+                // Copy file to resources
                 Path source = selectedFile.toPath();
                 Path target = Paths.get("src/main/resources/images/posters/" + selectedPosterPath);
-                Files.createDirectories(target.getParent()); // Tạo thư mục nếu chưa tồn tại
+                Files.createDirectories(target.getParent());
                 Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
 
-                // Hiển thị ảnh trong posterLabel
-                ImageIcon posterIcon = new ImageIcon(selectedFile.getPath());
-                Image scaledImage = posterIcon.getImage().getScaledInstance(150, 200, Image.SCALE_SMOOTH);
-                posterLabel.setIcon(new ImageIcon(scaledImage));
-                posterLabel.setText("");
+                // Display image
+                displayImage(selectedFile);
             } catch (IOException e) {
-                e.printStackTrace();
-                posterLabel.setIcon(null);
-                posterLabel.setText("Không thể tải ảnh");
+                showError("Không thể xử lý ảnh: " + e.getMessage());
             }
         }
     }
 
+    /**
+     * Displays the selected image in the poster label
+     */
+    private void displayImage(File file) {
+        try {
+            ImageIcon posterIcon = new ImageIcon(file.getPath());
+            Image scaledImage = posterIcon.getImage().getScaledInstance(150, 200, Image.SCALE_SMOOTH);
+            posterLabel.setIcon(new ImageIcon(scaledImage));
+            posterLabel.setText("");
+        } catch (Exception e) {
+            posterLabel.setIcon(null);
+            posterLabel.setText("Không thể hiển thị ảnh");
+        }
+    }
+
+    /**
+     * Shows an error message dialog
+     */
+    private void showError(String message) {
+        JOptionPane.showMessageDialog(this, message, "Lỗi", JOptionPane.ERROR_MESSAGE);
+    }
+
     // Getters
     public DatabaseConnection getDatabaseConnection() { return databaseConnection; }
-    public JTextField getTxtSearchTenPhim() { return txtSearchTenPhim; }
+    public JTextField getSearchField() { return searchField; }
     public JLabel getTxtMaPhim() { return txtMaPhim; }
     public JTextField getTxtTenPhim() { return txtTenPhim; }
     public JTextField getTxtTenTheLoai() { return txtTenTheLoai; }
@@ -188,9 +256,6 @@ public class PhimView extends JPanel {
     public JTextField getTxtDinhDang() { return txtDinhDang; }
     public JTextField getTxtMoTa() { return txtMoTa; }
     public JTextField getTxtDaoDien() { return txtDaoDien; }
-    public JTextField getTxtSearchTenTheLoai() { return txtSearchTenTheLoai; }
-    public JTextField getTxtSearchNuocSanXuat() { return txtSearchNuocSanXuat; }
-    public JTextField getTxtSearchDaoDien() { return txtSearchDaoDien; }
     public JLabel getPosterLabel() { return posterLabel; }
     public String getSelectedPosterPath() { return selectedPosterPath; }
     public void clearSelectedPosterPath() { selectedPosterPath = null; }
@@ -200,4 +265,5 @@ public class PhimView extends JPanel {
     public JButton getBtnSua() { return btnSua; }
     public JButton getBtnXoa() { return btnXoa; }
     public JButton getBtnClear() { return btnClear; }
+    public String getSearchText() { return searchField.getText(); }
 }
