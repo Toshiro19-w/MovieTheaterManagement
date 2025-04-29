@@ -1,6 +1,6 @@
 package com.cinema.models.repositories;
 
-import com.cinema.models.TrangThaiVe;
+import com.cinema.enums.TrangThaiVe;
 import com.cinema.models.Ve;
 import com.cinema.utils.DatabaseConnection;
 
