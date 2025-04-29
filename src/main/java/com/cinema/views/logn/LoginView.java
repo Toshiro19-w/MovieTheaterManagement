@@ -1,6 +1,6 @@
 package com.cinema.views;
 
-import com.cinema.enums.LoaiTaiKhoan;
+import com.cinema.models.LoaiTaiKhoan;
 import com.cinema.utils.DatabaseConnection;
 import com.formdev.flatlaf.FlatLightLaf;
 
@@ -14,7 +14,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Objects;
 
 public class LoginView extends JFrame {
     private final Connection conn;
@@ -48,19 +47,12 @@ public class LoginView extends JFrame {
         setLocationRelativeTo(null);
 
         setResizable(true);
-
-        ImageIcon icon = new ImageIcon(Objects.requireNonNull(getClass().getResource("/img/133864911312596807.jpg")));
+        
+        ImageIcon icon = new ImageIcon(getClass().getResource("/img/133864911312596807.jpg"));
         setIconImage(icon.getImage());
 
         setResizable(false);
 
-        // Panel con với nền trắng trong suốt nhẹ
-        JPanel innerPanel = new JPanel();
-        innerPanel.setOpaque(true);
-        innerPanel.setBackground(new Color(255, 255, 255, 100));
-        innerPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        innerPanel.setLayout(new GridBagLayout());
-        innerPanel.setPreferredSize(new Dimension(320, 400));
 
         // Panel nền với gradient
         JPanel backgroundPanel = getBackgroundPanel();
@@ -92,24 +84,19 @@ public class LoginView extends JFrame {
         loginPanel.add(usernameLabel, gbc);
 
         gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1;
-        usernameField = new JTextField(15);
+        usernameField = new JTextField(20);
         usernameField.setFont(new Font("Arial", Font.PLAIN, 14));
         loginPanel.add(usernameField, gbc);
 
         // Password
         gbc.gridx = 0;
-        gbc.weightx = 0.0;
         gbc.gridy++;
         JLabel passwordLabel = new JLabel("Mật khẩu:");
         passwordLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         loginPanel.add(passwordLabel, gbc);
 
         gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1;
-        passwordField = new JPasswordField(15);
+        passwordField = new JPasswordField(20);
         passwordField.setFont(new Font("Arial", Font.PLAIN, 14));
         loginPanel.add(passwordField, gbc);
 
@@ -141,7 +128,6 @@ public class LoginView extends JFrame {
         });
         loginPanel.add(forgotLabel, gbc);
 
-        // Liên kết Register
         gbc.gridy++;
         JLabel registerLabel = new JLabel("Không có tài khoản? Đăng ký", SwingConstants.CENTER);
         registerLabel.setFont(new Font("Arial", Font.PLAIN, 12));
@@ -218,24 +204,8 @@ public class LoginView extends JFrame {
                 JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
 
                 // Chuyển hướng dựa trên vai trò
-                switch (role.toLowerCase()) {
-                    case "admin":
-                        openMainView(username, LoaiTaiKhoan.ADMIN);
-                        break;
-                    case "quanlyphim":
-                        openMainView(username, LoaiTaiKhoan.QUANLYPHIM);
-                        break;
-                    case "thungan":
-                        openMainView(username, LoaiTaiKhoan.THUNGAN);
-                        break;
-                    case "banve":
-                        openMainView(username, LoaiTaiKhoan.BANVE);
-                        break;
-                    case "user":
-                    default:
-                        openMainView(username, LoaiTaiKhoan.USER); // Mặc định là khách hàng
-                        break;
-                }
+                if ("admin".equalsIgnoreCase(role)) openMainView(username, LoaiTaiKhoan.ADMIN); // Mở giao diện admin
+                else openMainView(username, LoaiTaiKhoan.USER); // Mở giao diện khách hàng
                 dispose(); // Đóng cửa sổ đăng nhập
             } else {
                 JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
@@ -286,17 +256,18 @@ public class LoginView extends JFrame {
 
     // Hàm mã hóa mật khẩu (sử dụng MD5)
     private String hashPassword(String password) {
-    	 try {
-             java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-             byte[] hash = md.digest(password.getBytes());
-             StringBuilder hexString = new StringBuilder();
-             for (byte b : hash) {
-                 hexString.append(Integer.toHexString(0xFF & b));
-             }
-             return hexString.toString(); // Trả về mật khẩu đã mã hóa MD5
-         } catch (Exception ex) {
-             ex.printStackTrace();
-         }
-         return null;
-     }
+//        try {
+//            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+//            byte[] hash = md.digest(password.getBytes());
+//            StringBuilder hexString = new StringBuilder();
+//            for (byte b : hash) {
+//                hexString.append(Integer.toHexString(0xFF & b));
+//            }
+//            return hexString.toString(); // Trả về mật khẩu đã mã hóa MD5
+//        } catch (Exception ex) {
+//            ex.printStackTrace();
+//        }
+//        return null;
+    	return password;
+    }
 }
