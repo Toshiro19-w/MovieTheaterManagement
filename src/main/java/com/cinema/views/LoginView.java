@@ -204,8 +204,8 @@ public class LoginView extends JFrame {
                 JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
 
                 // Chuyển hướng dựa trên vai trò
-                if ("admin".equalsIgnoreCase(role)) openMainView(username, LoaiTaiKhoan.admin); // Mở giao diện admin
-                else openMainView(username, LoaiTaiKhoan.user); // Mở giao diện khách hàng
+                if ("admin".equalsIgnoreCase(role)) openMainView(username, LoaiTaiKhoan.ADMIN); // Mở giao diện admin
+                else openMainView(username, LoaiTaiKhoan.USER); // Mở giao diện khách hàng
                 dispose(); // Đóng cửa sổ đăng nhập
             } else {
                 JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");

@@ -19,7 +19,7 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
     public List<NhanVien> findAll() throws SQLException {
         List<NhanVien> list = new ArrayList<>();
         String sql = "SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email, nd.loaiNguoiDung, " +
-                "nv.chucVu, nv.luong, nv.vaiTro " +
+                "nv.luong, nv.vaiTro " +
                 "FROM NguoiDung nd JOIN NhanVien nv ON nd.maNguoiDung = nv.maNguoiDung";
         try (PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -30,7 +30,6 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
                         rs.getString("soDienThoai"),
                         rs.getString("email"),
                         LoaiNguoiDung.fromString(rs.getString("loaiNguoiDung")),
-                        rs.getString("chucVu"),
                         rs.getBigDecimal("luong"),
                         VaiTro.fromString(rs.getString("vaiTro"))
                 ));
@@ -54,12 +53,11 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
             }
         }
 
-        String sqlNhanVien = "INSERT INTO NhanVien (maNguoiDung, chucVu, luong, vaiTro) VALUES (?, ?, ?, ?)";
+        String sqlNhanVien = "INSERT INTO NhanVien (maNguoiDung, luong, vaiTro) VALUES (?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sqlNhanVien)) {
             stmt.setInt(1, entity.getMaNguoiDung());
-            stmt.setString(2, entity.getChucVu());
-            stmt.setBigDecimal(3, entity.getLuong());
-            stmt.setString(4, entity.getVaiTro().toString());
+            stmt.setBigDecimal(2, entity.getLuong());
+            stmt.setString(3, entity.getVaiTro().toString());
             stmt.executeUpdate();
         }
 
@@ -77,12 +75,11 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
             stmt.executeUpdate();
         }
 
-        String sqlNhanVien = "UPDATE NhanVien SET chucVu = ?, luong = ?, vaiTro = ? WHERE maNguoiDung = ?";
+        String sqlNhanVien = "UPDATE NhanVien SET luong = ?, vaiTro = ? WHERE maNguoiDung = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sqlNhanVien)) {
-            stmt.setString(1, entity.getChucVu());
-            stmt.setBigDecimal(2, entity.getLuong());
-            stmt.setString(3, entity.getVaiTro().toString());
-            stmt.setInt(4, entity.getMaNguoiDung());
+            stmt.setBigDecimal(1, entity.getLuong());
+            stmt.setString(2, entity.getVaiTro().toString());
+            stmt.setInt(3, entity.getMaNguoiDung());
             stmt.executeUpdate();
         }
 
@@ -98,28 +95,20 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
         }
     }
 
-    public List<NhanVien> searchNhanVien(Integer maNguoiDung, String hoTen, String chucVu) throws SQLException {
+    public List<NhanVien> searchNhanVien(String hoTen) throws SQLException {
         List<NhanVien> nhanVienList = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
                 "SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email, nd.loaiNguoiDung, " +
-                        "nv.chucVu, nv.luong, nv.vaiTro " +
+                        "nv.luong, nv.vaiTro " +
                         "FROM NguoiDung nd " +
                         "JOIN NhanVien nv ON nd.maNguoiDung = nv.maNguoiDung " +
                         "WHERE nd.loaiNguoiDung = 'NhanVien'"
         );
 
         List<Object> params = new ArrayList<>();
-        if (maNguoiDung != null && maNguoiDung > 0) {
-            sql.append(" AND nd.maNguoiDung = ?");
-            params.add(maNguoiDung);
-        }
         if (hoTen != null && !hoTen.trim().isEmpty()) {
             sql.append(" AND nd.hoTen LIKE ?");
             params.add("%" + hoTen.trim() + "%");
-        }
-        if (chucVu != null && !chucVu.trim().isEmpty()) {
-            sql.append(" AND nv.chucVu LIKE ?");
-            params.add("%" + chucVu.trim() + "%");
         }
 
         try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
@@ -134,7 +123,6 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
                         rs.getString("soDienThoai"),
                         rs.getString("email"),
                         LoaiNguoiDung.fromString(rs.getString("loaiNguoiDung")),
-                        rs.getString("chucVu"),
                         rs.getBigDecimal("luong"),
                         VaiTro.fromString(rs.getString("vaiTro"))
                 ));

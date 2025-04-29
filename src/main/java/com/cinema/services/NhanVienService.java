@@ -18,8 +18,8 @@ public class NhanVienService {
         return nhanVienRepository.findAll();
     }
 
-    public List<NhanVien> searchNhanVien(Integer maNguoiDung, String hoTen, String chucVu) throws SQLException {
-        return nhanVienRepository.searchNhanVien(maNguoiDung, hoTen, chucVu);
+    public List<NhanVien> searchNhanVien(String hoTen) throws SQLException {
+        return nhanVienRepository.searchNhanVien(hoTen);
     }
 
     public void saveNhanVien(NhanVien entity) throws SQLException {

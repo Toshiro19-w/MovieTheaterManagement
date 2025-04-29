@@ -26,25 +26,6 @@ public class TaiKhoanRepository {
         }
     }
 
-    public List<TaiKhoan> getAllTaiKhoan() {
-        List<TaiKhoan> list = new ArrayList<>();
-        String sql = "SELECT tenDangNhap, loaiTaiKhoan FROM TaiKhoan";
-        try (PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                list.add(new TaiKhoan(
-                        rs.getString("tenDangNhap"),
-                        "",  // Không cần lấy mật khẩu
-                        (LoaiTaiKhoan) rs.getObject("loaiTaiKhoan"),
-                        rs.getInt("maNguoiDung")
-                ));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
-
     public boolean checkUser(String tenDangNhap, String matKhau) {
         String sql = "SELECT matKhau FROM TaiKhoan WHERE tenDangNhap = ? AND loaiTaiKhoan = 'user'";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -85,6 +66,42 @@ public class TaiKhoanRepository {
         } catch (SQLException e) {
             e.printStackTrace();
             throw new RuntimeException("Lỗi khi kiểm tra email: " + e.getMessage());
+        }
+    }
+
+
+    public void createTaiKhoan(TaiKhoan taiKhoan) throws SQLException {
+        String sql = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, ma_where) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, taiKhoan.getTenDangNhap());
+            pstmt.setString(2, taiKhoan.getMatKhau());
+            pstmt.setString(3, taiKhoan.getLoaiTaiKhoan());
+            pstmt.setInt(4, taiKhoan.getMaNguoiDung());
+            pstmt.executeUpdate();
+        }
+    }
+
+    public boolean existsByTenDangNhap(String tenDangNhap) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM TaiKhoan WHERE tenDangNhap = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, tenDangNhap);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+            return false;
+        }
+    }
+
+    public boolean existsByMaNguoiDung(Integer maNguoiDung) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM TaiKhoan WHERE maNguoiDung = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, maNguoiDung);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+            return false;
         }
     }
 }
