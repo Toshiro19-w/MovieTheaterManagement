@@ -1,8 +1,8 @@
-package com.cinema.models;
+package com.cinema.enums;
 
 public enum VaiTro {
     ADMIN("Admin"),
-    QUANLY("QuanLy"),
+    QUANLYPHIM("QuanLyPhim"),
     THUNGAN("ThuNgan"),
     BANVE("BanVe");
 

@@ -1,4 +1,4 @@
-package com.cinema.views;
+package com.cinema.views.admin;
 
 import com.cinema.controllers.HoaDonController;
 

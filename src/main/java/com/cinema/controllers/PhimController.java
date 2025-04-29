@@ -2,8 +2,7 @@ package com.cinema.controllers;
 
 import com.cinema.models.Phim;
 import com.cinema.services.PhimService;
-import com.cinema.utils.DatabaseConnection;
-import com.cinema.views.PhimView;
+import com.cinema.views.admin.PhimView;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;

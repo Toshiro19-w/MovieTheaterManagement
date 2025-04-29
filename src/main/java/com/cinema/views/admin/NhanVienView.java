@@ -1,4 +1,4 @@
-package com.cinema.views;
+package com.cinema.views.admin;
 
 import com.cinema.controllers.NhanVienController;
 import com.cinema.utils.DatabaseConnection;
@@ -11,9 +11,6 @@ import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
@@ -138,7 +135,7 @@ public class NhanVienView extends JPanel {
             @Override
             public void keyReleased(KeyEvent e) {
                 String searchText = searchField.getText();
-                if (searchText.trim().length() == 0) {
+                if (searchText.trim().isEmpty()) {
                     sorter.setRowFilter(null);
                 } else {
                     sorter.setRowFilter(RowFilter.regexFilter("(?i)" + searchText));

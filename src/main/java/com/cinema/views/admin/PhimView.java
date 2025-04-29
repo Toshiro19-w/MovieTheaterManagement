@@ -1,4 +1,4 @@
-package com.cinema.views;
+package com.cinema.views.admin;
 
 import com.cinema.controllers.PhimController;
 import com.cinema.utils.DatabaseConnection;
@@ -17,7 +17,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
 
 /**
  * PhimView is a JPanel that provides a GUI for managing movie information.

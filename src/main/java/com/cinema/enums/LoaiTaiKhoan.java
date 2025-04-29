@@ -1,8 +1,11 @@
-package com.cinema.models;
+package com.cinema.enums;
 
 public enum LoaiTaiKhoan {
-    ADMIN("admin"),
-    USER("user");
+    ADMIN("Admin"),
+    USER("User"),
+    QUANLYPHIM("QuanLyPhim"),
+    THUNGAN("ThuNgan"),
+    BANVE("BanVe");
 
     private final String value;
 

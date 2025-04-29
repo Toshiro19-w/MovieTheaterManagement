@@ -1,5 +1,8 @@
 package com.cinema.models;
 
+import com.cinema.enums.LoaiNguoiDung;
+import com.cinema.enums.VaiTro;
+
 import java.math.BigDecimal;
 
 public class NhanVien extends NguoiDung{

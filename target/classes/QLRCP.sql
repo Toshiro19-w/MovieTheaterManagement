@@ -37,9 +37,8 @@ CREATE TABLE IF NOT EXISTS ResetToken (
 -- Tạo bảng NhanVien (thừa kế từ NguoiDung)
 CREATE TABLE IF NOT EXISTS NhanVien (
     maNguoiDung INT PRIMARY KEY,
-    chucVu NVARCHAR(50) NOT NULL,
     luong DECIMAL(10,2) CHECK (luong >= 0) NOT NULL,
-    vaiTro ENUM('Admin', 'QuanLy', 'ThuNgan', 'BanVe') NOT NULL,
+    vaiTro ENUM('Admin', 'QuanLyPhim', 'ThuNgan', 'BanVe') NOT NULL,
     FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung) ON DELETE CASCADE
 );
 
@@ -47,7 +46,7 @@ CREATE TABLE IF NOT EXISTS NhanVien (
 CREATE TABLE IF NOT EXISTS TaiKhoan (
     tenDangNhap NVARCHAR(50) PRIMARY KEY,
     matKhau NVARCHAR(255) NOT NULL,
-    loaiTaiKhoan ENUM('admin', 'user') NOT NULL,
+    loaiTaiKhoan ENUM('Admin', 'QuanLyPhim', 'ThuNgan', 'BanVe', 'User') NOT NULL,
     maNguoiDung INT UNIQUE,
     FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung) ON DELETE CASCADE
 );
@@ -157,25 +156,25 @@ INSERT INTO KhachHang (maNguoiDung, diemTichLuy) VALUES
 (9, 30);
 
 -- Dữ liệu cho bảng NhanVien
-INSERT INTO NhanVien (maNguoiDung, chucVu, luong, vaiTro) VALUES
-(3, 'Quản lý', 15000000.00, 'QuanLy'),
-(4, 'Thu ngân', 8000000.00, 'ThuNgan'),
-(6, 'Bán vé', 7000000.00, 'BanVe'),
-(8, 'Admin', 20000000.00, 'Admin'),
-(10, 'Bán vé', 7000000.00, 'BanVe');
+INSERT INTO NhanVien (maNguoiDung, luong, vaiTro) VALUES
+(3, 15000000.00, 'QuanLyPhim'),
+(4, 8000000.00, 'ThuNgan'),
+(6, 7000000.00, 'BanVe'),
+(8, 20000000.00, 'Admin'),
+(10, 7000000.00, 'BanVe');
 
 -- Dữ liệu cho bảng TaiKhoan
 INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maNguoiDung) VALUES
-('nguyenvana', 'pass123', 'user', 1),
-('tranthib', 'pass456', 'user', 2),
-('levanc', 'pass789', 'admin', 3),
-('phamthid', 'pass101', 'user', 4),
-('hoangvane', 'pass112', 'user', 5),
-('dothif', 'pass131', 'user', 6),
-('buivang', 'pass415', 'user', 7),
-('vuthih', 'pass161', 'admin', 8),
+('nguyenvana', 'pass123', 'User', 1),
+('tranthib', 'pass456', 'User', 2),
+('levanc', 'pass789', 'QuanLyPhim', 3),
+('phamthid', 'pass101', 'ThuNgan', 4),
+('hoangvane', 'pass112', 'User', 5),
+('dothif', 'pass131', 'BanVe', 6),
+('buivang', 'pass415', 'User', 7),
+('vuthih', 'pass161', 'Admin', 8),
 ('ngovani', 'pass718', 'user', 9),
-('maithik', 'pass192', 'user', 10);
+('maithik', 'pass192', 'BanVe', 10);
 
 -- Dữ liệu cho bảng TheLoaiPhim
 INSERT INTO TheLoaiPhim (tenTheLoai) VALUES
@@ -190,29 +189,18 @@ INSERT INTO TheLoaiPhim (tenTheLoai) VALUES
 ('Tài liệu'),
 ('Cổ trang');
 
-UPDATE Phim SET duongDanPoster = 'FastAndFurious.jpg' WHERE maPhim = 1;
-UPDATE Phim SET duongDanPoster = 'Titanic.jpg' WHERE maPhim = 2;
-UPDATE Phim SET duongDanPoster = 'TheConjuring.jpg' WHERE maPhim = 3;
-UPDATE Phim SET duongDanPoster = 'HomeAlone.jpg' WHERE maPhim = 4;
-UPDATE Phim SET duongDanPoster = 'Interstellar.jpg' WHERE maPhim = 5;
-UPDATE Phim SET duongDanPoster = 'Coco.jpg' WHERE maPhim = 6;
-UPDATE Phim SET duongDanPoster = 'Joker.jpg' WHERE maPhim = 7;
-UPDATE Phim SET duongDanPoster = 'Avatar.jpg' WHERE maPhim = 8;
-UPDATE Phim SET duongDanPoster = 'PlanetEarth.jpg' WHERE maPhim = 9;
-UPDATE Phim SET duongDanPoster = 'TamQuocDienNghia.jpg' WHERE maPhim = 10;
-
 -- Dữ liệu cho bảng Phim
-INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien) VALUES
-('Fast & Furious 9', 1, 143, '2021-06-25', 'Mỹ', '2D', 'Phim hành động tốc độ cao', 'Justin Lin'),
-('Titanic', 2, 195, '1997-12-19', 'Mỹ', '3D', 'Tình yêu trên tàu định mệnh', 'James Cameron'),
-('The Conjuring', 3, 112, '2013-07-19', 'Mỹ', '2D', 'Kinh dị dựa trên sự kiện có thật', 'James Wan'),
-('Home Alone', 4, 103, '1990-11-16', 'Mỹ', '2D', 'Hài hước mùa Giáng sinh', 'Chris Columbus'),
-('Interstellar', 5, 169, '2014-11-07', 'Mỹ', 'IMAX', 'Hành trình khám phá vũ trụ', 'Christopher Nolan'),
-('Coco', 6, 105, '2017-11-22', 'Mỹ', '3D', 'Hành trình âm nhạc gia đình', 'Lee Unkrich'),
-('Joker', 7, 122, '2019-10-04', 'Mỹ', '2D', 'Tâm lý tội phạm', 'Todd Phillips'),
-('Avatar', 8, 162, '2009-12-18', 'Mỹ', '3D', 'Phiêu lưu trên Pandora', 'James Cameron'),
-('Planet Earth', 9, 60, '2006-03-05', 'Anh', '2D', 'Tài liệu về thiên nhiên', 'Alastair Fothergill'),
-('Tam Quốc Diễn Nghĩa', 10, 120, '1994-01-01', 'Trung Quốc', '2D', 'Lịch sử cổ trang', 'Wang Fulin');
+INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien, duongDanPoster) VALUES
+('Fast & Furious 9', 1, 143, '2021-06-25', 'Mỹ', '2D', 'Phim hành động tốc độ cao', 'Justin Lin', 'FastAndFurious.jpg'),
+('Titanic', 2, 195, '1997-12-19', 'Mỹ', '3D', 'Tình yêu trên tàu định mệnh', 'James Cameron', 'Titanic.jpg'),
+('The Conjuring', 3, 112, '2013-07-19', 'Mỹ', '2D', 'Kinh dị dựa trên sự kiện có thật', 'James Wan', 'TheConjuring.jpg'),
+('Home Alone', 4, 103, '1990-11-16', 'Mỹ', '2D', 'Hài hước mùa Giáng sinh', 'Chris Columbus', 'HomeAlone.jpg'),
+('Interstellar', 5, 169, '2014-11-07', 'Mỹ', 'IMAX', 'Hành trình khám phá vũ trụ', 'Christopher Nolan', 'Interstellar.jpg'),
+('Coco', 6, 105, '2017-11-22', 'Mỹ', '3D', 'Hành trình âm nhạc gia đình', 'Lee Unkrich', 'Coco.jpg'),
+('Joker', 7, 122, '2019-10-04', 'Mỹ', '2D', 'Tâm lý tội phạm', 'Todd Phillips', 'Joker.jpg'),
+('Avatar', 8, 162, '2009-12-18', 'Mỹ', '3D', 'Phiêu lưu trên Pandora', 'James Cameron', 'Avatar.jpg'),
+('Planet Earth', 9, 60, '2006-03-05', 'Anh', '2D', 'Tài liệu về thiên nhiên', 'Alastair Fothergill', 'PlanetEarth.jpg'),
+('Tam Quốc Diễn Nghĩa', 10, 120, '1994-01-01', 'Trung Quốc', '2D', 'Lịch sử cổ trang', 'Wang Fulin', 'TamQuocDienNghia.jpg');
 
 -- Dữ liệu cho bảng PhongChieu
 INSERT INTO PhongChieu (tenPhong, soLuongGhe, loaiPhong) VALUES

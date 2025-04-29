@@ -1,13 +1,10 @@
-package com.cinema.views;
+package com.cinema.views.admin;
 
 import com.cinema.controllers.BaoCaoController;
-import com.cinema.controllers.NhanVienController;
 import com.cinema.models.BaoCao;
 import com.cinema.services.BaoCaoService;
-import com.cinema.services.NhanVienService;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.ValidationUtils;
-import org.apache.poi.sl.usermodel.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -18,12 +15,9 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 // update baocaoview

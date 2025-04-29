@@ -1,8 +1,8 @@
 package com.cinema.models.repositories;
 
-import com.cinema.models.LoaiNguoiDung;
+import com.cinema.enums.LoaiNguoiDung;
 import com.cinema.models.NhanVien;
-import com.cinema.models.VaiTro;
+import com.cinema.enums.VaiTro;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.PreparedStatement;

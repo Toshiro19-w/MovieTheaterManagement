@@ -1,13 +1,10 @@
 package com.cinema.models.repositories;
 
-import com.cinema.models.LoaiTaiKhoan;
 import com.cinema.models.TaiKhoan;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 public class TaiKhoanRepository {
     protected Connection conn;
@@ -23,22 +20,6 @@ public class TaiKhoanRepository {
         } catch (SQLException e) {
             throw new RuntimeException("Không thể lấy kết nối cơ sở dữ liệu", e);
         }
-    }
-
-    public boolean checkUser(String tenDangNhap, String matKhau) {
-        String sql = "SELECT matKhau FROM TaiKhoan WHERE tenDangNhap = ? AND loaiTaiKhoan = 'user'";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, tenDangNhap);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    String hashedPassword = rs.getString("matKhau");
-                    return matKhau.equals(hashedPassword);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
     }
 
     public void saveResetTokenToDB(String email, String token) {
