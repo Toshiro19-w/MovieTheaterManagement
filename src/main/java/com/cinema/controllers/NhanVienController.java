@@ -1,12 +1,12 @@
 package com.cinema.controllers;
 
-import com.cinema.enums.LoaiNguoiDung;
+import com.cinema.models.LoaiNguoiDung;
 import com.cinema.models.NhanVien;
 import com.cinema.models.TaiKhoan;
-import com.cinema.enums.VaiTro;
+import com.cinema.models.VaiTro;
 import com.cinema.services.NhanVienService;
 import com.cinema.services.TaiKhoanService;
-import com.cinema.views.admin.NhanVienView;
+import com.cinema.views.NhanVienView;
 
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
@@ -28,11 +28,16 @@ public class NhanVienController {
         this.taiKhoanService = new TaiKhoanService(view.getDatabaseConnection());
         initView();
         addListeners();
-        initListeners();
     }
-    
+
+
     private void initListeners() {
-        view.getBtnTaoTaiKhoan().addActionListener(e -> taoTaiKhoan());
+        view.getBtnTaoTaiKhoan().addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                taoTaiKhoan();
+            }
+        });
     }
 
     private void taoTaiKhoan() {

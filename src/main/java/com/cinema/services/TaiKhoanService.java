@@ -1,7 +1,6 @@
 package com.cinema.services;
 
-import com.cinema.models.TaiKhoan;
-import com.cinema.models.repositories.TaiKhoanRepository;
+import com.cinema.repositories.TaiKhoanRepository;
 import com.cinema.utils.DatabaseConnection;
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -30,14 +29,15 @@ public class TaiKhoanService {
         if (taiKhoan.getMatKhau() == null || taiKhoan.getMatKhau().isEmpty()) {
             throw new IllegalArgumentException("Mật khẩu không được để trống");
         }
+        if (taiKhoan.getMaNguoiDung() == null) {
+            throw new IllegalArgumentException("Mã người dùng không được để trống");
+        }
 
-        // Check if username already exists
+        // Check if username or maNguoiDung already exists
         if (taiKhoanRepository.existsByTenDangNhap(taiKhoan.getTenDangNhap())) {
             throw new IllegalArgumentException("Tên đăng nhập đã tồn tại");
         }
-
-        // Check if maNguoiDung already has an account (if provided)
-        if (taiKhoan.getMaNguoiDung() != null && taiKhoanRepository.existsByMaNguoiDung(taiKhoan.getMaNguoiDung())) {
+        if (taiKhoanRepository.existsByMaNguoiDung(taiKhoan.getMaNguoiDung())) {
             throw new IllegalArgumentException("Nhân viên này đã có tài khoản");
         }
 
