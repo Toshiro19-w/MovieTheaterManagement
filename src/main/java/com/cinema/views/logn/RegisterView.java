@@ -1,4 +1,4 @@
-package com.cinema.views;
+package com.cinema.views.logn;
 
 import com.cinema.utils.DatabaseConnection;
 import com.formdev.flatlaf.FlatLightLaf;

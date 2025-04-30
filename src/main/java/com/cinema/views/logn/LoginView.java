@@ -1,7 +1,8 @@
-package com.cinema.views;
+package com.cinema.views.logn;
 
 import com.cinema.enums.LoaiTaiKhoan;
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.views.MainView;
 import com.formdev.flatlaf.FlatLightLaf;
 
 import javax.swing.*;
@@ -14,7 +15,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Objects;
 
 public class LoginView extends JFrame {
     private final Connection conn;

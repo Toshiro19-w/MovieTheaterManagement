@@ -12,6 +12,8 @@ import com.cinema.services.VeService;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.PermissionManager;
 import com.cinema.views.admin.*;
+import com.cinema.views.admin.PhimView;
+import com.cinema.views.logn.LoginView;
 import com.formdev.flatlaf.FlatLightLaf;
 
 import javax.swing.*;
