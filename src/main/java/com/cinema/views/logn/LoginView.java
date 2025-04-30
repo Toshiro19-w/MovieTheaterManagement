@@ -1,7 +1,8 @@
-package com.cinema.views;
+package com.cinema.views.logn;
 
 import com.cinema.models.LoaiTaiKhoan;
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.views.MainView;
 import com.formdev.flatlaf.FlatLightLaf;
 
 import javax.swing.*;
