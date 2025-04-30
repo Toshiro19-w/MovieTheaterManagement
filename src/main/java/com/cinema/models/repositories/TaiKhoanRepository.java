@@ -22,6 +22,22 @@ public class TaiKhoanRepository {
         }
     }
 
+    public boolean checkUser(String tenDangNhap, String matKhau) {
+        String sql = "SELECT matKhau FROM TaiKhoan WHERE tenDangNhap = ? AND loaiTaiKhoan = 'user'";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, tenDangNhap);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    String hashedPassword = rs.getString("matKhau");
+                    return matKhau.equals(hashedPassword);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public void saveResetTokenToDB(String email, String token) {
         String sql = "INSERT INTO ResetToken (email, token, expiration_time) VALUES (?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {

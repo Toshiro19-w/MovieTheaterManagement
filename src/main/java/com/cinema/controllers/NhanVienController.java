@@ -59,6 +59,40 @@ public class NhanVienController {
         }
     }
 
+
+    private void initListeners() {
+        view.getBtnTaoTaiKhoan().addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                taoTaiKhoan();
+            }
+        });
+    }
+
+    private void taoTaiKhoan() {
+        try {
+            String tenDangNhap = view.getTxtTenDangNhap().getText();
+            String matKhau = new String(view.getTxtMatKhau().getPassword());
+            String loaiTaiKhoan = (String) view.getCmbLoaiTaiKhoan().getSelectedItem();
+            Integer maNhanVien = view.getSelectedMaNV();
+
+            if (maNhanVien == null) {
+                JOptionPane.showMessageDialog(view, "Vui lòng chọn nhân viên!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            TaiKhoan taiKhoan = new TaiKhoan(tenDangNhap, matKhau, loaiTaiKhoan, maNhanVien);
+            taiKhoanService.createTaiKhoan(taiKhoan);
+
+            JOptionPane.showMessageDialog(view, "Tạo tài khoản thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+            clearForm();
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(view, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(view, "Lỗi cơ sở dữ liệu: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     private void initView() {
         try {
             loadNhanVienList(service.findAllNhanVien());
