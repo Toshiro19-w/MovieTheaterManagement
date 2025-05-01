@@ -13,7 +13,7 @@ import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.PermissionManager;
 import com.cinema.views.admin.*;
 import com.cinema.views.admin.PhimView;
-import com.cinema.views.logn.LoginView;
+import com.cinema.views.login.LoginView;
 import com.formdev.flatlaf.FlatLightLaf;
 
 import javax.swing.*;
@@ -133,7 +133,7 @@ public class MainView extends JFrame {
         );
         BookingView bookingView = new BookingView(this, datVeController, maPhim, bookingResult -> {
             PaymentView paymentView = new PaymentView(
-                    this, paymentController, bookingResult.suatChieu, bookingResult.ghe, bookingResult.giaVe,
+                    this, paymentController, bookingResult.suatChieu(), bookingResult.ghe(), bookingResult.giaVe(),
                     paymentResult -> saveDatVe(
                             paymentResult.suatChieu,
                             paymentResult.ghe,

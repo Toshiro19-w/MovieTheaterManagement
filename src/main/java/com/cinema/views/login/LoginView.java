@@ -1,4 +1,4 @@
-package com.cinema.views.logn;
+package com.cinema.views.login;
 
 import com.cinema.enums.LoaiTaiKhoan;
 import com.cinema.utils.DatabaseConnection;
@@ -15,6 +15,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Objects;
 
 public class LoginView extends JFrame {
     private final Connection conn;
@@ -49,7 +50,7 @@ public class LoginView extends JFrame {
 
         setResizable(true);
         
-        ImageIcon icon = new ImageIcon(getClass().getResource("/img/133864911312596807.jpg"));
+        ImageIcon icon = new ImageIcon(Objects.requireNonNull(getClass().getResource("/img/133864911312596807.jpg")));
         setIconImage(icon.getImage());
 
         setResizable(false);

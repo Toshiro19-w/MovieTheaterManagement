@@ -17,4 +17,8 @@ public class GheService {
     public List<Ghe> findGheTrongByPhongAndSuatChieu(int maPhong, int maSuatChieu) throws SQLException {
         return gheRepository.findGheTrongByPhongAndSuatChieu(maPhong, maSuatChieu);
     }
+
+    public List<Ghe> findAllGheByPhong(int maPhong) throws SQLException {
+        return gheRepository.findAllGheByPhong(maPhong);
+    }
 }

@@ -15,10 +15,6 @@ public class SuatChieuService {
         this.suatChieuRepository = new SuatChieuRepository(databaseConnection);
     }
 
-    public List<SuatChieu> getAllSuatChieu() throws SQLException {
-        return suatChieuRepository.findAll();
-    }
-
     public List<SuatChieu> getAllSuatChieuDetail() throws SQLException {
         return suatChieuRepository.findAllDetail();
     }
@@ -31,18 +27,18 @@ public class SuatChieuService {
         return suatChieuRepository.searchSuatChieuByNgay(ngayGioChieu);
     }
 
-    public SuatChieu addSuatChieu(SuatChieu suatChieu) throws SQLException {
+    public void addSuatChieu(SuatChieu suatChieu) throws SQLException {
         if (suatChieu.getMaPhim() <= 0 || suatChieu.getMaPhong() <= 0 || suatChieu.getNgayGioChieu() == null) {
             throw new IllegalArgumentException("Dữ liệu suất chiếu không hợp lệ.");
         }
-        return suatChieuRepository.save(suatChieu);
+        suatChieuRepository.save(suatChieu);
     }
 
-    public SuatChieu updateSuatChieu(SuatChieu suatChieu) throws SQLException {
+    public void updateSuatChieu(SuatChieu suatChieu) throws SQLException {
         if (suatChieu.getMaSuatChieu() <= 0 || suatChieu.getMaPhim() <= 0 || suatChieu.getMaPhong() <= 0 || suatChieu.getNgayGioChieu() == null) {
             throw new IllegalArgumentException("Dữ liệu suất chiếu không hợp lệ.");
         }
-        return suatChieuRepository.update(suatChieu);
+        suatChieuRepository.update(suatChieu);
     }
 
     public void deleteSuatChieu(int maSuatChieu) throws SQLException {

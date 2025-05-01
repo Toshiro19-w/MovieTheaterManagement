@@ -30,7 +30,6 @@ public class PhimView extends JPanel {
             txtNgayKhoiChieu, txtNuocSanXuat, txtDinhDang, txtMoTa,
             txtDaoDien;
     private JLabel txtMaPhim, posterLabel;
-    private JButton btnChonAnh;
     private String selectedPosterPath;
     private JTable table;
     private DefaultTableModel tableModel;
@@ -128,7 +127,7 @@ public class PhimView extends JPanel {
 
         // Add image selection button
         JPanel chonAnhPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        btnChonAnh = new JButton("Chọn Ảnh");
+        JButton btnChonAnh = new JButton("Chọn Ảnh");
         btnChonAnh.addActionListener(e -> chonAnh());
         chonAnhPanel.add(btnChonAnh);
         fieldsPanel.add(new JLabel("Poster:"));
@@ -139,7 +138,7 @@ public class PhimView extends JPanel {
             @Override
             public void keyReleased(KeyEvent e) {
                 String searchText = searchField.getText();
-                if (searchText.trim().length() == 0) {
+                if (searchText.trim().isEmpty()) {
                     sorter.setRowFilter(null);
                 } else {
                     sorter.setRowFilter(RowFilter.regexFilter("(?i)" + searchText));

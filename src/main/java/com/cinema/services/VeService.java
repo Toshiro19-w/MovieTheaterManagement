@@ -6,6 +6,7 @@ import com.cinema.models.repositories.KhachHangRepository;
 import com.cinema.models.repositories.VeRepository;
 import com.cinema.utils.DatabaseConnection;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -19,16 +20,8 @@ public class VeService{
         this.khachHangRepository = new KhachHangRepository(databaseConnection);
     }
 
-    public List<Ve> getAllVe() throws SQLException {
-        return veRepository.findAll();
-    }
-
     public List<Ve> getAllVeDetail() throws SQLException {
         return veRepository.findAllDetail();
-    }
-
-    public List<Ve> findByHoaDon(Integer maHoaDon) throws SQLException {
-        return veRepository.findByHoaDon(maHoaDon);
     }
 
     public List<Ve> findBySoGhe(String soGhe) throws SQLException {
@@ -47,15 +40,11 @@ public class VeService{
         veRepository.delete(maVe);
     }
 
-    public void updateVeStatus(int maVe, String trangThai, Integer maHoaDon) throws SQLException {
-        updateVeStatus(maVe, trangThai, maHoaDon);
-    }
-
-    public List<KhachHang> getAllKhachHang() throws SQLException {
-        return khachHangRepository.getAllKhachHang();
-    }
-
     public KhachHang getKhachHangByMaVe(int maVe) throws SQLException {
         return khachHangRepository.getKhachHangByMaVe(maVe);
+    }
+
+    public BigDecimal getTicketPriceBySuatChieu(int maSuatChieu) throws SQLException {
+        return veRepository.findTicketPriceBySuatChieu(maSuatChieu);
     }
 }

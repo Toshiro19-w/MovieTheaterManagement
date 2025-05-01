@@ -9,6 +9,8 @@ public class Ghe {
         this.soGhe = soGhe;
     }
 
+    public Ghe() {}
+
     public int getMaPhong() {
         return maPhong;
     }

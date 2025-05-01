@@ -63,7 +63,7 @@ public class PhimController {
         view.getSearchField().addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
-                timKiemSach();
+                timKiemPhim();
             }
         });
 
@@ -73,7 +73,7 @@ public class PhimController {
         view.getBtnClear().addActionListener(e -> clearForm());
     }
 
-    public void timKiemSach() {
+    public void timKiemPhim() {
         String tuKhoa = view.getSearchText().toLowerCase();
 
         if (tuKhoa.isEmpty()) {
