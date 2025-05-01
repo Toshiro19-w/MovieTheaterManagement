@@ -1,4 +1,4 @@
-package com.cinema.views.logn;
+package com.cinema.views.login;
 
 import com.cinema.utils.DatabaseConnection;
 import com.formdev.flatlaf.FlatLightLaf;
@@ -16,7 +16,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class RegisterView extends JFrame {
-    private Connection conn;
     private JTextField usernameField, emailField , fullNameField, phoneField;
     private JPasswordField passwordField, confirmPasswordField;
 
@@ -222,7 +221,7 @@ public class RegisterView extends JFrame {
             return;
         }
 
-        DatabaseConnection db = null;
+        DatabaseConnection db;
         Connection conn = null;
 
         try {
@@ -284,10 +283,8 @@ public class RegisterView extends JFrame {
             stmt.close();
 
         } catch (SQLException ex) {
-            ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Lỗi kết nối CSDL: " + ex.getMessage());
         } catch (IOException e) {
-            e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Lỗi hệ thống: " + e.getMessage());
         } finally {
             try {
@@ -299,8 +296,6 @@ public class RegisterView extends JFrame {
             }
         }
     }
-
-    
 
     // Hàm mã hóa mật khẩu (sử dụng MD5)
     private String hashPassword(String password) {

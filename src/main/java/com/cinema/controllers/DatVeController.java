@@ -35,4 +35,12 @@ public class DatVeController {
         );
         veService.saveVe(ve);
     }
+
+    public List<Ghe> getAllGheByPhong(int maPhong) throws SQLException {
+        return gheService.findAllGheByPhong(maPhong);
+    }
+
+    public BigDecimal getTicketPriceBySuatChieu(int maSuatChieu) throws SQLException{
+        return veService.getTicketPriceBySuatChieu(maSuatChieu);
+    }
 }
