@@ -1,5 +1,7 @@
 package com.cinema.models;
 
+import com.cinema.enums.LoaiNguoiDung;
+
 public class NguoiDung {
     private int maNguoiDung;
     private String hoTen;

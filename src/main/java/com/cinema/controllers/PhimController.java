@@ -2,11 +2,14 @@ package com.cinema.controllers;
 
 import com.cinema.models.Phim;
 import com.cinema.services.PhimService;
-import com.cinema.views.PhimView;
+import com.cinema.views.admin.PhimView;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -18,6 +21,7 @@ public class PhimController {
     private final PhimView view;
     private final PhimService service;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private TableRowSorter<DefaultTableModel> sorter;
 
     public PhimController(PhimView view) throws SQLException {
         this.view = view;
@@ -46,11 +50,6 @@ public class PhimController {
     }
 
     private void addListeners() {
-        view.getTxtSearchTenPhim().addActionListener(e -> searchPhim());
-        view.getTxtSearchTenTheLoai().addActionListener(e -> searchPhim());
-        view.getTxtSearchNuocSanXuat().addActionListener(e -> searchPhim());
-        view.getTxtSearchDaoDien().addActionListener(e -> searchPhim());
-
         view.getTable().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = view.getTable().getSelectedRow();
@@ -60,24 +59,27 @@ public class PhimController {
             }
         });
 
+        // Tìm kiếm tự động khi gõ vào ô tìm kiếm
+        view.getSearchField().addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                timKiemSach();
+            }
+        });
+
         view.getBtnThem().addActionListener(e -> themPhim());
         view.getBtnSua().addActionListener(e -> suaPhim());
         view.getBtnXoa().addActionListener(e -> xoaPhim());
         view.getBtnClear().addActionListener(e -> clearForm());
     }
 
-    private void searchPhim() {
-        String tenPhim = view.getTxtSearchTenPhim().getText().trim();
-        String tenTheLoai = view.getTxtSearchTenTheLoai().getText().trim();
-        String nuocSanXuat = view.getTxtSearchNuocSanXuat().getText().trim();
-        String daoDien = view.getTxtSearchDaoDien().getText().trim();
+    public void timKiemSach() {
+        String tuKhoa = view.getSearchText().toLowerCase();
 
-        try {
-            List<Phim> phimList = service.getPhimByTen(tenPhim, tenTheLoai, nuocSanXuat, daoDien);
-            loadPhimList(phimList);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(view, "Lỗi khi tìm kiếm phim!");
+        if (tuKhoa.isEmpty()) {
+            sorter.setRowFilter(null);
+        } else {
+            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + tuKhoa, 1)); // Cột 1: Tên Sách
         }
     }
 

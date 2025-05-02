@@ -7,15 +7,6 @@
     <groupId>org.example</groupId>
     <artifactId>1</artifactId>
     <version>1.0-SNAPSHOT</version>
-    
-    <build>
-    <resources>
-        <resource>
-            <directory>src/main/resources</directory>
-        </resource>
-    </resources>
-</build>
-
 
     <properties>
         <maven.compiler.source>24</maven.compiler.source>
@@ -24,24 +15,23 @@
     </properties>
 
     <dependencies>
-    
-    <dependency>
-    <groupId>com.toedter</groupId>
-    <artifactId>jcalendar</artifactId>
-    <version>1.4</version>
-</dependency>
-	
-	<dependency>
-    <groupId>com.google.zxing</groupId>
-    <artifactId>core</artifactId>
-    <version>3.5.3</version> <!-- hoặc version mới hơn nếu có -->
-</dependency>
-<dependency>
-    <groupId>com.google.zxing</groupId>
-    <artifactId>javase</artifactId>
-    <version>3.5.3</version>
-</dependency>
+        <dependency>
+            <groupId>com.toedter</groupId>
+            <artifactId>jcalendar</artifactId>
+            <version>1.4</version>
+        </dependency>
 
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>3.5.1</version> <!-- hoặc version mới hơn nếu có -->
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>3.5.1</version>
+        </dependency>
 
         <dependency>
             <groupId>com.mysql</groupId>
@@ -58,13 +48,31 @@
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
-            <version>5.3.0</version>
+            <version>5.4.0</version>
         </dependency>
 
         <dependency>
             <groupId>javax.mail</groupId>
             <artifactId>mail</artifactId>
             <version>1.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20231013</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>0.4</version>
         </dependency>
     </dependencies>
 

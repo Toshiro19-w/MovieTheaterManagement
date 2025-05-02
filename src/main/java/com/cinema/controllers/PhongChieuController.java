@@ -2,7 +2,7 @@ package com.cinema.controllers;
 
 import com.cinema.models.PhongChieu;
 import com.cinema.services.PhongChieuService;
-import com.cinema.views.PhongChieuView;
+import com.cinema.views.admin.PhongChieuView;
 
 import javax.swing.table.DefaultTableModel;
 import java.sql.SQLException;
@@ -29,7 +29,7 @@ public class PhongChieuController {
     }
 
     private void addListeners() {
-        view.getTxtSearchTenPhong().addActionListener(_ -> searchPhongChieu());
+        view.getSearchField().addActionListener(_ -> searchPhongChieu());
         view.getTable().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = view.getTable().getSelectedRow();
@@ -43,7 +43,7 @@ public class PhongChieuController {
     }
 
     private void searchPhongChieu() {
-        String tenPhong = view.getTxtSearchTenPhong().getText().trim();
+        String tenPhong = view.getSeacrhText().trim();
         try {
             loadPhongChieuList(service.searchPhongChieuByTenPhong(tenPhong));
             if (view.getTableModel().getRowCount() == 0) {

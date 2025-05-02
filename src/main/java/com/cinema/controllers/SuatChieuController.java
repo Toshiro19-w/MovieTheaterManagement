@@ -6,7 +6,7 @@ import com.cinema.models.SuatChieu;
 import com.cinema.services.PhimService;
 import com.cinema.services.PhongChieuService;
 import com.cinema.services.SuatChieuService;
-import com.cinema.views.SuatChieuView;
+import com.cinema.views.admin.SuatChieuView;
 
 import javax.swing.table.DefaultTableModel;
 import java.sql.SQLException;
@@ -44,7 +44,7 @@ public class SuatChieuController {
     }
 
     private void addListeners() {
-        view.getNgayChieuField().addActionListener(e -> searchSuatChieu());
+        view.getSearchField().addActionListener(e -> searchSuatChieu());
         view.getTable().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = view.getTable().getSelectedRow();
@@ -76,7 +76,7 @@ public class SuatChieuController {
     }
 
     private void searchSuatChieu() {
-        String ngayChieuStr = view.getNgayChieuField().getText().trim();
+        String ngayChieuStr = view.getSeacrhText().trim();
         try {
             if (ngayChieuStr.isEmpty() || ngayChieuStr.equals("dd/MM/yyyy HH:mm:ss")) {
                 loadSuatChieuList(service.getAllSuatChieuDetail());
@@ -231,7 +231,6 @@ public class SuatChieuController {
             throw new IllegalArgumentException("Vui lòng nhập ngày giờ chiếu!");
         }
 
-        LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayGioChieuStr, formatter);
-        return ngayGioChieu;
+        return LocalDateTime.parse(ngayGioChieuStr, formatter);
     }
 }

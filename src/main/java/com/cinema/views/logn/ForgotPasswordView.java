@@ -1,4 +1,4 @@
-package com.cinema.views;
+package com.cinema.views.logn;
 
 import com.cinema.controllers.TaiKhoanController;
 import com.cinema.services.TaiKhoanService;

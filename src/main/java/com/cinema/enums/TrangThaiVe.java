@@ -1,4 +1,4 @@
-package com.cinema.models;
+package com.cinema.enums;
 
 public enum TrangThaiVe {
     AVAILABLE("available"),

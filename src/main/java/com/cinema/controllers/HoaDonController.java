@@ -4,7 +4,7 @@ import com.cinema.models.HoaDon;
 import com.cinema.models.ChiTietHoaDon;
 import com.cinema.services.HoaDonService;
 import com.cinema.utils.DatabaseConnection;
-import com.cinema.views.HoaDonView;
+import com.cinema.views.admin.HoaDonView;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
