@@ -1,4 +1,4 @@
-package com.cinema.views.logn;
+package com.cinema.views.login;
 
 import com.cinema.controllers.TaiKhoanController;
 import com.cinema.services.TaiKhoanService;
@@ -13,6 +13,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Objects;
 
 public class ForgotPasswordView extends JFrame {
     private final JTextField usernameField = new JTextField(20);
@@ -50,7 +51,7 @@ public class ForgotPasswordView extends JFrame {
 
         // Panel nền với ảnh nen1.jpg
         JPanel backgroundPanel = new JPanel() {
-            Image background = new ImageIcon(getClass().getResource("/img/nen1.jpg")).getImage();
+            final Image background = new ImageIcon(Objects.requireNonNull(getClass().getResource("/img/nen1.jpg"))).getImage();
 
             @Override
             protected void paintComponent(Graphics g) {
@@ -130,7 +131,7 @@ public class ForgotPasswordView extends JFrame {
         innerPanel.add(backButton, updateGBC(gbc, 1, 9, 1, GridBagConstraints.NONE, 0));
 
         // Đặt biểu tượng cho frame
-        ImageIcon icon = new ImageIcon(getClass().getResource("/img/nen1.jpg"));
+        ImageIcon icon = new ImageIcon(Objects.requireNonNull(getClass().getResource("/img/nen1.jpg")));
         setIconImage(icon.getImage());
     }
 

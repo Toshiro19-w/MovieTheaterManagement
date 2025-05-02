@@ -8,6 +8,7 @@ import java.awt.*;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.function.Consumer;
+import java.math.BigDecimal;
 
 public class BookingView extends JDialog {
     private final DatVeController datVeController;
@@ -15,6 +16,7 @@ public class BookingView extends JDialog {
     private final Consumer<BookingResult> confirmCallback;
     private SuatChieu selectedSuatChieu;
     private Ghe selectedGhe;
+    private BigDecimal ticketPrice;
 
     public BookingView(JFrame parent, DatVeController datVeController, int maPhim, Consumer<BookingResult> confirmCallback) {
         super(parent, "Đặt vé", true);
@@ -43,7 +45,8 @@ public class BookingView extends JDialog {
             return;
         }
 
-        JPanel seatPanel = new JPanel(new GridLayout(5, 10, 5, 5));
+        JPanel seatPanel = new JPanel();
+        seatPanel.setLayout(new GridLayout(0, 10, 5, 5)); // Dynamic rows, 10 columns
         seatPanel.setBorder(BorderFactory.createTitledBorder("Sơ đồ ghế"));
         JLabel selectedSeatLabel = new JLabel("Ghế đã chọn: None");
         Ghe[] selectedGheArray = {null};
@@ -53,21 +56,26 @@ public class BookingView extends JDialog {
             selectedGheArray[0] = null;
             selectedSeatLabel.setText("Ghế đã chọn: None");
             selectedSuatChieu = (SuatChieu) suatChieuCombo.getSelectedItem();
+            ticketPrice = null;
             if (selectedSuatChieu != null) {
                 try {
-                    List<Ghe> gheList = datVeController.getGheTrongByPhongAndSuatChieu(
+                    // Get all seats for the room
+                    List<Ghe> allSeats = datVeController.getAllGheByPhong(selectedSuatChieu.getMaPhong());
+                    // Get available seats for the showtime
+                    List<Ghe> availableSeats = datVeController.getGheTrongByPhongAndSuatChieu(
                             selectedSuatChieu.getMaPhong(), selectedSuatChieu.getMaSuatChieu());
-                    String[] allSeats = new String[50];
-                    for (int i = 0; i < 5; i++) {
-                        for (int j = 1; j <= 10; j++) {
-                            allSeats[i * 10 + j - 1] = (char) ('A' + i) + String.valueOf(j);
-                        }
+
+                    // Get ticket price for this showtime (assume uniform pricing for simplicity)
+                    ticketPrice = datVeController.getTicketPriceBySuatChieu(selectedSuatChieu.getMaSuatChieu());
+                    if (ticketPrice == null) {
+                        JOptionPane.showMessageDialog(this, "Không tìm thấy giá vé!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        return;
                     }
 
-                    for (String seat : allSeats) {
-                        JButton seatButton = new JButton(seat);
+                    for (Ghe seat : allSeats) {
+                        JButton seatButton = new JButton(seat.getSoGhe());
                         seatButton.setPreferredSize(new Dimension(50, 50));
-                        boolean isAvailable = gheList.stream().anyMatch(ghe -> ghe.getSoGhe().equals(seat));
+                        boolean isAvailable = availableSeats.stream().anyMatch(ghe -> ghe.getSoGhe().equals(seat.getSoGhe()));
                         if (isAvailable) {
                             seatButton.setBackground(Color.GREEN);
                             seatButton.addActionListener(_ -> {
@@ -79,12 +87,12 @@ public class BookingView extends JDialog {
                                         }
                                     }
                                 }
-                                selectedGheArray[0] = gheList.stream()
-                                        .filter(ghe -> ghe.getSoGhe().equals(seat))
+                                selectedGheArray[0] = allSeats.stream()
+                                        .filter(ghe -> ghe.getSoGhe().equals(seat.getSoGhe()))
                                         .findFirst()
                                         .orElse(null);
                                 seatButton.setBackground(Color.YELLOW);
-                                selectedSeatLabel.setText("Ghế đã chọn: " + seat);
+                                selectedSeatLabel.setText("Ghế đã chọn: " + seat.getSoGhe() + " (Giá: " + ticketPrice + ")");
                                 selectedGhe = selectedGheArray[0];
                             });
                         } else {
@@ -113,7 +121,7 @@ public class BookingView extends JDialog {
         confirmButton.addActionListener(_ -> {
             selectedSuatChieu = (SuatChieu) suatChieuCombo.getSelectedItem();
             selectedGhe = selectedGheArray[0];
-            if (selectedSuatChieu == null || selectedGhe == null) {
+            if (selectedSuatChieu == null || selectedGhe == null || ticketPrice == null) {
                 JOptionPane.showMessageDialog(this, "Vui lòng chọn suất chiếu và ghế!", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -122,11 +130,12 @@ public class BookingView extends JDialog {
                         selectedSuatChieu.getMaSuatChieu(),
                         selectedGhe.getMaPhong(),
                         selectedGhe.getSoGhe(),
-                        new java.math.BigDecimal("50000")
+                        ticketPrice
                 );
-                confirmCallback.accept(new BookingResult(selectedSuatChieu, selectedGhe, new java.math.BigDecimal("50000")));
+                confirmCallback.accept(new BookingResult(selectedSuatChieu, selectedGhe, ticketPrice));
                 dispose();
             } catch (SQLException e) {
+                e.printStackTrace();
                 JOptionPane.showMessageDialog(this, "Lỗi khi đặt vé: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         });
@@ -141,15 +150,5 @@ public class BookingView extends JDialog {
         }
     }
 
-    public static class BookingResult {
-        public final SuatChieu suatChieu;
-        public final Ghe ghe;
-        public final java.math.BigDecimal giaVe;
-
-        public BookingResult(SuatChieu suatChieu, Ghe ghe, java.math.BigDecimal giaVe) {
-            this.suatChieu = suatChieu;
-            this.ghe = ghe;
-            this.giaVe = giaVe;
-        }
-    }
+    public record BookingResult(SuatChieu suatChieu, Ghe ghe, BigDecimal giaVe) {}
 }

@@ -8,6 +8,9 @@ import com.cinema.views.admin.HoaDonView;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -18,6 +21,7 @@ public class HoaDonController {
     private final HoaDonView view;
     private final HoaDonService service;
     private final DateTimeFormatter ngayGioChieuFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+    private TableRowSorter<DefaultTableModel> sorter;
 
     public HoaDonController(HoaDonView view) throws IOException {
         this.view = view;
@@ -29,6 +33,8 @@ public class HoaDonController {
     private void initView() {
         try {
             loadHoaDonList(service.getAllHoaDon());
+            sorter = new TableRowSorter<>(view.getModelHoaDon());
+            view.getTableHoaDon().setRowSorter(sorter);
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(view, "Lỗi khi tải danh sách hóa đơn!");
@@ -36,24 +42,20 @@ public class HoaDonController {
     }
 
     private void addListeners() {
-        // Tìm kiếm
-        view.getTxtSearchID().addActionListener(_ -> searchHoaDon());
-        view.getTxtSearchIDKhachHang().addActionListener(_ -> searchHoaDon());
-        view.getTxtSearchTenKhachHang().addActionListener(_ -> searchHoaDon());
-
-        // Chọn hóa đơn
         view.getTableHoaDon().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = view.getTableHoaDon().getSelectedRow();
                 if (selectedRow >= 0) {
                     displayHoaDonInfo(selectedRow);
-                    try {
-                        loadChiTietHoaDon((int) view.getModelHoaDon().getValueAt(selectedRow, 0));
-                    } catch (SQLException ex) {
-                        ex.printStackTrace();
-                        JOptionPane.showMessageDialog(view, "Lỗi khi tải chi tiết hóa đơn!");
-                    }
                 }
+            }
+        });
+
+        // Tìm kiếm tự động khi gõ vào ô tìm kiếm
+        view.getSearchField().addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                timKiemHoaDon();
             }
         });
     }
@@ -62,15 +64,13 @@ public class HoaDonController {
         return String.format("%,.0f VND", amount);
     }
 
-    private void searchHoaDon() {
-        String id = view.getTxtSearchID().getText().trim();
-        String idKhachHang = view.getTxtSearchIDKhachHang().getText().trim();
-        String tenKhachHang = view.getTxtSearchTenKhachHang().getText().trim();
-        try {
-            loadHoaDonList(service.searchHoaDon(id, idKhachHang, tenKhachHang));
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(view, "Lỗi khi tìm kiếm hóa đơn!");
+    public void timKiemHoaDon() {
+        String tuKhoa = view.getSearchText().toLowerCase();
+
+        if (tuKhoa.isEmpty()) {
+            sorter.setRowFilter(null);
+        } else {
+            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + tuKhoa, 1)); // Cột 1: Tên NV
         }
     }
 
@@ -93,6 +93,13 @@ public class HoaDonController {
         view.getTxtTenNhanVien().setText((String) model.getValueAt(row, 1));
         view.getTxtNgayLap().setText((String) model.getValueAt(row, 3));
         view.getTxtTongTien().setText(model.getValueAt(row, 4).toString());
+        try {
+            int maHoaDon = (int) model.getValueAt(row, 0);
+            loadChiTietHoaDon(maHoaDon);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(view, "Lỗi khi tải chi tiết hóa đơn!");
+        }
     }
 
     private void loadChiTietHoaDon(int maHoaDon) throws SQLException {

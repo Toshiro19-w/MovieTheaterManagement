@@ -25,10 +25,10 @@ public class PhongChieuService {
         return phongChieuRepository.findByTenPhong(tenPhong);
     }
 
-    public PhongChieu addPhongChieu(PhongChieu phongChieu) throws SQLException {
+    public void addPhongChieu(PhongChieu phongChieu) throws SQLException {
         if (phongChieu.getSoLuongGhe() <= 0 || phongChieu.getLoaiPhong() == null || phongChieu.getLoaiPhong().trim().isEmpty()) {
             throw new IllegalArgumentException("Dữ liệu phòng chiếu không hợp lệ: số lượng ghế phải lớn hơn 0 và loại phòng không được để trống.");
         }
-        return phongChieuRepository.save(phongChieu);
+        phongChieuRepository.save(phongChieu);
     }
 }

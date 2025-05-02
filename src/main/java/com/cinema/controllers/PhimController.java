@@ -2,7 +2,8 @@ package com.cinema.controllers;
 
 import com.cinema.models.Phim;
 import com.cinema.services.PhimService;
-import com.cinema.views.admin.PhimView;
+import com.cinema.utils.DatabaseConnection;
+import com.cinema.views.PhimView;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -63,7 +64,7 @@ public class PhimController {
         view.getSearchField().addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
-                timKiemSach();
+                timKiemPhim();
             }
         });
 
@@ -73,7 +74,7 @@ public class PhimController {
         view.getBtnClear().addActionListener(e -> clearForm());
     }
 
-    public void timKiemSach() {
+    public void timKiemPhim() {
         String tuKhoa = view.getSearchText().toLowerCase();
 
         if (tuKhoa.isEmpty()) {

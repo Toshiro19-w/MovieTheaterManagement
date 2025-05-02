@@ -4,6 +4,7 @@ import com.cinema.enums.TrangThaiVe;
 import com.cinema.models.Ve;
 import com.cinema.utils.DatabaseConnection;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -89,29 +90,6 @@ public class VeRepository extends BaseRepository<Ve> {
         return result;
     }
 
-    public List<Ve> findByHoaDon(int maHoaDon) throws SQLException {
-        List<Ve> list = new ArrayList<>();
-        String sql = "SELECT * FROM Ve WHERE maHoaDon = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, maHoaDon);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    list.add(new Ve(
-                            rs.getInt("maVe"),
-                            rs.getInt("maSuatChieu"),
-                            rs.getInt("maPhong"),
-                            rs.getString("soGhe"),
-                            rs.getObject("maHoaDon") != null ? rs.getInt("maHoaDon") : null,
-                            rs.getBigDecimal("giaVe"),
-                            TrangThaiVe.fromString(rs.getString("trangThai")),
-                            rs.getTimestamp("ngayDat") != null ? rs.getTimestamp("ngayDat").toLocalDateTime() : null
-                    ));
-                }
-            }
-        }
-        return list;
-    }
-
     public List<Ve> findBySoGhe(String soGhe) throws SQLException {
         List<Ve> veList = new ArrayList<>();
         String sql = """
@@ -163,8 +141,8 @@ public class VeRepository extends BaseRepository<Ve> {
         String sql = "INSERT INTO Ve (maSuatChieu, maPhong, soGhe, maHoaDon, giaVe, trangThai, ngayDat) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             // Lấy maSuatChieu và maPhong dựa trên tenPhong, ngayGioChieu, tenPhim
-            Integer maSuatChieu = getMaSuatChieu(ve.getTenPhim(), ve.getNgayGioChieu());
-            Integer maPhong = getMaPhong(ve.getTenPhong());
+            Integer maSuatChieu = ve.getMaSuatChieu();
+            Integer maPhong = ve.getMaPhong();
             if (maSuatChieu == null || maPhong == null) {
                 throw new SQLException("Không tìm thấy suất chiếu hoặc phòng chiếu tương ứng.");
             }
@@ -197,9 +175,9 @@ public class VeRepository extends BaseRepository<Ve> {
     public Ve update(Ve ve) throws SQLException {
         String sql = "UPDATE Ve SET maSuatChieu = ?, maPhong = ?, soGhe = ?, maHoaDon = ?, giaVe = ?, trangThai = ?, ngayDat = ? WHERE maVe = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            // Lấy maSuatChieu và maPhong dựa trên tenPhong, ngayGioChieu, tenPhim
-            Integer maSuatChieu = getMaSuatChieu(ve.getTenPhim(), ve.getNgayGioChieu());
-            Integer maPhong = getMaPhong(ve.getTenPhong());
+            // Lấy maSuatChieu và maPhong dựa trên tenPhong, tenPhim
+            Integer maSuatChieu = ve.getMaSuatChieu();
+            Integer maPhong = ve.getMaPhong();
             if (maSuatChieu == null || maPhong == null) {
                 throw new SQLException("Không tìm thấy suất chiếu hoặc phòng chiếu tương ứng.");
             }
@@ -240,31 +218,16 @@ public class VeRepository extends BaseRepository<Ve> {
         }
     }
 
-    private Integer getMaSuatChieu(String tenPhim, LocalDateTime ngayGioChieu) throws SQLException {
-        String sql = "SELECT s.maSuatChieu FROM SuatChieu s JOIN Phim p ON s.maPhim = p.maPhim " +
-                "WHERE p.tenPhim = ? AND s.ngayGioChieu = ?";
+    public BigDecimal findTicketPriceBySuatChieu(int maSuatChieu) throws SQLException {
+        String sql = "SELECT giaVe FROM Ve WHERE maSuatChieu = ? AND trangThai = 'available' LIMIT 1";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, tenPhim);
-            stmt.setTimestamp(2, Timestamp.valueOf(ngayGioChieu));
+            stmt.setInt(1, maSuatChieu);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getInt("maSuatChieu");
+                    return rs.getBigDecimal("giaVe");
                 }
-                return null;
             }
         }
-    }
-
-    private Integer getMaPhong(String tenPhong) throws SQLException {
-        String sql = "SELECT maPhong FROM PhongChieu WHERE tenPhong = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, tenPhong);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("maPhong");
-                }
-                return null;
-            }
-        }
+        return null;
     }
 }

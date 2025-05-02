@@ -49,4 +49,21 @@ public class GheRepository implements IGheRepository {
         }
         return list;
     }
+
+    public List<Ghe> findAllGheByPhong(int maPhong) throws SQLException {
+        List<Ghe> gheList = new ArrayList<>();
+        String sql = "SELECT maPhong, soGhe FROM Ghe WHERE maPhong = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maPhong);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Ghe ghe = new Ghe();
+                    ghe.setMaPhong(rs.getInt("maPhong"));
+                    ghe.setSoGhe(rs.getString("soGhe"));
+                    gheList.add(ghe);
+                }
+            }
+        }
+        return gheList;
+    }
 }

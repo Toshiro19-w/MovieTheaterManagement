@@ -1,10 +1,14 @@
-package com.cinema.models.repositories;
+package com.cinema.repositories;
 
+import com.cinema.models.LoaiNguoiDung;
+import com.cinema.models.LoaiTaiKhoan;
 import com.cinema.models.TaiKhoan;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TaiKhoanRepository {
     protected Connection conn;
