@@ -188,6 +188,8 @@ public class NhanVienController {
         view.getTxtSDT().setText("");
         view.getTxtEmail().setText("");
         view.getTxtLuong().setText("");
+        view.getTxtTenDangNhap().setText("");
+        view.getTxtMatKhau().setText("");
         view.getVaiTroCombo().setSelectedIndex(0);
         view.getTable().clearSelection();
     }

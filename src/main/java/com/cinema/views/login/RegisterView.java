@@ -2,6 +2,7 @@ package com.cinema.views.login;
 
 import com.cinema.utils.DatabaseConnection;
 import com.formdev.flatlaf.FlatLightLaf;
+import org.mindrot.jbcrypt.BCrypt;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -16,7 +17,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class RegisterView extends JFrame {
-    private JTextField usernameField, emailField , fullNameField, phoneField;
+    private JTextField usernameField, emailField, fullNameField, phoneField;
     private JPasswordField passwordField, confirmPasswordField;
 
     public RegisterView() {
@@ -45,8 +46,8 @@ public class RegisterView extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.insets = new Insets(10, 10, 10, 10); // Khoảng cách giữa các thành phần
-        gbc.anchor = GridBagConstraints.CENTER; // Căn giữa
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.anchor = GridBagConstraints.CENTER;
 
         // Tiêu đề
         JLabel titleLabel = new JLabel("Đăng ký", SwingConstants.CENTER);
@@ -67,21 +68,20 @@ public class RegisterView extends JFrame {
         usernameField = new JTextField(20);
         usernameField.setFont(new Font("Arial", Font.PLAIN, 14));
         registerPanel.add(usernameField, gbc);
-        
-        //Name
+
+        // Name
         gbc.gridx = 0;
         gbc.gridy++;
-        JLabel fullNameLabel = new JLabel("Tên :");
+        JLabel fullNameLabel = new JLabel("Tên:");
         fullNameLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         registerPanel.add(fullNameLabel, gbc);
-        
+
         gbc.gridx = 1;
         fullNameField = new JTextField(20);
         fullNameField.setFont(new Font("Arial", Font.PLAIN, 14));
         registerPanel.add(fullNameField, gbc);
-        
-        
-     // Số điện thoại
+
+        // Số điện thoại
         gbc.gridx = 0;
         gbc.gridy++;
         JLabel phoneLabel = new JLabel("Số điện thoại:");
@@ -92,7 +92,6 @@ public class RegisterView extends JFrame {
         phoneField = new JTextField(20);
         phoneField.setFont(new Font("Arial", Font.PLAIN, 14));
         registerPanel.add(phoneField, gbc);
-
 
         // Email
         gbc.gridx = 0;
@@ -198,119 +197,136 @@ public class RegisterView extends JFrame {
     }
 
     private void handleRegister() {
-    	
         String username = usernameField.getText().trim();
         String fullName = fullNameField.getText().trim();
         String phone = phoneField.getText().trim();
         String email = emailField.getText().trim();
-        String password = new String(passwordField.getPassword());
-        String confirmPassword = new String(confirmPasswordField.getPassword());
+        String password = new String(passwordField.getPassword()).trim();
+        String confirmPassword = new String(confirmPasswordField.getPassword()).trim();
 
-        if (username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin!");
+        // Kiểm tra các trường bắt buộc
+        if (username.isEmpty() || fullName.isEmpty() || phone.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
+        // Kiểm tra mật khẩu khớp
         if (!password.equals(confirmPassword)) {
-            JOptionPane.showMessageDialog(this, "Mật khẩu xác nhận không khớp!");
+            JOptionPane.showMessageDialog(this, "Mật khẩu xác nhận không khớp!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
+        // Kiểm tra định dạng email
         if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            JOptionPane.showMessageDialog(this, "Email không hợp lệ!");
+            JOptionPane.showMessageDialog(this, "Email không hợp lệ!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        DatabaseConnection db;
-        Connection conn = null;
+        // Kiểm tra độ dài mật khẩu
+        if (password.length() < 8) {
+            JOptionPane.showMessageDialog(this, "Mật khẩu phải có ít nhất 8 ký tự!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Kiểm tra định dạng số điện thoại (VD: 10 số)
+        if (!phone.matches("^[0-9]{10}$")) {
+            JOptionPane.showMessageDialog(this, "Số điện thoại không hợp lệ! Phải có 10 số.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        DatabaseConnection db = null;
+        Connection connection = null;
+        PreparedStatement checkStmt = null;
+        PreparedStatement nguoiDungStmt = null;
+        PreparedStatement taiKhoanStmt = null;
+        ResultSet rs = null;
+        ResultSet generatedKeys = null;
 
         try {
             db = new DatabaseConnection();
-            conn = db.getConnection();
+            connection = db.getConnection();
+            connection.setAutoCommit(false); // Bắt đầu transaction
 
-            // Kiểm tra username/email đã tồn tại
+            // Kiểm tra username và email đã tồn tại
             String checkSQL = "SELECT COUNT(*) FROM TaiKhoan WHERE tenDangNhap = ?";
-            PreparedStatement checkStmt = conn.prepareStatement(checkSQL);
+            checkStmt = connection.prepareStatement(checkSQL);
             checkStmt.setString(1, username);
-            ResultSet rs = checkStmt.executeQuery();
+            rs = checkStmt.executeQuery();
             if (rs.next() && rs.getInt(1) > 0) {
-                JOptionPane.showMessageDialog(this, "Tên đăng nhập hoặc email đã tồn tại!");
+                JOptionPane.showMessageDialog(this, "Tên đăng nhập đã tồn tại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                connection.rollback();
                 return;
             }
 
-            rs.close();
-            checkStmt.close();
+            // Thêm vào bảng NguoiDung
+            String insertNguoiDung = "INSERT INTO NguoiDung (hoTen, soDienThoai, email, loaiNguoiDung) VALUES (?, ?, ?, ?)";
+            nguoiDungStmt = connection.prepareStatement(insertNguoiDung, Statement.RETURN_GENERATED_KEYS);
+            nguoiDungStmt.setString(1, fullName);
+            nguoiDungStmt.setString(2, phone);
+            nguoiDungStmt.setString(3, email);
+            nguoiDungStmt.setString(4, "KhachHang");
+            nguoiDungStmt.executeUpdate();
 
-            //thêm vào bảng người dùng
-            String  inserNguoiDung = "INSERT INTO NguoiDung(hoTen,soDienThoai,email,loaiNguoiDung)"
-            		+ "VALUES (?, ? , ?, ?)";
-            PreparedStatement NguoiDungStmt = conn.prepareStatement(inserNguoiDung, Statement.RETURN_GENERATED_KEYS);
-            NguoiDungStmt.setString(1,fullName);
-            NguoiDungStmt.setString(2,phone);
-            NguoiDungStmt.setString(3,email);
-            NguoiDungStmt.setString(4,"KhachHang");
-            NguoiDungStmt.executeUpdate();
-            
-            //lấy mã người dùng được sinh tự động
-            
-            ResultSet generatedKeys = NguoiDungStmt.getGeneratedKeys();
+            // Lấy mã người dùng được sinh tự động
+            generatedKeys = nguoiDungStmt.getGeneratedKeys();
             int maNguoiDung = -1;
             if (generatedKeys.next()) {
-            	maNguoiDung = generatedKeys.getInt(1);
+                maNguoiDung = generatedKeys.getInt(1);
+            } else {
+                throw new SQLException("Không thể lấy mã người dùng!");
             }
-            generatedKeys.close();
-            NguoiDungStmt.close();
-            
-            String hashedPassword = hashPassword(password);
-            String sql = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maNguoiDung) VALUES (?, ?, ?, ?)";         
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setString(1, username);
-            stmt.setString(2, hashedPassword);
-            stmt.setString(3, "user");
-            stmt.setInt(4, maNguoiDung);
 
-            int rowsAffected = stmt.executeUpdate();
+            // Thêm vào bảng TaiKhoan
+            String hashedPassword = hashPassword(password);
+            String insertTaiKhoan = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maNguoiDung) VALUES (?, ?, ?, ?)";
+            taiKhoanStmt = connection.prepareStatement(insertTaiKhoan);
+            taiKhoanStmt.setString(1, username);
+            taiKhoanStmt.setString(2, hashedPassword);
+            taiKhoanStmt.setString(3, "User");
+            taiKhoanStmt.setInt(4, maNguoiDung);
+            int rowsAffected = taiKhoanStmt.executeUpdate();
 
             if (rowsAffected > 0) {
-                JOptionPane.showMessageDialog(this, "Đăng ký thành công! Vui lòng đăng nhập.");
+                connection.commit();
+                JOptionPane.showMessageDialog(this, "Đăng ký thành công! Vui lòng đăng nhập.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 LoginView loginView = new LoginView();
                 loginView.setVisible(true);
                 dispose();
             } else {
-                JOptionPane.showMessageDialog(this, "Đăng ký thất bại!");
+                connection.rollback();
+                JOptionPane.showMessageDialog(this, "Đăng ký thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
 
-            stmt.close();
-
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi kết nối CSDL: " + ex.getMessage());
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Lỗi hệ thống: " + e.getMessage());
-        } finally {
             try {
-                if (conn != null && !conn.isClosed()) {
-                    conn.close();
+                if (connection != null) {
+                    connection.rollback();
                 }
+            } catch (SQLException rollbackEx) {
+                rollbackEx.printStackTrace();
+            }
+            JOptionPane.showMessageDialog(this, "Lỗi kết nối CSDL: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, "Lỗi hệ thống: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        } finally {
+            // Đóng các tài nguyên
+            try {
+                if (rs != null) rs.close();
+                if (generatedKeys != null) generatedKeys.close();
+                if (checkStmt != null) checkStmt.close();
+                if (nguoiDungStmt != null) nguoiDungStmt.close();
+                if (taiKhoanStmt != null) taiKhoanStmt.close();
+                if (connection != null && !connection.isClosed()) connection.close();
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
         }
     }
 
-    // Hàm mã hóa mật khẩu (sử dụng MD5)
+    // Hàm mã hóa mật khẩu bằng bcrypt
     private String hashPassword(String password) {
-        try {
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-            byte[] hash = md.digest(password.getBytes());
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                hexString.append(Integer.toHexString(0xFF & b));
-            }
-            return hexString.toString(); // Trả về mật khẩu đã mã hóa MD5
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return null;
+        return BCrypt.hashpw(password, BCrypt.gensalt(12)); // 12 là work factor
     }
-    
 }

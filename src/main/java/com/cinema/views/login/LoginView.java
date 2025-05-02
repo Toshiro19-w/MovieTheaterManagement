@@ -1,9 +1,10 @@
 package com.cinema.views.login;
 
-import com.cinema.models.LoaiTaiKhoan;
+import com.cinema.enums.LoaiTaiKhoan;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.views.MainView;
 import com.formdev.flatlaf.FlatLightLaf;
+import org.mindrot.jbcrypt.BCrypt;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -47,14 +48,10 @@ public class LoginView extends JFrame {
         setSize(1280, 700);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-
-        setResizable(true);
-        
-        ImageIcon icon = new ImageIcon(Objects.requireNonNull(getClass().getResource("/img/133864911312596807.jpg")));
-        setIconImage(icon.getImage());
-
         setResizable(false);
 
+        ImageIcon icon = new ImageIcon(Objects.requireNonNull(getClass().getResource("/img/133864911312596807.jpg")));
+        setIconImage(icon.getImage());
 
         // Panel nền với gradient
         JPanel backgroundPanel = getBackgroundPanel();
@@ -86,19 +83,24 @@ public class LoginView extends JFrame {
         loginPanel.add(usernameLabel, gbc);
 
         gbc.gridx = 1;
-        usernameField = new JTextField(20);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1;
+        usernameField = new JTextField(15);
         usernameField.setFont(new Font("Arial", Font.PLAIN, 14));
         loginPanel.add(usernameField, gbc);
 
         // Password
         gbc.gridx = 0;
+        gbc.weightx = 0.0;
         gbc.gridy++;
         JLabel passwordLabel = new JLabel("Mật khẩu:");
         passwordLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         loginPanel.add(passwordLabel, gbc);
 
         gbc.gridx = 1;
-        passwordField = new JPasswordField(20);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1;
+        passwordField = new JPasswordField(15);
         passwordField.setFont(new Font("Arial", Font.PLAIN, 14));
         loginPanel.add(passwordField, gbc);
 
@@ -194,21 +196,43 @@ public class LoginView extends JFrame {
         PreparedStatement stmt = null;
         ResultSet rs = null;
         try {
-            String sql = "SELECT loaiTaiKhoan FROM TaiKhoan WHERE tenDangNhap = ? AND matKhau = ?";
+            String sql = "SELECT loaiTaiKhoan, matKhau FROM TaiKhoan WHERE tenDangNhap = ?";
             stmt = conn.prepareStatement(sql);
             stmt.setString(1, username);
-            stmt.setString(2, password); // Mã hoá mật khẩu (nên mã hóa trước khi lưu vào DB)
             rs = stmt.executeQuery();
 
             // Nếu đăng nhập thành công
             if (rs.next()) {
-                String role = rs.getString("loaiTaiKhoan"); // Lấy vai trò từ cơ sở dữ liệu
-                JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
+                String storedHash = rs.getString("matKhau");
+                String role = rs.getString("loaiTaiKhoan");
 
-                // Chuyển hướng dựa trên vai trò
-                if ("admin".equalsIgnoreCase(role)) openMainView(username, LoaiTaiKhoan.ADMIN); // Mở giao diện admin
-                else openMainView(username, LoaiTaiKhoan.USER); // Mở giao diện khách hàng
-                dispose(); // Đóng cửa sổ đăng nhập
+                // Kiểm tra mật khẩu với bcrypt
+                if (BCrypt.checkpw(password, storedHash)) {
+                    JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
+
+                    // Chuyển hướng dựa trên vai trò
+                    switch (role.toLowerCase()) {
+                        case "admin":
+                            openMainView(username, LoaiTaiKhoan.ADMIN);
+                            break;
+                        case "quanlyphim":
+                            openMainView(username, LoaiTaiKhoan.QUANLYPHIM);
+                            break;
+                        case "thungan":
+                            openMainView(username, LoaiTaiKhoan.THUNGAN);
+                            break;
+                        case "banve":
+                            openMainView(username, LoaiTaiKhoan.BANVE);
+                            break;
+                        case "user":
+                        default:
+                            openMainView(username, LoaiTaiKhoan.USER);
+                            break;
+                    }
+                    dispose(); // Đóng cửa sổ đăng nhập
+                } else {
+                    JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
+                }
             } else {
                 JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
             }
@@ -218,7 +242,7 @@ public class LoginView extends JFrame {
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
-            // Đóng PreparedStatement và ResultSet trong khối finally để đảm bảo chúng luôn được đóng
+            // Đóng PreparedStatement và ResultSet
             if (rs != null) {
                 try {
                     rs.close();
@@ -236,40 +260,25 @@ public class LoginView extends JFrame {
         }
     }
 
-    // Phương thức mở giao diện admin
     private void openMainView(String username, LoaiTaiKhoan loaiTaiKhoan) throws IOException, SQLException {
         MainView mainView = new MainView(username, loaiTaiKhoan);
         mainView.setVisible(true);
     }
 
-    // Phương thức mở giao diện đăng ký
     private void handleRegister() {
         RegisterView registerView = new RegisterView();
         registerView.setVisible(true);
         dispose();
     }
 
-    // Phương thức mở giao diện quên mật khẩu
-    private void handleForgotPassword(){
+    private void handleForgotPassword() {
         ForgotPasswordView forgotPasswordView = new ForgotPasswordView();
         forgotPasswordView.setVisible(true);
         dispose();
     }
 
-    // Hàm mã hóa mật khẩu (sử dụng MD5)
-    private String hashPassword(String password) {
-//        try {
-//            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-//            byte[] hash = md.digest(password.getBytes());
-//            StringBuilder hexString = new StringBuilder();
-//            for (byte b : hash) {
-//                hexString.append(Integer.toHexString(0xFF & b));
-//            }
-//            return hexString.toString(); // Trả về mật khẩu đã mã hóa MD5
-//        } catch (Exception ex) {
-//            ex.printStackTrace();
-//        }
-//        return null;
-    	return password;
+    // Hàm mã hóa mật khẩu bằng bcrypt
+    public static String hashPassword(String password) {
+        return BCrypt.hashpw(password, BCrypt.gensalt(12)); // 12 là work factor
     }
 }

@@ -46,7 +46,7 @@ public class VeRepository extends BaseRepository<Ve> {
 
     public List<Ve> findAllDetail() throws SQLException {
         String sql = """
-                SELECT\s
+                SELECT 
                     Ve.maVe,
                     Ve.trangThai,
                     Ve.giaVe,
@@ -93,7 +93,7 @@ public class VeRepository extends BaseRepository<Ve> {
     public List<Ve> findBySoGhe(String soGhe) throws SQLException {
         List<Ve> veList = new ArrayList<>();
         String sql = """
-                SELECT\s
+                SELECT 
                     Ve.maVe,
                     Ve.trangThai,
                     Ve.giaVe,
@@ -138,17 +138,18 @@ public class VeRepository extends BaseRepository<Ve> {
 
     @Override
     public Ve save(Ve ve) throws SQLException {
+        // Kiểm tra tính hợp lệ của maSuatChieu và maPhong
+        if (isSuatChieuExists(ve.getMaSuatChieu())) {
+            throw new SQLException("Suất chiếu với mã " + ve.getMaSuatChieu() + " không tồn tại");
+        }
+        if (isPhongExists(ve.getMaPhong())) {
+            throw new SQLException("Phòng chiếu với mã " + ve.getMaPhong() + " không tồn tại");
+        }
+
         String sql = "INSERT INTO Ve (maSuatChieu, maPhong, soGhe, maHoaDon, giaVe, trangThai, ngayDat) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            // Lấy maSuatChieu và maPhong dựa trên tenPhong, ngayGioChieu, tenPhim
-            Integer maSuatChieu = ve.getMaSuatChieu();
-            Integer maPhong = ve.getMaPhong();
-            if (maSuatChieu == null || maPhong == null) {
-                throw new SQLException("Không tìm thấy suất chiếu hoặc phòng chiếu tương ứng.");
-            }
-
-            stmt.setInt(1, maSuatChieu);
-            stmt.setInt(2, maPhong);
+            stmt.setInt(1, ve.getMaSuatChieu());
+            stmt.setInt(2, ve.getMaPhong());
             stmt.setString(3, ve.getSoGhe());
             stmt.setObject(4, null, Types.INTEGER); // maHoaDon mặc định là null
             stmt.setBigDecimal(5, ve.getGiaVe());
@@ -173,17 +174,18 @@ public class VeRepository extends BaseRepository<Ve> {
 
     @Override
     public Ve update(Ve ve) throws SQLException {
+        // Kiểm tra tính hợp lệ của maSuatChieu và maPhong
+        if (isSuatChieuExists(ve.getMaSuatChieu())) {
+            throw new SQLException("Suất chiếu với mã " + ve.getMaSuatChieu() + " không tồn tại");
+        }
+        if (isPhongExists(ve.getMaPhong())) {
+            throw new SQLException("Phòng chiếu với mã " + ve.getMaPhong() + " không tồn tại");
+        }
+
         String sql = "UPDATE Ve SET maSuatChieu = ?, maPhong = ?, soGhe = ?, maHoaDon = ?, giaVe = ?, trangThai = ?, ngayDat = ? WHERE maVe = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            // Lấy maSuatChieu và maPhong dựa trên tenPhong, tenPhim
-            Integer maSuatChieu = ve.getMaSuatChieu();
-            Integer maPhong = ve.getMaPhong();
-            if (maSuatChieu == null || maPhong == null) {
-                throw new SQLException("Không tìm thấy suất chiếu hoặc phòng chiếu tương ứng.");
-            }
-
-            stmt.setInt(1, maSuatChieu);
-            stmt.setInt(2, maPhong);
+            stmt.setInt(1, ve.getMaSuatChieu());
+            stmt.setInt(2, ve.getMaPhong());
             stmt.setString(3, ve.getSoGhe());
             stmt.setObject(4, null, Types.INTEGER);
             stmt.setBigDecimal(5, ve.getGiaVe());
@@ -229,5 +231,25 @@ public class VeRepository extends BaseRepository<Ve> {
             }
         }
         return null;
+    }
+
+    private boolean isSuatChieuExists(int maSuatChieu) throws SQLException {
+        String sql = "SELECT 1 FROM SuatChieu WHERE maSuatChieu = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maSuatChieu);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return !rs.next();
+            }
+        }
+    }
+
+    private boolean isPhongExists(int maPhong) throws SQLException {
+        String sql = "SELECT 1 FROM PhongChieu WHERE maPhong = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maPhong);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return !rs.next();
+            }
+        }
     }
 }

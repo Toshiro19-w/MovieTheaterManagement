@@ -53,7 +53,7 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
             }
         }
 
-        String sqlNhanVien = "INSERT INTO NhanVien (maNguoiDung, luong, vaiTro) VALUES (?, ?, ?, ?)";
+        String sqlNhanVien = "INSERT INTO NhanVien (maNguoiDung, luong, vaiTro) VALUES (?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sqlNhanVien)) {
             stmt.setInt(1, entity.getMaNguoiDung());
             stmt.setBigDecimal(2, entity.getLuong());
