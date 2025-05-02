@@ -20,7 +20,6 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
-// update baocaoview
 public class BaoCaoView extends JPanel {
     private DatabaseConnection databaseConnection;
     private BaoCaoController controller;

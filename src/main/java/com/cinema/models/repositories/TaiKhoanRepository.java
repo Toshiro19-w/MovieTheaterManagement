@@ -1,14 +1,10 @@
-package com.cinema.repositories;
+package com.cinema.models.repositories;
 
-import com.cinema.models.LoaiNguoiDung;
-import com.cinema.models.LoaiTaiKhoan;
 import com.cinema.models.TaiKhoan;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 public class TaiKhoanRepository {
     protected Connection conn;
@@ -71,7 +67,7 @@ public class TaiKhoanRepository {
 
 
     public void createTaiKhoan(TaiKhoan taiKhoan) throws SQLException {
-        String sql = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, ma_where) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maNguoiDung) VALUES (?, ?, ?, ?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, taiKhoan.getTenDangNhap());
             pstmt.setString(2, taiKhoan.getMatKhau());

@@ -1,7 +1,7 @@
 package com.cinema.services;
 
 import com.cinema.models.TaiKhoan;
-import com.cinema.repositories.TaiKhoanRepository;
+import com.cinema.models.repositories.TaiKhoanRepository;
 import com.cinema.utils.DatabaseConnection;
 import org.mindrot.jbcrypt.BCrypt;
 
