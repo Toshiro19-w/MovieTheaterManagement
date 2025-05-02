@@ -147,7 +147,7 @@ public class PaymentView extends JDialog {
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
-            }, 5, 5, TimeUnit.SECONDS);
+            }, 0, 5, TimeUnit.SECONDS);
 
             addWindowListener(new WindowAdapter() {
                 @Override
