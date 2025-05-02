@@ -2,8 +2,7 @@ package com.cinema.controllers;
 
 import com.cinema.models.Phim;
 import com.cinema.services.PhimService;
-import com.cinema.utils.DatabaseConnection;
-import com.cinema.views.PhimView;
+import com.cinema.views.admin.PhimView;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -92,7 +91,7 @@ public class PhimController {
                     phim.getMaPhim(),
                     phim.getTenPhim(),
                     phim.getTenTheLoai(),
-                    phim.getThoiLuong(),
+                    phim.getThoiLuong() + " phút",
                     phim.getNgayKhoiChieu() != null ? phim.getNgayKhoiChieu().format(formatter) : "",
                     phim.getNuocSanXuat(),
                     phim.getDinhDang(),
@@ -107,7 +106,7 @@ public class PhimController {
         String maPhim = model.getValueAt(row, 0).toString();
         String tenPhim = model.getValueAt(row, 1).toString();
         String theLoai = model.getValueAt(row, 2).toString();
-        String thoiLuong = model.getValueAt(row, 3).toString();
+        String thoiLuong = model.getValueAt(row, 3).toString().replace(" phút","");
         String ngayKhoiChieu = model.getValueAt(row, 4).toString();
         String nuocSanXuat = model.getValueAt(row, 5).toString();
         String dinhDang = model.getValueAt(row, 6).toString();

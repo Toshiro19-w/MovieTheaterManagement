@@ -10,7 +10,10 @@ import com.cinema.views.admin.VeView;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -63,7 +66,7 @@ public class VeController {
         for (Ve ve : veList) {
             model.addRow(new Object[]{
                     ve.getMaVe(),
-                    ve.getTrangThai().getValue(),
+                    ve.getTrangThai().getValue().toLowerCase(),
                     formatCurrency(ve.getGiaVe()),
                     ve.getSoGhe(),
                     ve.getNgayDat() != null ? ve.getNgayDat().format(ngayDatFormatter) : "Chưa đặt",
@@ -77,7 +80,7 @@ public class VeController {
     private void displayVeInfo(int row) {
         DefaultTableModel model = view.getTableModel();
         view.getTxtMaVe().setText(model.getValueAt(row, 0).toString());
-        view.getCbTrangThai().setSelectedItem(model.getValueAt(row, 1).toString());
+        view.getCbTrangThai().setSelectedItem(model.getValueAt(row, 1).toString().toLowerCase());
         view.getTxtGiaVe().setText(model.getValueAt(row, 2).toString().replaceAll("[^\\d]", ""));
         view.getTxtSoGhe().setText(model.getValueAt(row, 3).toString());
         view.getTxtNgayDat().setText(model.getValueAt(row, 4).toString());
@@ -241,8 +244,8 @@ public class VeController {
         return true;
     }
 
-    private Ve createVeFromForm() {
-        TrangThaiVe trangThai = TrangThaiVe.valueOf(view.getCbTrangThai().getSelectedItem().toString());
+    private Ve createVeFromForm() throws SQLException {
+        TrangThaiVe trangThai = TrangThaiVe.valueOf(view.getCbTrangThai().getSelectedItem().toString().toUpperCase());
         String soGhe = view.getTxtSoGhe().getText();
         BigDecimal giaVe = parseCurrency(view.getTxtGiaVe().getText());
         LocalDateTime ngayDat = LocalDateTime.now();
@@ -251,7 +254,39 @@ public class VeController {
         LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayGioChieuStr, ngayGioChieuFormatter);
         String tenPhim = view.getTxtTenPhim().getText();
 
-        return new Ve(0, trangThai, giaVe, soGhe, ngayDat, tenPhong, ngayGioChieu, tenPhim);
+        // Tra cứu maSuatChieu dựa trên tenPhim và ngayGioChieu
+        int maSuatChieu = getMaSuatChieuFromTenPhimAndNgayGioChieu(tenPhim, ngayGioChieu);
+        int maPhong = getMaPhongFromTenPhong(tenPhong);
+
+        return new Ve(0, maSuatChieu, maPhong, soGhe, null, giaVe, trangThai, ngayDat);
+    }
+
+    private int getMaSuatChieuFromTenPhimAndNgayGioChieu(String tenPhim, LocalDateTime ngayGioChieu) throws SQLException {
+        String sql = "SELECT maSuatChieu FROM SuatChieu s JOIN Phim p ON s.maPhim = p.maPhim " +
+                "WHERE p.tenPhim = ? AND s.ngayGioChieu = ?";
+        try (PreparedStatement stmt = view.getDatabaseConnection().getConnection().prepareStatement(sql)) {
+            stmt.setString(1, tenPhim);
+            stmt.setTimestamp(2, Timestamp.valueOf(ngayGioChieu));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("maSuatChieu");
+                }
+                throw new SQLException("Không tìm thấy suất chiếu cho phim '" + tenPhim + "' và thời gian '" + ngayGioChieu.format(ngayGioChieuFormatter) + "'");
+            }
+        }
+    }
+
+    private int getMaPhongFromTenPhong(String tenPhong) throws SQLException {
+        String sql = "SELECT maPhong FROM PhongChieu WHERE tenPhong = ?";
+        try (PreparedStatement stmt = view.getDatabaseConnection().getConnection().prepareStatement(sql)) {
+            stmt.setString(1, tenPhong);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("maPhong");
+                }
+                throw new SQLException("Không tìm thấy phòng với tên '" + tenPhong + "'");
+            }
+        }
     }
 
     private void clearForm() {

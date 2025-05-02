@@ -86,7 +86,7 @@ public class NhanVienView extends JPanel {
         panel.add(txtMatKhau);
 
         panel.add(new JLabel("Loại Tài Khoản:"));
-        cmbLoaiTaiKhoan = new JComboBox<>(new String[]{"admin", "user"});
+        cmbLoaiTaiKhoan = new JComboBox<>(new String[]{"Admin", "QuanLyPhim", "ThuNgan", "BanVe"});
         panel.add(cmbLoaiTaiKhoan);
 
         panel.add(new JLabel(""));
@@ -119,7 +119,7 @@ public class NhanVienView extends JPanel {
         txtSDT = new JTextField();
         txtEmail = new JTextField();
         txtLuong = new JTextField();
-        vaiTroCombo = new JComboBox<>(new String[]{"Admin", "QuanLy", "ThuNgan", "BanVe"});
+        vaiTroCombo = new JComboBox<>(new String[]{"Admin", "QuanLyPhim", "ThuNgan", "BanVe"});
         searchField = new JTextField();
 
         addField(fieldsPanel, "Mã Nhân Viên:", txtMaND);
