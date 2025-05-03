@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS SuatChieu (
     maPhim INT NOT NULL,
     maPhong INT NOT NULL,
     ngayGioChieu DATETIME NOT NULL,
+    soSuatChieu INT DEFAULT 50,
     FOREIGN KEY (maPhim) REFERENCES Phim(maPhim) ON DELETE CASCADE,
     FOREIGN KEY (maPhong) REFERENCES PhongChieu(maPhong) ON DELETE CASCADE
 );
@@ -117,7 +118,7 @@ CREATE TABLE IF NOT EXISTS Ve (
     soGhe NVARCHAR(5) NOT NULL,
     maHoaDon INT NULL,
     giaVe DECIMAL(10,2) CHECK (giaVe >= 0) NOT NULL,
-    trangThai ENUM('available', 'booked', 'paid', 'cancelled', 'pending') DEFAULT 'available' NOT NULL,
+    trangThai ENUM('booked', 'paid', 'cancelled', 'pending') NOT NULL,
     ngayDat DATETIME NULL,
     FOREIGN KEY (maSuatChieu) REFERENCES SuatChieu(maSuatChieu) ON DELETE CASCADE,
     FOREIGN KEY (maHoaDon) REFERENCES HoaDon(maHoaDon) ON DELETE SET NULL,
@@ -266,7 +267,7 @@ INSERT INTO Ve (maSuatChieu, maPhong, soGhe, maHoaDon, giaVe, trangThai, ngayDat
 (3, 3, 'A1', 3, 100000.00, 'paid', '2025-04-05 13:00:00'),
 (4, 4, 'A1', 4, 150000.00, 'paid', '2025-04-05 15:00:00'),
 (5, 5, 'A1', 5, 125000.00, 'paid', '2025-04-05 17:00:00'),
-(1, 1, 'B1', NULL, 75000.00, 'available', NULL),
+(1, 1, 'B1', NULL, 75000.00, 'booked', NULL),
 (2, 2, 'A2', NULL, 100000.00, 'booked', '2025-04-05 10:00:00'),
 (3, 3, 'B1', NULL, 100000.00, 'pending', '2025-04-05 12:00:00'),
 (5, 5, 'A2', NULL, 125000.00, 'cancelled', '2025-04-05 14:00:00');

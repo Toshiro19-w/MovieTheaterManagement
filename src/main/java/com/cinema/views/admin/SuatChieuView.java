@@ -21,9 +21,6 @@ public class SuatChieuView extends JPanel {
     // SuatChieu components
 
     private JTextField txtNgayGioChieu, txtSoSuatChieu, suatChieuSearchField;
-
-    private JTextField txtNgayGioChieu, suatChieuSearchField;
-
     private JLabel txtMaSuatChieu;
     private JComboBox cbMaPhim, cbMaPhong;
     private JTable suatChieuTable;
@@ -34,7 +31,6 @@ public class SuatChieuView extends JPanel {
     // PhongChieu components
     private JTable phongChieuTable;
     private DefaultTableModel phongChieuTableModel;
-    private JTextField phongChieuSearchField;
     private TableRowSorter<DefaultTableModel> phongChieuSorter;
     private Integer selectedMaPhong;
 
@@ -80,7 +76,6 @@ public class SuatChieuView extends JPanel {
         JPanel infoPanel = new JPanel(new BorderLayout(10, 10));
         infoPanel.setBorder(BorderFactory.createTitledBorder("THÔNG TIN SUẤT CHIẾU"));
         JPanel fieldsPanel = new JPanel(new GridLayout(6, 2, 10, 10));
-        JPanel fieldsPanel = new JPanel(new GridLayout(5, 2, 10, 10));
 
         initializeSuatChieuFields(fieldsPanel);
         infoPanel.add(fieldsPanel, BorderLayout.CENTER);
@@ -139,7 +134,6 @@ public class SuatChieuView extends JPanel {
 
     private JPanel createSuatChieuTablePanel() {
         String[] columns = {"Mã Suất Chiếu", "Tên Phim", "Phòng Chiếu", "Ngày Giờ Chiếu", "Số Suất Chiếu"};
-        String[] columns = {"Mã Suất Chiếu", "Tên Phim", "Phòng Chiếu", "Ngày Giờ Chiếu"};
         suatChieuTableModel = new DefaultTableModel(columns, 0);
         suatChieuTable = new JTable(suatChieuTableModel);
         suatChieuTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -247,7 +241,5 @@ public class SuatChieuView extends JPanel {
     // Getters for PhongChieuController
     public JTable getPhongChieuTable() { return phongChieuTable; }
     public DefaultTableModel getPhongChieuTableModel() { return phongChieuTableModel; }
-    public JTextField getPhongChieuSearchField() { return phongChieuSearchField; }
-    public String getPhongChieuSearchText() { return phongChieuSearchField.getText(); }
     public Integer getSelectedMaPhong() { return selectedMaPhong; }
 }

@@ -5,7 +5,6 @@ import com.cinema.models.repositories.SuatChieuRepository;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.SQLException;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class SuatChieuService {
@@ -21,10 +20,6 @@ public class SuatChieuService {
 
     public List<SuatChieu> getSuatChieuByMaPhim(int maPhim) throws SQLException {
         return suatChieuRepository.findByMaPhim(maPhim);
-    }
-
-    public List<SuatChieu> searchSuatChieuByNgay(LocalDateTime ngayGioChieu) throws SQLException {
-        return suatChieuRepository.searchSuatChieuByNgay(ngayGioChieu);
     }
 
     public void addSuatChieu(SuatChieu suatChieu) throws SQLException {

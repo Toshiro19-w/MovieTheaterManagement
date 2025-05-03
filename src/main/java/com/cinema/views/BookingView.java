@@ -176,14 +176,9 @@ public class BookingView extends JDialog {
             } catch (SQLException e) {
                 e.printStackTrace();
                 JOptionPane.showMessageDialog(this, "Lỗi khi xác nhận thanh toán: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-                );
                 confirmCallback.accept(new BookingResult(selectedSuatChieu, selectedGhe, ticketPrice));
                 JOptionPane.showMessageDialog(this, "Đặt vé và tạo hóa đơn thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 dispose();
-            } catch (SQLException e) {
-                e.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Lỗi khi đặt vé hoặc tạo hóa đơn: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-
             }
         });
 
