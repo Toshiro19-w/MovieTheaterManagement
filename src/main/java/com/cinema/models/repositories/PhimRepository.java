@@ -15,33 +15,6 @@ public class PhimRepository extends BaseRepository<Phim> {
     @Override
     public List<Phim> findAll() throws SQLException {
         List<Phim> list = new ArrayList<>();
-        String sql = "SELECT p.*, tl.tenTheLoai FROM Phim p JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai";
-
-        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
-                Phim phim = new Phim();
-                phim.setMaPhim(rs.getInt("maPhim"));
-                phim.setTenPhim(rs.getString("tenPhim"));
-                phim.setMaTheLoai(rs.getInt("maTheLoai"));
-                phim.setTenTheLoai(rs.getString("tenTheLoai"));
-                phim.setThoiLuong(rs.getInt("thoiLuong"));
-                phim.setNgayKhoiChieu(rs.getDate("ngayKhoiChieu") != null
-                        ? rs.getDate("ngayKhoiChieu").toLocalDate()
-                        : null);
-                phim.setNuocSanXuat(rs.getString("nuocSanXuat"));
-                phim.setDinhDang(rs.getString("dinhDang"));
-                phim.setMoTa(rs.getString("moTa"));
-                phim.setDaoDien(rs.getString("daoDien"));
-                phim.setDuongDanPoster(rs.getString("duongDanPoster"));
-
-                list.add(phim);
-            }
-        }
-        return list;
-    }
-
-    public List<Phim> findAllDetail() throws SQLException {
-        List<Phim> list = new ArrayList<>();
         String sql = "SELECT p.maPhim, p.tenPhim, p.maTheLoai, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu, " +
                 "p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien, p.duongDanPoster, COUNT(sc.maSuatChieu) AS soSuatChieu " +
                 "FROM Phim p " +
@@ -67,65 +40,6 @@ public class PhimRepository extends BaseRepository<Phim> {
                 phim.setDaoDien(rs.getString("daoDien"));
                 phim.setDuongDanPoster(rs.getString("duongDanPoster"));
 
-                list.add(phim);
-            }
-        }
-        return list;
-    }
-
-    public List<Phim> searchPhim(String tenPhim, String tenTheLoai, String nuocSanXuat, String daoDien) throws SQLException {
-        List<Phim> list = new ArrayList<>();
-        StringBuilder sql = new StringBuilder(
-                "SELECT p.maPhim, p.tenPhim, p.maTheLoai, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu, " +
-                        "p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien, p.duongDanPoster, COUNT(sc.maSuatChieu) AS soSuatChieu " +
-                        "FROM Phim p " +
-                        "JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai " +
-                        "LEFT JOIN SuatChieu sc ON p.maPhim = sc.maPhim " +
-                        "WHERE 1=1"
-        );
-
-        List<String> params = new ArrayList<>();
-        if (tenPhim != null && !tenPhim.trim().isEmpty()) {
-            sql.append(" AND p.tenPhim LIKE ?");
-            params.add("%" + tenPhim.trim() + "%");
-        }
-        if (tenTheLoai != null && !tenTheLoai.trim().isEmpty()) {
-            sql.append(" AND tl.tenTheLoai LIKE ?");
-            params.add("%" + tenTheLoai.trim() + "%");
-        }
-        if (nuocSanXuat != null && !nuocSanXuat.trim().isEmpty()) {
-            sql.append(" AND p.nuocSanXuat LIKE ?");
-            params.add("%" + nuocSanXuat.trim() + "%");
-        }
-        if (daoDien != null && !daoDien.trim().isEmpty()) {
-            sql.append(" AND p.daoDien LIKE ?");
-            params.add("%" + daoDien.trim() + "%");
-        }
-
-        sql.append(" GROUP BY p.maPhim, p.tenPhim, p.maTheLoai, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu, " +
-                "p.nuocSanXuat, p.dinhDang, p.moTa, p.daoDien, p.duongDanPoster " +
-                "ORDER BY p.ngayKhoiChieu DESC, p.tenPhim");
-
-        try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                stmt.setString(i + 1, params.get(i));
-            }
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                Phim phim = new Phim();
-                phim.setMaPhim(rs.getInt("maPhim"));
-                phim.setTenPhim(rs.getString("tenPhim"));
-                phim.setMaTheLoai(rs.getInt("maTheLoai"));
-                phim.setTenTheLoai(rs.getString("tenTheLoai"));
-                phim.setThoiLuong(rs.getInt("thoiLuong"));
-                phim.setNgayKhoiChieu(rs.getDate("ngayKhoiChieu") != null
-                        ? rs.getDate("ngayKhoiChieu").toLocalDate()
-                        : null);
-                phim.setNuocSanXuat(rs.getString("nuocSanXuat"));
-                phim.setDinhDang(rs.getString("dinhDang"));
-                phim.setMoTa(rs.getString("moTa"));
-                phim.setDaoDien(rs.getString("daoDien"));
-                phim.setDuongDanPoster(rs.getString("duongDanPoster"));
                 list.add(phim);
             }
         }

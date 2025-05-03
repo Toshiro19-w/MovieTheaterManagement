@@ -28,11 +28,6 @@ public class PhimListView extends JPanel {
     private JTextField searchField;
     private JPanel phimPanel;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    private JLabel bannerLabel;
-    private ImageIcon[] bannerIcons;
-    private int currentBannerIndex = 0;
-    private int bannerX = 0;
-    private Timer slideTimer;
 
     public PhimListView(PhimController phimController, BiConsumer<Integer, Integer> bookTicketCallback, String username) throws IOException {
         this.phimController = phimController;
@@ -44,32 +39,9 @@ public class PhimListView extends JPanel {
 
         initializeComponents();
         loadPhimList("");
-        startBannerCarousel();
     }
 
     private void initializeComponents() {
-        // Banner
-        bannerLabel = new JLabel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g.create();
-                if (bannerIcons != null && currentBannerIndex < bannerIcons.length) {
-                    if (bannerIcons[currentBannerIndex] != null) {
-                        g2d.drawImage(bannerIcons[currentBannerIndex].getImage(), bannerX, 0, null);
-                    }
-                    int nextIndex = (currentBannerIndex + 1) % bannerIcons.length;
-                    if (bannerX > 0 && bannerIcons[nextIndex] != null) {
-                        g2d.drawImage(bannerIcons[nextIndex].getImage(), bannerX - 1280, 0, null);
-                    }
-                }
-                g2d.dispose();
-            }
-        };
-        bannerLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        bannerLabel.setPreferredSize(new Dimension(1280, 300));
-        add(bannerLabel, BorderLayout.NORTH);
-
         // Content panel (tiêu đề, tìm kiếm, danh sách phim)
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
@@ -126,61 +98,11 @@ public class PhimListView extends JPanel {
         add(contentPanel, BorderLayout.CENTER);
     }
 
-    private void startBannerCarousel() {
-        String[] banners = {"banner1.jpg", "banner2.jpg", "banner3.jpg"};
-        bannerIcons = new ImageIcon[banners.length];
-        for (int i = 0; i < banners.length; i++) {
-            try {
-                bannerIcons[i] = new ImageIcon(Objects.requireNonNull(getClass().getClassLoader().getResource("images/banners/" + banners[i])));
-                Image scaledImage = bannerIcons[i].getImage().getScaledInstance(1280, 300, Image.SCALE_SMOOTH);
-                bannerIcons[i] = new ImageIcon(scaledImage);
-            } catch (Exception e) {
-                bannerIcons[i] = null;
-            }
-        }
-
-        updateBanner();
-
-        Timer carouselTimer = new Timer(5000, _ -> {
-            bannerX = 0;
-            if (slideTimer != null && slideTimer.isRunning()) {
-                slideTimer.stop();
-            }
-            slideTimer = new Timer(20, slideEvent -> {
-                bannerX += 40;
-                if (bannerX >= 1280) {
-                    bannerX = 0;
-                    currentBannerIndex = (currentBannerIndex + 1) % bannerIcons.length;
-                    updateBanner();
-                    ((Timer) slideEvent.getSource()).stop();
-                }
-                bannerLabel.repaint();
-            });
-            slideTimer.start();
-        });
-        carouselTimer.start();
-    }
-
-    private void updateBanner() {
-        if (bannerIcons[currentBannerIndex] != null) {
-            bannerLabel.setText("");
-            bannerLabel.setOpaque(false);
-        } else {
-            bannerLabel.setIcon(null);
-            bannerLabel.setText("Không có banner");
-            bannerLabel.setBackground(new Color(0, 48, 135));
-            bannerLabel.setOpaque(true);
-            bannerLabel.setForeground(Color.WHITE);
-            bannerLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        }
-        bannerLabel.repaint();
-    }
-
     public void loadPhimList(String searchText) {
         phimPanel.removeAll();
         List<Phim> phimList;
         try {
-            phimList = phimController.getAllPhimDetail();
+            phimList = phimController.getAllPhim();
             if (!searchText.isEmpty()) {
                 String searchLower = searchText.toLowerCase();
                 phimList = phimList.stream()
@@ -215,7 +137,7 @@ public class PhimListView extends JPanel {
     private JPanel createPhimCard(Phim phim) {
         JPanel phimCard = new JPanel(new BorderLayout(5, 5));
         phimCard.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-        phimCard.setPreferredSize(new Dimension(250, 450));
+        phimCard.setPreferredSize(new Dimension(250, 350));
         phimCard.setBackground(Color.WHITE);
 
         JLabel posterLabel = new JLabel();
@@ -223,7 +145,7 @@ public class PhimListView extends JPanel {
         if (phim.getDuongDanPoster() != null && !phim.getDuongDanPoster().isEmpty()) {
             try {
                 ImageIcon posterIcon = new ImageIcon(Objects.requireNonNull(getClass().getClassLoader().getResource("images/posters/" + phim.getDuongDanPoster())));
-                Image scaledImage = posterIcon.getImage().getScaledInstance(250, 350, Image.SCALE_SMOOTH);
+                Image scaledImage = posterIcon.getImage().getScaledInstance(250, 250, Image.SCALE_SMOOTH);
                 posterLabel.setIcon(new ImageIcon(scaledImage));
             } catch (Exception e) {
                 e.printStackTrace();

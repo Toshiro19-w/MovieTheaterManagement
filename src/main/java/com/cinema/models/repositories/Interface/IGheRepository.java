@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface IGheRepository {
     List<Ghe> findGheTrongByPhongAndSuatChieu(int maPhong, int maSuatChieu) throws SQLException;
+    List<Ghe> findAllGheByPhong(int maPhong) throws SQLException;
 }

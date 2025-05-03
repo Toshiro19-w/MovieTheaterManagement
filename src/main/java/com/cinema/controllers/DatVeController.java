@@ -1,13 +1,9 @@
 package com.cinema.controllers;
 
 import com.cinema.models.*;
-import com.cinema.models.repositories.VeRepository;
 import com.cinema.services.*;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -42,16 +38,15 @@ public class DatVeController {
         veService.datVe(maSuatChieu, maPhong, soGhe, giaVe, maKhachHang);
     }
 
-    public void confirmPayment(int maVe, int maHoaDon) throws SQLException {
-        veService.confirmPayment(maVe, maHoaDon);
+    public int confirmPayment(int maVe, int maKhachHang) throws SQLException {
+        return veService.confirmPayment(maVe, maKhachHang);
     }
 
     public int getMaVeFromBooking(int maSuatChieu, String soGhe, int maKhachHang) throws SQLException {
         return veService.getMaVeFromBooking(maSuatChieu, soGhe, maKhachHang);
     }
 
-    public int getMaHoaDonFromVe(int maVe) throws SQLException {
-        return veService.getMaHoaDonFromVe(maVe);
-
+    public void cancelVe(int maVe) throws SQLException {
+        veService.cancelVe(maVe);
     }
 }

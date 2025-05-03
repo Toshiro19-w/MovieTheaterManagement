@@ -6,7 +6,6 @@ import com.cinema.controllers.PhimController;
 import com.cinema.enums.LoaiTaiKhoan;
 import com.cinema.models.Ghe;
 import com.cinema.models.SuatChieu;
-import com.cinema.models.repositories.VeRepository;
 import com.cinema.services.GheService;
 import com.cinema.services.SuatChieuService;
 import com.cinema.services.VeService;
@@ -68,6 +67,14 @@ public class MainView extends JFrame {
         HeaderPanel headerPanel = new HeaderPanel(
                 username, loaiTaiKhoan,
                 this::handleMenuSelection,
+                searchText -> {
+                    for (Component comp : mainContentPanel.getComponents()) {
+                        if (comp instanceof PhimListView) {
+                            ((PhimListView) comp).loadPhimList(searchText);
+                            break;
+                        }
+                    }
+                },
                 _ -> {
                     dispose();
                     SwingUtilities.invokeLater(() -> new LoginView().setVisible(true));
@@ -91,7 +98,7 @@ public class MainView extends JFrame {
         add(mainContentPanel, BorderLayout.CENTER);
 
         // Footer
-        if (permissionManager.isUser() || permissionManager.isBanVe()) {
+        if (permissionManager.isUser()) {
             JPanel footerPanel = new JPanel();
             footerPanel.setPreferredSize(new Dimension(1280, 50));
             footerPanel.setBackground(new Color(0, 48, 135));
@@ -106,7 +113,7 @@ public class MainView extends JFrame {
     private void handleMenuSelection(String feature) {
         if (permissionManager.isAdmin() || permissionManager.isQuanLyPhim() || permissionManager.isThuNgan()) {
             cardLayout.show(mainContentPanel, feature);
-        } else if (permissionManager.isUser() || permissionManager.isBanVe()) {
+        } else if (permissionManager.isUser()) {
             if (feature.equals("Phim đang chiếu") || feature.equals("Đặt vé") || feature.equals("Suất chiếu")) {
                 for (Component comp : mainContentPanel.getComponents()) {
                     if (comp instanceof PhimListView) {
@@ -115,47 +122,44 @@ public class MainView extends JFrame {
                     }
                 }
             } else if (feature.equals("Thông tin cá nhân")) {
-                UserInfoView userInfoView = new UserInfoView(this, username);
+                UserInfoView userInfoView;
+                try {
+                    userInfoView = new UserInfoView(this, username);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
                 userInfoView.setVisible(true);
             }
         }
     }
 
     private void openBookingView(int maPhim, int maKhachHang) {
-        if (!permissionManager.hasPermission("Đặt vé")) {
-            JOptionPane.showMessageDialog(this, "Bạn không có quyền đặt vé!", "Lỗi quyền truy cập", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
         DatVeController datVeController = new DatVeController(
                 new SuatChieuService(databaseConnection),
                 new GheService(databaseConnection),
                 new VeService(databaseConnection)
         );
-        BookingView bookingView = new BookingView(this, datVeController, maPhim, maKhachHang, bookingResult -> {
-            PaymentView paymentView = new PaymentView(
-                    this, paymentController, bookingResult.suatChieu(), bookingResult.ghe(), bookingResult.giaVe(),
-                    paymentResult -> saveDatVe(
-                            paymentResult.suatChieu,
-                            paymentResult.ghe,
-                            paymentResult.giaVe,
-                            paymentResult.transactionId
-                    )
+        BookingView bookingView = new BookingView(this, datVeController, paymentController, maPhim, maKhachHang, bookingResult -> {
+            // Callback này được gọi khi thanh toán thành công, bao gồm transactionId
+            saveDatVe(
+                    bookingResult.suatChieu(),
+                    bookingResult.ghe(),
+                    bookingResult.giaVe(),
+                    bookingResult.transactionId() // Lấy transactionId từ BookingResult đã được cập nhật
             );
-            paymentView.setVisible(true);
         });
         bookingView.setVisible(true);
     }
 
     private void saveDatVe(SuatChieu suatChieu, Ghe ghe, BigDecimal giaVe, String transactionId) {
         try {
-            System.out.println("Xử lý thanh toán: Suất chiếu - " + suatChieu.getMaSuatChieu() +
+            System.out.println("Đã lưu thông tin đặt vé: Suất chiếu - " + suatChieu.getMaSuatChieu() +
                     ", Ghế - " + ghe.getSoGhe() +
                     ", Số tiền - " + giaVe +
                     ", Transaction ID - " + transactionId);
-            JOptionPane.showMessageDialog(this, "Thanh toán thành công! Transaction ID: " + transactionId,
-                    "Thành công", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Đặt vé và thanh toán thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Lỗi khi xử lý thanh toán: " + e.getMessage(),
+            JOptionPane.showMessageDialog(this, "Lỗi khi lưu thông tin đặt vé: " + e.getMessage(),
                     "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }

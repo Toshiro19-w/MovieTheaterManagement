@@ -28,16 +28,8 @@ public class PhimService {
         this.phimRepo = new PhimRepository(dbConnection);
     }
 
-    public List<Phim> getPhimByTen(String tenPhim, String tenTheLoai, String nuocSanXuat, String daoDien) throws SQLException {
-        return phimRepo.searchPhim(tenPhim, tenTheLoai, nuocSanXuat, daoDien);
-    }
-
     public List<Phim> getAllPhim() throws SQLException {
         return phimRepo.findAll();
-    }
-
-    public List<Phim> getAllPhimDetail() throws SQLException {
-        return phimRepo.findAllDetail();
     }
 
     public Phim addPhim(Phim phim) throws SQLException {

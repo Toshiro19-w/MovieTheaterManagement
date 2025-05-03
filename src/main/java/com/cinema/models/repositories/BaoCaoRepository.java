@@ -28,6 +28,7 @@ public class BaoCaoRepository implements IBaoCaoRepository {
         }
     }
 
+    @Override
     public List<BaoCao> getBaoCaoDoanhThuTheoPhim(LocalDateTime tuNgay, LocalDateTime denNgay) throws SQLException {
         List<BaoCao> list = new ArrayList<>();
         String sql = "SELECT p.tenPhim, COUNT(v.maVe) AS soVeBanRa, SUM(v.giaVe) AS tongDoanhThu " +

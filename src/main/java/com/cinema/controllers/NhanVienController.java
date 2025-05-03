@@ -69,7 +69,6 @@ public class NhanVienController {
     }
 
     private void addListeners() {
-        view.getSearchField().addActionListener(_ -> searchNhanVien());
         view.getTable().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = view.getTable().getSelectedRow();
@@ -82,16 +81,6 @@ public class NhanVienController {
         view.getBtnSua().addActionListener(_ -> suaNhanVien());
         view.getBtnXoa().addActionListener(_ -> xoaNhanVien());
         view.getBtnClear().addActionListener(_ -> clearForm());
-    }
-
-    private void searchNhanVien() {
-        String hoTen = view.getSearchText().trim();
-        try {
-            loadNhanVienList(service.searchNhanVien(hoTen));
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(view, "Lỗi khi tìm kiếm nhân viên!");
-        }
     }
 
     private void loadNhanVienList(List<NhanVien> nhanViens) {

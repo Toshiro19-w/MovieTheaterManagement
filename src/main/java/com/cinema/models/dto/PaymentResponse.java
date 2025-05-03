@@ -1,4 +1,4 @@
-package com.cinema.dto;
+package com.cinema.models.dto;
 
 import com.cinema.enums.PaymentStatus;
 

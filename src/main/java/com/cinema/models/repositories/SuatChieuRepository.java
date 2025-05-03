@@ -4,7 +4,6 @@ import com.cinema.models.SuatChieu;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,26 +14,6 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
 
     @Override
     public List<SuatChieu> findAll() {
-        List<SuatChieu> list = new ArrayList<>();
-        String sql = "SELECT * FROM SuatChieu";
-        try (PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                list.add(new SuatChieu(
-                        rs.getInt("maSuatChieu"),
-                        rs.getInt("maPhim"),
-                        rs.getInt("maPhong"),
-                        rs.getTimestamp("ngayGioChieu").toLocalDateTime(),
-                        rs.getInt("soSuatChieu")
-                ));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Lỗi khi truy vấn tất cả suất chiếu: " + e.getMessage(), e);
-        }
-        return list;
-    }
-
-    public List<SuatChieu> findAllDetail() {
         List<SuatChieu> list = new ArrayList<>();
         String sql = "SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, sc.maPhong, pc.tenPhong, " +
                 "sc.ngayGioChieu, p.thoiLuong, p.dinhDang, sc.soSuatChieu " +

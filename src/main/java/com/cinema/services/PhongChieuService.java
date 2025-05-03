@@ -17,18 +17,4 @@ public class PhongChieuService {
     public List<PhongChieu> getAllPhongChieu() throws SQLException {
         return phongChieuRepository.findAll();
     }
-
-    public List<PhongChieu> searchPhongChieuByTenPhong(String tenPhong) throws SQLException {
-        if (tenPhong == null || tenPhong.trim().isEmpty()) {
-            return getAllPhongChieu();
-        }
-        return phongChieuRepository.findByTenPhong(tenPhong);
-    }
-
-    public void addPhongChieu(PhongChieu phongChieu) throws SQLException {
-        if (phongChieu.getSoLuongGhe() <= 0 || phongChieu.getLoaiPhong() == null || phongChieu.getLoaiPhong().trim().isEmpty()) {
-            throw new IllegalArgumentException("Dữ liệu phòng chiếu không hợp lệ: số lượng ghế phải lớn hơn 0 và loại phòng không được để trống.");
-        }
-        phongChieuRepository.save(phongChieu);
-    }
 }

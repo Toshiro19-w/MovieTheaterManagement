@@ -1,12 +1,13 @@
 package com.cinema.models.repositories;
 
 import com.cinema.models.TaiKhoan;
+import com.cinema.models.repositories.Interface.ITaiKhoanRepository;
 import com.cinema.utils.DatabaseConnection;
 
 import java.sql.*;
 import java.time.LocalDateTime;
 
-public class TaiKhoanRepository {
+public class TaiKhoanRepository implements ITaiKhoanRepository {
     protected Connection conn;
     protected DatabaseConnection dbConnection;
 
@@ -22,22 +23,7 @@ public class TaiKhoanRepository {
         }
     }
 
-    public boolean checkUser(String tenDangNhap, String matKhau) {
-        String sql = "SELECT matKhau FROM TaiKhoan WHERE tenDangNhap = ? AND loaiTaiKhoan = 'user'";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, tenDangNhap);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    String hashedPassword = rs.getString("matKhau");
-                    return matKhau.equals(hashedPassword);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
+    @Override
     public void saveResetTokenToDB(String email, String token) {
         String sql = "INSERT INTO ResetToken (email, token, expiration_time) VALUES (?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -50,6 +36,7 @@ public class TaiKhoanRepository {
         }
     }
 
+    @Override
     public boolean checkEmailExists(String email) {
         String query = "SELECT COUNT(*) FROM NguoiDung WHERE email = ?";
         try (PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -65,7 +52,7 @@ public class TaiKhoanRepository {
         }
     }
 
-
+    @Override
     public void createTaiKhoan(TaiKhoan taiKhoan) throws SQLException {
         String sql = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maNguoiDung) VALUES (?, ?, ?, ?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -77,6 +64,7 @@ public class TaiKhoanRepository {
         }
     }
 
+    @Override
     public boolean existsByTenDangNhap(String tenDangNhap) throws SQLException {
         String sql = "SELECT COUNT(*) FROM TaiKhoan WHERE tenDangNhap = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -89,6 +77,7 @@ public class TaiKhoanRepository {
         }
     }
 
+    @Override
     public boolean existsByMaNguoiDung(Integer maNguoiDung) throws SQLException {
         String sql = "SELECT COUNT(*) FROM TaiKhoan WHERE maNguoiDung = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {

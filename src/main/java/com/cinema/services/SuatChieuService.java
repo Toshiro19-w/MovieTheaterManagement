@@ -15,16 +15,12 @@ public class SuatChieuService {
         this.suatChieuRepository = new SuatChieuRepository(databaseConnection);
     }
 
-    public List<SuatChieu> getAllSuatChieuDetail() throws SQLException {
-        return suatChieuRepository.findAllDetail();
+    public List<SuatChieu> getAllSuatChieu() throws SQLException {
+        return suatChieuRepository.findAll();
     }
 
     public List<SuatChieu> getSuatChieuByMaPhim(int maPhim) throws SQLException {
         return suatChieuRepository.findByMaPhim(maPhim);
-    }
-
-    public List<SuatChieu> searchSuatChieuByNgay(LocalDateTime ngayGioChieu) throws SQLException {
-        return suatChieuRepository.searchSuatChieuByNgay(ngayGioChieu);
     }
 
     public void addSuatChieu(SuatChieu suatChieu) throws SQLException {

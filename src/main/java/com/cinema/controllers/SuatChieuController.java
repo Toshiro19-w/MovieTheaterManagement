@@ -34,7 +34,7 @@ public class SuatChieuController {
 
     private void initView() {
         try {
-            loadSuatChieuList(service.getAllSuatChieuDetail());
+            loadSuatChieuList(service.getAllSuatChieu());
             loadPhimToComboBox();
             loadPhongChieuToComboBox();
         } catch (SQLException e) {
@@ -44,7 +44,6 @@ public class SuatChieuController {
     }
 
     private void addListeners() {
-        view.getSuatChieuSearchField().addActionListener(e -> searchSuatChieu());
         view.getSuatChieuTable().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = view.getSuatChieuTable().getSelectedRow();
@@ -60,7 +59,7 @@ public class SuatChieuController {
     }
 
     private void loadPhimToComboBox() throws SQLException {
-        List<Phim> phimList = phimService.getAllPhimDetail();
+        List<Phim> phimList = phimService.getAllPhim();
         view.getCbMaPhim().removeAllItems();
         for (Phim phim : phimList) {
             view.getCbMaPhim().addItem(phim);
@@ -74,24 +73,6 @@ public class SuatChieuController {
             view.getCbMaPhong().addItem(phong);
         }
     }
-
-    private void searchSuatChieu() {
-        String ngayChieuStr = view.getSuatChieuSearchText().trim();
-        try {
-            if (ngayChieuStr.isEmpty() || ngayChieuStr.equals("dd/MM/yyyy HH:mm:ss")) {
-                loadSuatChieuList(service.getAllSuatChieuDetail());
-            } else {
-                LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayChieuStr, formatter);
-                loadSuatChieuList(service.searchSuatChieuByNgay(ngayGioChieu));
-            }
-        } catch (DateTimeParseException e) {
-            JOptionPane.showMessageDialog(view, "Ngày giờ chiếu không đúng định dạng (dd/MM/yyyy HH:mm:ss)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(view, "Lỗi khi tìm kiếm suất chiếu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
 
     private void loadSuatChieuList(List<SuatChieu> suatChieus) {
         DefaultTableModel model = view.getSuatChieuTableModel();
@@ -145,7 +126,7 @@ public class SuatChieuController {
             SuatChieu suatChieu = createSuatChieuFromForm();
             service.addSuatChieu(suatChieu);
             JOptionPane.showMessageDialog(view, "Thêm suất chiếu thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadSuatChieuList(service.getAllSuatChieuDetail());
+            loadSuatChieuList(service.getAllSuatChieu());
             clearForm();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -167,7 +148,7 @@ public class SuatChieuController {
             suatChieu.setMaSuatChieu(Integer.parseInt(view.getTxtMaSuatChieu().getText()));
             service.updateSuatChieu(suatChieu);
             JOptionPane.showMessageDialog(view, "Cập nhật suất chiếu thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadSuatChieuList(service.getAllSuatChieuDetail());
+            loadSuatChieuList(service.getAllSuatChieu());
             clearForm();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -192,7 +173,7 @@ public class SuatChieuController {
             if (confirm == JOptionPane.YES_OPTION) {
                 service.deleteSuatChieu(maSuatChieu);
                 JOptionPane.showMessageDialog(view, "Xóa suất chiếu thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-                loadSuatChieuList(service.getAllSuatChieuDetail());
+                loadSuatChieuList(service.getAllSuatChieu());
                 clearForm();
             }
         } catch (SQLException e) {
@@ -248,13 +229,6 @@ public class SuatChieuController {
                 ngayGioChieu,
                 soSuatChieu
         );
-
-        if (selectedPhim == null || selectedPhong == null) {
-            throw new IllegalArgumentException("Vui lòng chọn phim và phòng chiếu!");
-        }
-
-        return new SuatChieu(0, selectedPhim.getMaPhim(), selectedPhong.getMaPhong(), ngayGioChieu);
-
     }
 
     private LocalDateTime getLocalDateTime(Phim selectedPhim, PhongChieu selectedPhong) {
