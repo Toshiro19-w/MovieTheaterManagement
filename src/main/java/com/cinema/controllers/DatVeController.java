@@ -2,9 +2,13 @@ package com.cinema.controllers;
 
 import com.cinema.enums.TrangThaiVe;
 import com.cinema.models.*;
+import com.cinema.models.repositories.VeRepository;
 import com.cinema.services.*;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,19 +32,15 @@ public class DatVeController {
         return gheService.findGheTrongByPhongAndSuatChieu(maPhong, maSuatChieu);
     }
 
-    public void datVe(int maSuatChieu, Integer maPhong, String soGhe, BigDecimal giaVe) throws SQLException {
-        Ve ve = new Ve(0, maSuatChieu,
-                maPhong, soGhe, null,
-                giaVe, TrangThaiVe.BOOKED, LocalDateTime.now()
-        );
-        veService.saveVe(ve);
-    }
-
     public List<Ghe> getAllGheByPhong(int maPhong) throws SQLException {
         return gheService.findAllGheByPhong(maPhong);
     }
 
-    public BigDecimal getTicketPriceBySuatChieu(int maSuatChieu) throws SQLException{
+    public BigDecimal getTicketPriceBySuatChieu(int maSuatChieu) throws SQLException {
         return veService.getTicketPriceBySuatChieu(maSuatChieu);
+    }
+
+    public void datVe(int maSuatChieu, Integer maPhong, String soGhe, BigDecimal giaVe, int maKhachHang) throws SQLException {
+        veService.datVe(maSuatChieu, maPhong, soGhe, giaVe, maKhachHang);
     }
 }

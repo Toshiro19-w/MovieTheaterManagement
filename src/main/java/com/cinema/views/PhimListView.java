@@ -2,6 +2,7 @@ package com.cinema.views;
 
 import com.cinema.controllers.PhimController;
 import com.cinema.models.Phim;
+import com.cinema.utils.DatabaseConnection;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -9,14 +10,21 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 public class PhimListView extends JPanel {
     private final PhimController phimController;
-    private final Consumer<Integer> bookTicketCallback;
+    private final BiConsumer<Integer, Integer> bookTicketCallback;
+    private final String username;
+    private final DatabaseConnection databaseConnection;
     private JTextField searchField;
     private JPanel phimPanel;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -26,10 +34,11 @@ public class PhimListView extends JPanel {
     private int bannerX = 0;
     private Timer slideTimer;
 
-    public PhimListView(PhimController phimController, Consumer<Integer> bookTicketCallback) {
+    public PhimListView(PhimController phimController, BiConsumer<Integer, Integer> bookTicketCallback, String username) throws IOException {
         this.phimController = phimController;
         this.bookTicketCallback = bookTicketCallback;
-
+        this.username = username;
+        this.databaseConnection = new DatabaseConnection();
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
@@ -46,11 +55,9 @@ public class PhimListView extends JPanel {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g.create();
                 if (bannerIcons != null && currentBannerIndex < bannerIcons.length) {
-                    // Vẽ banner hiện tại
                     if (bannerIcons[currentBannerIndex] != null) {
                         g2d.drawImage(bannerIcons[currentBannerIndex].getImage(), bannerX, 0, null);
                     }
-                    // Vẽ banner tiếp theo (nếu đang trượt)
                     int nextIndex = (currentBannerIndex + 1) % bannerIcons.length;
                     if (bannerX > 0 && bannerIcons[nextIndex] != null) {
                         g2d.drawImage(bannerIcons[nextIndex].getImage(), bannerX - 1280, 0, null);
@@ -120,7 +127,6 @@ public class PhimListView extends JPanel {
     }
 
     private void startBannerCarousel() {
-        // Tải trước banner
         String[] banners = {"banner1.jpg", "banner2.jpg", "banner3.jpg"};
         bannerIcons = new ImageIcon[banners.length];
         for (int i = 0; i < banners.length; i++) {
@@ -133,12 +139,9 @@ public class PhimListView extends JPanel {
             }
         }
 
-        // Khởi tạo banner đầu tiên
         updateBanner();
 
-        // Timer cho carousel với hiệu ứng slide
         Timer carouselTimer = new Timer(5000, _ -> {
-            // Bắt đầu hiệu ứng slide
             bannerX = 0;
             if (slideTimer != null && slideTimer.isRunning()) {
                 slideTimer.stop();
@@ -242,7 +245,10 @@ public class PhimListView extends JPanel {
         datVeButton.setBackground(new Color(0, 48, 135));
         datVeButton.setForeground(Color.WHITE);
         datVeButton.setFont(new Font("Arial", Font.BOLD, 14));
-        datVeButton.addActionListener(_ -> bookTicketCallback.accept(phim.getMaPhim()));
+        datVeButton.addActionListener(_ -> {
+            int maKhachHang = getMaKhachHangFromSession();
+            bookTicketCallback.accept(phim.getMaPhim(), maKhachHang);
+        });
         datVeButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -329,8 +335,9 @@ public class PhimListView extends JPanel {
         datVeButton.setForeground(Color.WHITE);
         datVeButton.setFont(new Font("Arial", Font.BOLD, 14));
         datVeButton.addActionListener(_ -> {
+            int maKhachHang = getMaKhachHangFromSession();
+            bookTicketCallback.accept(phim.getMaPhim(), maKhachHang);
             detailDialog.dispose();
-            bookTicketCallback.accept(phim.getMaPhim());
         });
         datVeButton.addMouseListener(new MouseAdapter() {
             @Override
@@ -346,5 +353,23 @@ public class PhimListView extends JPanel {
         detailDialog.add(mainDetailPanel, BorderLayout.CENTER);
         detailDialog.add(datVeButton, BorderLayout.SOUTH);
         detailDialog.setVisible(true);
+    }
+
+    private int getMaKhachHangFromSession() {
+        try (Connection conn = databaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                     "SELECT nd.maNguoiDung FROM NguoiDung nd JOIN TaiKhoan tk ON nd.maNguoiDung = tk.maNguoiDung " +
+                             "WHERE tk.tenDangNhap = ? AND nd.loaiNguoiDung = 'KhachHang'")) {
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("maNguoiDung");
+            }
+            throw new SQLException("Không tìm thấy khách hàng cho tài khoản: " + username);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Lỗi khi lấy thông tin khách hàng: " + e.getMessage(),
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+            throw new RuntimeException("Lỗi khi lấy maKhachHang: " + e.getMessage(), e);
+        }
     }
 }

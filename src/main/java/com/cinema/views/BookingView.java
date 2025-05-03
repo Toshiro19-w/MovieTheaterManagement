@@ -13,15 +13,17 @@ import java.math.BigDecimal;
 public class BookingView extends JDialog {
     private final DatVeController datVeController;
     private final int maPhim;
+    private final int maKhachHang;
     private final Consumer<BookingResult> confirmCallback;
     private SuatChieu selectedSuatChieu;
     private Ghe selectedGhe;
     private BigDecimal ticketPrice;
 
-    public BookingView(JFrame parent, DatVeController datVeController, int maPhim, Consumer<BookingResult> confirmCallback) {
+    public BookingView(JFrame parent, DatVeController datVeController, int maPhim, int maKhachHang, Consumer<BookingResult> confirmCallback) {
         super(parent, "Đặt vé", true);
         this.datVeController = datVeController;
         this.maPhim = maPhim;
+        this.maKhachHang = maKhachHang;
         this.confirmCallback = confirmCallback;
 
         setSize(800, 600);
@@ -130,13 +132,15 @@ public class BookingView extends JDialog {
                         selectedSuatChieu.getMaSuatChieu(),
                         selectedGhe.getMaPhong(),
                         selectedGhe.getSoGhe(),
-                        ticketPrice
+                        ticketPrice,
+                        maKhachHang
                 );
                 confirmCallback.accept(new BookingResult(selectedSuatChieu, selectedGhe, ticketPrice));
+                JOptionPane.showMessageDialog(this, "Đặt vé và tạo hóa đơn thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 dispose();
             } catch (SQLException e) {
                 e.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Lỗi khi đặt vé: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Lỗi khi đặt vé hoặc tạo hóa đơn: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         });
         bottomPanel.add(confirmButton, BorderLayout.SOUTH);

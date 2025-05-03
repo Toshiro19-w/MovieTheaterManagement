@@ -6,13 +6,13 @@ import com.cinema.controllers.PhimController;
 import com.cinema.enums.LoaiTaiKhoan;
 import com.cinema.models.Ghe;
 import com.cinema.models.SuatChieu;
+import com.cinema.models.repositories.VeRepository;
 import com.cinema.services.GheService;
 import com.cinema.services.SuatChieuService;
 import com.cinema.services.VeService;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.PermissionManager;
 import com.cinema.views.admin.*;
-import com.cinema.views.admin.PhimView;
 import com.cinema.views.login.LoginView;
 import com.formdev.flatlaf.FlatLightLaf;
 
@@ -85,7 +85,7 @@ public class MainView extends JFrame {
         } else {
             mainContentPanel.setLayout(new BorderLayout());
             mainContentPanel.setBackground(Color.WHITE);
-            PhimListView phimListView = new PhimListView(phimController, this::openBookingView);
+            PhimListView phimListView = new PhimListView(phimController, this::openBookingView, username);
             mainContentPanel.add(phimListView, BorderLayout.CENTER);
         }
         add(mainContentPanel, BorderLayout.CENTER);
@@ -121,7 +121,7 @@ public class MainView extends JFrame {
         }
     }
 
-    private void openBookingView(int maPhim) {
+    private void openBookingView(int maPhim, int maKhachHang) {
         if (!permissionManager.hasPermission("Đặt vé")) {
             JOptionPane.showMessageDialog(this, "Bạn không có quyền đặt vé!", "Lỗi quyền truy cập", JOptionPane.ERROR_MESSAGE);
             return;
@@ -131,7 +131,7 @@ public class MainView extends JFrame {
                 new GheService(databaseConnection),
                 new VeService(databaseConnection)
         );
-        BookingView bookingView = new BookingView(this, datVeController, maPhim, bookingResult -> {
+        BookingView bookingView = new BookingView(this, datVeController, maPhim, maKhachHang, bookingResult -> {
             PaymentView paymentView = new PaymentView(
                     this, paymentController, bookingResult.suatChieu(), bookingResult.ghe(), bookingResult.giaVe(),
                     paymentResult -> saveDatVe(
@@ -148,13 +148,15 @@ public class MainView extends JFrame {
 
     private void saveDatVe(SuatChieu suatChieu, Ghe ghe, BigDecimal giaVe, String transactionId) {
         try {
-            System.out.println("Lưu vé: Suất chiếu - " + suatChieu.getMaSuatChieu() +
+            System.out.println("Xử lý thanh toán: Suất chiếu - " + suatChieu.getMaSuatChieu() +
                     ", Ghế - " + ghe.getSoGhe() +
                     ", Số tiền - " + giaVe +
                     ", Transaction ID - " + transactionId);
-            // TODO: Thêm logic lưu vé vào cơ sở dữ liệu nếu cần
+            JOptionPane.showMessageDialog(this, "Thanh toán thành công! Transaction ID: " + transactionId,
+                    "Thành công", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Lỗi khi lưu vé: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Lỗi khi xử lý thanh toán: " + e.getMessage(),
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
