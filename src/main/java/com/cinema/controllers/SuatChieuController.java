@@ -39,24 +39,24 @@ public class SuatChieuController {
             loadPhongChieuToComboBox();
         } catch (SQLException e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(view, "Lỗi khi tải dữ liệu suất chiếu!");
+            JOptionPane.showMessageDialog(view, "Lỗi khi tải dữ liệu suất chiếu!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void addListeners() {
-        view.getSearchField().addActionListener(e -> searchSuatChieu());
-        view.getTable().getSelectionModel().addListSelectionListener(e -> {
+        view.getSuatChieuSearchField().addActionListener(e -> searchSuatChieu());
+        view.getSuatChieuTable().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
-                int selectedRow = view.getTable().getSelectedRow();
+                int selectedRow = view.getSuatChieuTable().getSelectedRow();
                 if (selectedRow >= 0) {
                     displaySuatChieuInfo(selectedRow);
                 }
             }
         });
-        view.getBtnThem().addActionListener(e -> themSuatChieu());
-        view.getBtnSua().addActionListener(e -> suaSuatChieu());
-        view.getBtnXoa().addActionListener(e -> xoaSuatChieu());
-        view.getBtnClear().addActionListener(e -> clearForm());
+        view.getBtnThemSuat().addActionListener(e -> themSuatChieu());
+        view.getBtnSuaSuat().addActionListener(e -> suaSuatChieu());
+        view.getBtnXoaSuat().addActionListener(e -> xoaSuatChieu());
+        view.getBtnClearSuat().addActionListener(e -> clearForm());
     }
 
     private void loadPhimToComboBox() throws SQLException {
@@ -76,7 +76,7 @@ public class SuatChieuController {
     }
 
     private void searchSuatChieu() {
-        String ngayChieuStr = view.getSeacrhText().trim();
+        String ngayChieuStr = view.getSuatChieuSearchText().trim();
         try {
             if (ngayChieuStr.isEmpty() || ngayChieuStr.equals("dd/MM/yyyy HH:mm:ss")) {
                 loadSuatChieuList(service.getAllSuatChieuDetail());
@@ -88,12 +88,12 @@ public class SuatChieuController {
             JOptionPane.showMessageDialog(view, "Ngày giờ chiếu không đúng định dạng (dd/MM/yyyy HH:mm:ss)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         } catch (SQLException e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(view, "Lỗi khi tìm kiếm suất chiếu!");
+            JOptionPane.showMessageDialog(view, "Lỗi khi tìm kiếm suất chiếu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void loadSuatChieuList(List<SuatChieu> suatChieus) {
-        DefaultTableModel model = view.getTableModel();
+        DefaultTableModel model = view.getSuatChieuTableModel();
         model.setRowCount(0);
         for (SuatChieu sc : suatChieus) {
             String ngayGioChieuFormatted = sc.getNgayGioChieu() != null
@@ -109,10 +109,10 @@ public class SuatChieuController {
     }
 
     private void displaySuatChieuInfo(int row) {
-        DefaultTableModel model = view.getTableModel();
+        DefaultTableModel model = view.getSuatChieuTableModel();
         view.getTxtMaSuatChieu().setText(model.getValueAt(row, 0).toString());
         String tenPhim = model.getValueAt(row, 1).toString();
-        String tenPhong = model.getValueAt(row, 2).toString(); // Sửa: Sử dụng tenPhong thay vì loaiPhong
+        String tenPhong = model.getValueAt(row, 2).toString();
         String ngayGioChieu = model.getValueAt(row, 3).toString();
 
         // Tìm và chọn phim trong combobox
@@ -140,7 +140,7 @@ public class SuatChieuController {
         try {
             SuatChieu suatChieu = createSuatChieuFromForm();
             service.addSuatChieu(suatChieu);
-            JOptionPane.showMessageDialog(view, "Thêm suất chiếu thành công!");
+            JOptionPane.showMessageDialog(view, "Thêm suất chiếu thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
             loadSuatChieuList(service.getAllSuatChieuDetail());
             clearForm();
         } catch (SQLException e) {
@@ -162,7 +162,7 @@ public class SuatChieuController {
             SuatChieu suatChieu = createSuatChieuFromForm();
             suatChieu.setMaSuatChieu(Integer.parseInt(view.getTxtMaSuatChieu().getText()));
             service.updateSuatChieu(suatChieu);
-            JOptionPane.showMessageDialog(view, "Cập nhật suất chiếu thành công!");
+            JOptionPane.showMessageDialog(view, "Cập nhật suất chiếu thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
             loadSuatChieuList(service.getAllSuatChieuDetail());
             clearForm();
         } catch (SQLException e) {
@@ -182,18 +182,20 @@ public class SuatChieuController {
             JOptionPane.showMessageDialog(view, "Vui lòng chọn suất chiếu cần xóa!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        int maSuatChieu = Integer.parseInt(view.getTxtMaSuatChieu().getText());
-        int confirm = JOptionPane.showConfirmDialog(view, "Bạn có chắc chắn muốn xóa suất chiếu này?", "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
-        if (confirm == JOptionPane.YES_OPTION) {
-            try {
+        try {
+            int maSuatChieu = Integer.parseInt(view.getTxtMaSuatChieu().getText());
+            int confirm = JOptionPane.showConfirmDialog(view, "Bạn có chắc chắn muốn xóa suất chiếu này?", "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
                 service.deleteSuatChieu(maSuatChieu);
-                JOptionPane.showMessageDialog(view, "Xóa suất chiếu thành công!");
+                JOptionPane.showMessageDialog(view, "Xóa suất chiếu thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 loadSuatChieuList(service.getAllSuatChieuDetail());
                 clearForm();
-            } catch (SQLException e) {
-                e.printStackTrace();
-                JOptionPane.showMessageDialog(view, "Lỗi khi xóa suất chiếu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(view, "Lỗi khi xóa suất chiếu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(view, "Mã suất chiếu không hợp lệ!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -202,7 +204,7 @@ public class SuatChieuController {
         view.getCbMaPhim().setSelectedIndex(-1);
         view.getCbMaPhong().setSelectedIndex(-1);
         view.getTxtNgayGioChieu().setText("dd/MM/yyyy HH:mm:ss");
-        view.getTable().clearSelection();
+        view.getSuatChieuTable().clearSelection();
     }
 
     private SuatChieu createSuatChieuFromForm() {
@@ -213,8 +215,10 @@ public class SuatChieuController {
             throw new IllegalArgumentException("Ngày giờ chiếu phải sau thời điểm hiện tại!");
         }
 
-        assert selectedPhim != null;
-        assert selectedPhong != null;
+        if (selectedPhim == null || selectedPhong == null) {
+            throw new IllegalArgumentException("Vui lòng chọn phim và phòng chiếu!");
+        }
+
         return new SuatChieu(0, selectedPhim.getMaPhim(), selectedPhong.getMaPhong(), ngayGioChieu);
     }
 

@@ -26,9 +26,6 @@ public class AdminViewManager {
         if (permissionManager.hasPermission("Suất chiếu")) {
             mainContentPanel.add(new SuatChieuView(), "Suất chiếu");
         }
-        if (permissionManager.hasPermission("Phòng chiếu")) {
-            mainContentPanel.add(new PhongChieuView(), "Phòng chiếu");
-        }
         if (permissionManager.hasPermission("Vé")) {
             mainContentPanel.add(new VeView(), "Vé");
         }

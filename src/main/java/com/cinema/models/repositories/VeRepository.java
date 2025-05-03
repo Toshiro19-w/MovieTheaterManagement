@@ -220,6 +220,83 @@ public class VeRepository extends BaseRepository<Ve> {
         }
     }
 
+    public void datVe(int maSuatChieu, Integer maPhong, String soGhe, BigDecimal giaVe, int maKhachHang) throws SQLException {
+        Connection conn = null;
+        PreparedStatement hoaDonStmt = null;
+        PreparedStatement veStmt = null;
+        PreparedStatement chiTietHoaDonStmt = null;
+        ResultSet generatedKeys = null;
+
+        try {
+            conn = dbConnection.getConnection();
+            conn.setAutoCommit(false); // Start transaction
+
+            // Create HoaDon
+            String hoaDonSql = "INSERT INTO HoaDon (maKhachHang, ngayLap, tongTien) VALUES (?, NOW(), ?)";
+            hoaDonStmt = conn.prepareStatement(hoaDonSql, PreparedStatement.RETURN_GENERATED_KEYS);
+            hoaDonStmt.setInt(1, maKhachHang);
+            hoaDonStmt.setBigDecimal(2, giaVe); // tongTien is the ticket price for one seat
+            hoaDonStmt.executeUpdate();
+
+            // Get generated maHoaDon
+            generatedKeys = hoaDonStmt.getGeneratedKeys();
+            int maHoaDon;
+            if (generatedKeys.next()) {
+                maHoaDon = generatedKeys.getInt(1);
+            } else {
+                throw new SQLException("Không thể lấy mã hóa đơn!");
+            }
+
+            // Create Ve
+            Ve ve = new Ve(0, maSuatChieu, maPhong, soGhe, maHoaDon, giaVe, TrangThaiVe.BOOKED, LocalDateTime.now());
+            veStmt = conn.prepareStatement(
+                    "INSERT INTO Ve (maSuatChieu, maPhong, soGhe, maHoaDon, giaVe, trangThai, ngayDat) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    PreparedStatement.RETURN_GENERATED_KEYS
+            );
+            veStmt.setInt(1, ve.getMaSuatChieu());
+            veStmt.setInt(2, ve.getMaPhong());
+            veStmt.setString(3, ve.getSoGhe());
+            veStmt.setInt(4, ve.getMaHoaDon());
+            veStmt.setBigDecimal(5, ve.getGiaVe());
+            veStmt.setString(6, ve.getTrangThai().toString());
+            veStmt.setTimestamp(7, java.sql.Timestamp.valueOf(ve.getNgayDat()));
+            veStmt.executeUpdate();
+
+            // Get generated maVe
+            generatedKeys = veStmt.getGeneratedKeys();
+            int maVe;
+            if (generatedKeys.next()) {
+                maVe = generatedKeys.getInt(1);
+            } else {
+                throw new SQLException("Không thể lấy mã vé!");
+            }
+
+            // Create ChiTietHoaDon
+            String chiTietHoaDonSql = "INSERT INTO ChiTietHoaDon (maHoaDon, maVe) VALUES (?, ?)";
+            chiTietHoaDonStmt = conn.prepareStatement(chiTietHoaDonSql);
+            chiTietHoaDonStmt.setInt(1, maHoaDon);
+            chiTietHoaDonStmt.setInt(2, maVe);
+            chiTietHoaDonStmt.executeUpdate();
+
+            conn.commit(); // Commit transaction
+        } catch (SQLException e) {
+            if (conn != null) {
+                try {
+                    conn.rollback(); // Rollback on error
+                } catch (SQLException rollbackEx) {
+                    rollbackEx.printStackTrace();
+                }
+            }
+            throw e;
+        } finally {
+            if (generatedKeys != null) try { generatedKeys.close(); } catch (SQLException e) { e.printStackTrace(); }
+            if (hoaDonStmt != null) try { hoaDonStmt.close(); } catch (SQLException e) { e.printStackTrace(); }
+            if (veStmt != null) try { veStmt.close(); } catch (SQLException e) { e.printStackTrace(); }
+            if (chiTietHoaDonStmt != null) try { chiTietHoaDonStmt.close(); } catch (SQLException e) { e.printStackTrace(); }
+            if (conn != null) try { conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+        }
+    }
+
     public BigDecimal findTicketPriceBySuatChieu(int maSuatChieu) throws SQLException {
         String sql = "SELECT giaVe FROM Ve WHERE maSuatChieu = ? AND trangThai = 'available' LIMIT 1";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {

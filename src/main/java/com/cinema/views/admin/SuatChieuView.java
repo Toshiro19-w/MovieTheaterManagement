@@ -1,5 +1,6 @@
 package com.cinema.views.admin;
 
+import com.cinema.controllers.PhongChieuController;
 import com.cinema.controllers.SuatChieuController;
 import com.cinema.utils.DatabaseConnection;
 
@@ -17,19 +18,27 @@ import java.sql.SQLException;
 
 public class SuatChieuView extends JPanel {
     private DatabaseConnection databaseConnection;
-    private JTextField txtNgayGioChieu, searchField;
+    // SuatChieu components
+    private JTextField txtNgayGioChieu, suatChieuSearchField;
     private JLabel txtMaSuatChieu;
     private JComboBox cbMaPhim, cbMaPhong;
-    private JTable table;
-    private DefaultTableModel tableModel;
-    private JButton btnThem, btnSua, btnXoa, btnClear;
-    private TableRowSorter<DefaultTableModel> sorter;
+    private JTable suatChieuTable;
+    private DefaultTableModel suatChieuTableModel;
+    private JButton btnThemSuat, btnSuaSuat, btnXoaSuat, btnClearSuat;
+    private TableRowSorter<DefaultTableModel> suatChieuSorter;
     private Integer selectedMaSuatChieu;
+    // PhongChieu components
+    private JTable phongChieuTable;
+    private DefaultTableModel phongChieuTableModel;
+    private JTextField phongChieuSearchField;
+    private TableRowSorter<DefaultTableModel> phongChieuSorter;
+    private Integer selectedMaPhong;
 
     public SuatChieuView() throws SQLException {
         initializeDatabase();
         initializeUI();
         new SuatChieuController(this);
+        new PhongChieuController(this);
     }
 
     private void initializeDatabase() {
@@ -44,103 +53,142 @@ public class SuatChieuView extends JPanel {
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        // Initialize panels
-        JPanel topPanel = new JPanel(new BorderLayout(10, 10));
-        JPanel infoPanel = createInfoPanel();
-        JPanel tablePanel = createTablePanel();
-        JPanel buttonPanel = createButtonPanel();
+        // Create split pane for side-by-side layout
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        splitPane.setDividerLocation(0.5); // Split evenly
+        splitPane.setResizeWeight(0.5); // Maintain proportional resizing
 
-        // Combine info and account panels
-        topPanel.add(infoPanel, BorderLayout.CENTER);
+        // SuatChieu panel (left)
+        JPanel suatChieuPanel = createSuatChieuPanel();
+        // PhongChieu panel (right)
+        JPanel phongChieuPanel = createPhongChieuPanel();
 
-        // Add components to main panel
-        add(topPanel, BorderLayout.NORTH);
-        add(tablePanel, BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
+        splitPane.setLeftComponent(suatChieuPanel);
+        splitPane.setRightComponent(phongChieuPanel);
+
+        add(splitPane, BorderLayout.CENTER);
     }
 
-    private JPanel createInfoPanel() {
+    private JPanel createSuatChieuPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+
+        // Info panel
         JPanel infoPanel = new JPanel(new BorderLayout(10, 10));
         infoPanel.setBorder(BorderFactory.createTitledBorder("THÔNG TIN SUẤT CHIẾU"));
-
         JPanel fieldsPanel = new JPanel(new GridLayout(5, 2, 10, 10));
-        initializeFields(fieldsPanel);
-
+        initializeSuatChieuFields(fieldsPanel);
         infoPanel.add(fieldsPanel, BorderLayout.CENTER);
-        return infoPanel;
+
+        // Table panel
+        JPanel tablePanel = createSuatChieuTablePanel();
+
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        btnThemSuat = new JButton("THÊM");
+        btnSuaSuat = new JButton("SỬA");
+        btnXoaSuat = new JButton("XÓA");
+        btnClearSuat = new JButton("CLEAR");
+        buttonPanel.add(btnThemSuat);
+        buttonPanel.add(btnSuaSuat);
+        buttonPanel.add(btnXoaSuat);
+        buttonPanel.add(btnClearSuat);
+
+        panel.add(infoPanel, BorderLayout.NORTH);
+        panel.add(tablePanel, BorderLayout.CENTER);
+        panel.add(buttonPanel, BorderLayout.SOUTH);
+
+        return panel;
     }
 
-    private void initializeFields(JPanel fieldsPanel) {
+    private void initializeSuatChieuFields(JPanel fieldsPanel) {
         txtMaSuatChieu = new JLabel();
         cbMaPhim = new JComboBox<>();
         cbMaPhong = new JComboBox<>();
         txtNgayGioChieu = new JTextField();
-        searchField = new JTextField();
+        suatChieuSearchField = new JTextField();
 
         addField(fieldsPanel, "Mã Suất Chiếu:", txtMaSuatChieu);
         addField(fieldsPanel, "Phim:", cbMaPhim);
         addField(fieldsPanel, "Phòng chiếu:", cbMaPhong);
         addField(fieldsPanel, "Ngày giờ chiếu:", txtNgayGioChieu);
         setPlaceholder(txtNgayGioChieu, "dd/MM/yyyy HH:mm:ss");
-        addField(fieldsPanel, "Tìm Kiếm:", searchField);
+        addField(fieldsPanel, "Tìm Kiếm:", suatChieuSearchField);
 
         // Add search functionality
-        searchField.addKeyListener(new KeyAdapter() {
+        suatChieuSearchField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
-                String searchText = searchField.getText();
+                String searchText = suatChieuSearchField.getText();
                 if (searchText.trim().isEmpty()) {
-                    sorter.setRowFilter(null);
+                    suatChieuSorter.setRowFilter(null);
                 } else {
-                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + searchText));
+                    suatChieuSorter.setRowFilter(RowFilter.regexFilter("(?i)" + searchText));
                 }
             }
         });
     }
 
-    private void addField(JPanel panel, String labelText, JComponent component) {
-        panel.add(new JLabel(labelText));
-        panel.add(component);
-    }
-
-    private JPanel createTablePanel() {
+    private JPanel createSuatChieuTablePanel() {
         String[] columns = {"Mã Suất Chiếu", "Tên Phim", "Phòng Chiếu", "Ngày Giờ Chiếu"};
-        tableModel = new DefaultTableModel(columns, 0);
-        table = new JTable(tableModel);
-        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        suatChieuTableModel = new DefaultTableModel(columns, 0);
+        suatChieuTable = new JTable(suatChieuTableModel);
+        suatChieuTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        sorter = new TableRowSorter<>(tableModel);
-        table.setRowSorter(sorter);
+        suatChieuSorter = new TableRowSorter<>(suatChieuTableModel);
+        suatChieuTable.setRowSorter(suatChieuSorter);
 
-        // Handle table selection
-        table.getSelectionModel().addListSelectionListener(e -> {
+        suatChieuTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
-                int selectedRow = table.getSelectedRow();
+                int selectedRow = suatChieuTable.getSelectedRow();
                 if (selectedRow >= 0) {
-                    selectedMaSuatChieu = (Integer) tableModel.getValueAt(selectedRow, 0);
+                    selectedMaSuatChieu = (Integer) suatChieuTableModel.getValueAt(selectedRow, 0);
                 } else {
                     selectedMaSuatChieu = null;
                 }
             }
         });
 
-        JScrollPane scrollPane = new JScrollPane(table);
+        JScrollPane scrollPane = new JScrollPane(suatChieuTable);
         scrollPane.setBorder(BorderFactory.createTitledBorder("DANH SÁCH SUẤT CHIẾU"));
         return new JPanel(new BorderLayout()) {{ add(scrollPane, BorderLayout.CENTER); }};
     }
 
-    private JPanel createButtonPanel() {
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        btnThem = new JButton("THÊM");
-        btnSua = new JButton("SỬA");
-        btnXoa = new JButton("XÓA");
-        btnClear = new JButton("CLEAR");
+    private JPanel createPhongChieuPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        // Table panel
+        JPanel tablePanel = createPhongChieuTablePanel();
+        panel.add(tablePanel, BorderLayout.CENTER);
+        return panel;
+    }
 
-        buttonPanel.add(btnThem);
-        buttonPanel.add(btnSua);
-        buttonPanel.add(btnXoa);
-        buttonPanel.add(btnClear);
-        return buttonPanel;
+    private JPanel createPhongChieuTablePanel() {
+        String[] columns = {"Mã Phòng", "Tên Phòng", "Số Lượng Ghế", "Loại Phòng"};
+        phongChieuTableModel = new DefaultTableModel(columns, 0);
+        phongChieuTable = new JTable(phongChieuTableModel);
+        phongChieuTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        phongChieuSorter = new TableRowSorter<>(phongChieuTableModel);
+        phongChieuTable.setRowSorter(phongChieuSorter);
+
+        phongChieuTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int selectedRow = phongChieuTable.getSelectedRow();
+                if (selectedRow >= 0) {
+                    selectedMaPhong = (Integer) phongChieuTableModel.getValueAt(selectedRow, 0);
+                } else {
+                    selectedMaPhong = null;
+                }
+            }
+        });
+
+        JScrollPane scrollPane = new JScrollPane(phongChieuTable);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("DANH SÁCH PHÒNG CHIẾU"));
+        return new JPanel(new BorderLayout()) {{ add(scrollPane, BorderLayout.CENTER); }};
+    }
+
+    private void addField(JPanel panel, String labelText, JComponent component) {
+        panel.add(new JLabel(labelText));
+        panel.add(component);
     }
 
     private void showError(String message) {
@@ -169,18 +217,26 @@ public class SuatChieuView extends JPanel {
         });
     }
 
-    // Getters để controller truy cập
+    // Getters for SuatChieuController
     public DatabaseConnection getDatabaseConnection() { return databaseConnection; }
-    public JTextField getSearchField() { return searchField; }
+    public JTextField getSuatChieuSearchField() { return suatChieuSearchField; }
     public JLabel getTxtMaSuatChieu() { return txtMaSuatChieu; }
     public JTextField getTxtNgayGioChieu() { return txtNgayGioChieu; }
     public JComboBox getCbMaPhim() { return cbMaPhim; }
     public JComboBox getCbMaPhong() { return cbMaPhong; }
-    public JTable getTable() { return table; }
-    public DefaultTableModel getTableModel() { return tableModel; }
-    public JButton getBtnThem() { return btnThem; }
-    public JButton getBtnSua() { return btnSua; }
-    public JButton getBtnXoa() { return btnXoa; }
-    public JButton getBtnClear() { return btnClear; }
-    public String getSeacrhText() { return searchField.getText(); }
+    public JTable getSuatChieuTable() { return suatChieuTable; }
+    public DefaultTableModel getSuatChieuTableModel() { return suatChieuTableModel; }
+    public JButton getBtnThemSuat() { return btnThemSuat; }
+    public JButton getBtnSuaSuat() { return btnSuaSuat; }
+    public JButton getBtnXoaSuat() { return btnXoaSuat; }
+    public JButton getBtnClearSuat() { return btnClearSuat; }
+    public String getSuatChieuSearchText() { return suatChieuSearchField.getText(); }
+    public Integer getSelectedMaSuatChieu() { return selectedMaSuatChieu; }
+
+    // Getters for PhongChieuController
+    public JTable getPhongChieuTable() { return phongChieuTable; }
+    public DefaultTableModel getPhongChieuTableModel() { return phongChieuTableModel; }
+    public JTextField getPhongChieuSearchField() { return phongChieuSearchField; }
+    public String getPhongChieuSearchText() { return phongChieuSearchField.getText(); }
+    public Integer getSelectedMaPhong() { return selectedMaPhong; }
 }

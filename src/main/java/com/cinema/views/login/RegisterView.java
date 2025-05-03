@@ -228,9 +228,9 @@ public class RegisterView extends JFrame {
             return;
         }
 
-        // Kiểm tra định dạng số điện thoại (VD: 10 số)
-        if (!phone.matches("^[0-9]{10}$")) {
-            JOptionPane.showMessageDialog(this, "Số điện thoại không hợp lệ! Phải có 10 số.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        // Kiểm tra định dạng số điện thoại (10-15 số)
+        if (!phone.matches("^[0-9]{10,15}$")) {
+            JOptionPane.showMessageDialog(this, "Số điện thoại không hợp lệ! Phải có 10-15 số.", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -239,6 +239,7 @@ public class RegisterView extends JFrame {
         PreparedStatement checkStmt = null;
         PreparedStatement nguoiDungStmt = null;
         PreparedStatement taiKhoanStmt = null;
+        PreparedStatement khachHangStmt = null;
         ResultSet rs = null;
         ResultSet generatedKeys = null;
 
@@ -247,15 +248,21 @@ public class RegisterView extends JFrame {
             connection = db.getConnection();
             connection.setAutoCommit(false); // Bắt đầu transaction
 
-            // Kiểm tra username và email đã tồn tại
-            String checkSQL = "SELECT COUNT(*) FROM TaiKhoan WHERE tenDangNhap = ?";
+            // Kiểm tra username, email, và số điện thoại đã tồn tại
+            String checkSQL = "SELECT COUNT(*) FROM TaiKhoan WHERE tenDangNhap = ? " +
+                    "UNION SELECT COUNT(*) FROM NguoiDung WHERE email = ? " +
+                    "UNION SELECT COUNT(*) FROM NguoiDung WHERE soDienThoai = ?";
             checkStmt = connection.prepareStatement(checkSQL);
             checkStmt.setString(1, username);
+            checkStmt.setString(2, email);
+            checkStmt.setString(3, phone);
             rs = checkStmt.executeQuery();
-            if (rs.next() && rs.getInt(1) > 0) {
-                JOptionPane.showMessageDialog(this, "Tên đăng nhập đã tồn tại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                connection.rollback();
-                return;
+            while (rs.next()) {
+                if (rs.getInt(1) > 0) {
+                    JOptionPane.showMessageDialog(this, "Tên đăng nhập, email hoặc số điện thoại đã tồn tại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    connection.rollback();
+                    return;
+                }
             }
 
             // Thêm vào bảng NguoiDung
@@ -277,25 +284,26 @@ public class RegisterView extends JFrame {
             }
 
             // Thêm vào bảng TaiKhoan
-            String hashedPassword = hashPassword(password);
             String insertTaiKhoan = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maNguoiDung) VALUES (?, ?, ?, ?)";
             taiKhoanStmt = connection.prepareStatement(insertTaiKhoan);
             taiKhoanStmt.setString(1, username);
-            taiKhoanStmt.setString(2, hashedPassword);
+            taiKhoanStmt.setString(2, hashPassword(password));
             taiKhoanStmt.setString(3, "User");
             taiKhoanStmt.setInt(4, maNguoiDung);
-            int rowsAffected = taiKhoanStmt.executeUpdate();
+            taiKhoanStmt.executeUpdate();
 
-            if (rowsAffected > 0) {
-                connection.commit();
-                JOptionPane.showMessageDialog(this, "Đăng ký thành công! Vui lòng đăng nhập.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-                LoginView loginView = new LoginView();
-                loginView.setVisible(true);
-                dispose();
-            } else {
-                connection.rollback();
-                JOptionPane.showMessageDialog(this, "Đăng ký thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
+            // Thêm vào bảng KhachHang
+            String insertKhachHang = "INSERT INTO KhachHang (maNguoiDung, diemTichLuy) VALUES (?, ?)";
+            khachHangStmt = connection.prepareStatement(insertKhachHang);
+            khachHangStmt.setInt(1, maNguoiDung);
+            khachHangStmt.setInt(2, 0); // diemTichLuy defaults to 0
+            khachHangStmt.executeUpdate();
+
+            connection.commit();
+            JOptionPane.showMessageDialog(this, "Đăng ký thành công! Vui lòng đăng nhập.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+            LoginView loginView = new LoginView();
+            loginView.setVisible(true);
+            dispose();
 
         } catch (SQLException ex) {
             try {
@@ -318,6 +326,7 @@ public class RegisterView extends JFrame {
                 if (checkStmt != null) checkStmt.close();
                 if (nguoiDungStmt != null) nguoiDungStmt.close();
                 if (taiKhoanStmt != null) taiKhoanStmt.close();
+                if (khachHangStmt != null) khachHangStmt.close();
                 if (connection != null && !connection.isClosed()) connection.close();
             } catch (SQLException ex) {
                 ex.printStackTrace();
@@ -328,5 +337,9 @@ public class RegisterView extends JFrame {
     // Hàm mã hóa mật khẩu bằng bcrypt
     private String hashPassword(String password) {
         return BCrypt.hashpw(password, BCrypt.gensalt(12)); // 12 là work factor
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new RegisterView().setVisible(true));
     }
 }

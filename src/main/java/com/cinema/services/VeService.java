@@ -40,6 +40,10 @@ public class VeService{
         veRepository.delete(maVe);
     }
 
+    public void datVe(int maSuatChieu, Integer maPhong, String soGhe, BigDecimal giaVe, int maKhachHang) throws SQLException {
+        veRepository.datVe(maSuatChieu, maPhong, soGhe, giaVe, maKhachHang);
+    }
+
     public KhachHang getKhachHangByMaVe(int maVe) throws SQLException {
         return khachHangRepository.getKhachHangByMaVe(maVe);
     }
