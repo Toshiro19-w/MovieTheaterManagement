@@ -138,18 +138,15 @@ public class VeRepository extends BaseRepository<Ve> {
 
     @Override
     public Ve save(Ve ve) throws SQLException {
-
         // Kiểm tra trùng lặp ghế
         if (isSeatTaken(ve.getMaSuatChieu(), ve.getSoGhe())) {
             throw new SQLException("Ghế " + ve.getSoGhe() + " đã được đặt cho suất chiếu " + ve.getMaSuatChieu());
         }
 
-        // Kiểm tra tính hợp lệ của maSuatChieu và maPhong
-
-        if (isSuatChieuExists(ve.getMaSuatChieu())) {
+        if (!isSuatChieuExists(ve.getMaSuatChieu())) {
             throw new SQLException("Suất chiếu với mã " + ve.getMaSuatChieu() + " không tồn tại");
         }
-        if (isPhongExists(ve.getMaPhong())) {
+        if (!isPhongExists(ve.getMaPhong())) {
             throw new SQLException("Phòng chiếu với mã " + ve.getMaPhong() + " không tồn tại");
         }
 
@@ -181,7 +178,6 @@ public class VeRepository extends BaseRepository<Ve> {
 
     @Override
     public Ve update(Ve ve) throws SQLException {
-
         // Kiểm tra trùng lặp ghế (trừ vé hiện tại)
         String checkSql = "SELECT maVe FROM Ve WHERE maSuatChieu = ? AND soGhe = ? AND trangThai != 'CANCELLED' AND maVe != ?";
         try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
@@ -194,12 +190,10 @@ public class VeRepository extends BaseRepository<Ve> {
             }
         }
 
-        // Kiểm tra tính hợp lệ của maSuatChieu và maPhong
-
-        if (isSuatChieuExists(ve.getMaSuatChieu())) {
+        if (!isSuatChieuExists(ve.getMaSuatChieu())) {
             throw new SQLException("Suất chiếu với mã " + ve.getMaSuatChieu() + " không tồn tại");
         }
-        if (isPhongExists(ve.getMaPhong())) {
+        if (!isPhongExists(ve.getMaPhong())) {
             throw new SQLException("Phòng chiếu với mã " + ve.getMaPhong() + " không tồn tại");
         }
 
@@ -251,7 +245,6 @@ public class VeRepository extends BaseRepository<Ve> {
         PreparedStatement hoaDonStmt = null;
         PreparedStatement veStmt = null;
         PreparedStatement chiTietHoaDonStmt = null;
-
         PreparedStatement updateSuatChieuStmt = null;
         ResultSet rs = null;
 
@@ -354,93 +347,9 @@ public class VeRepository extends BaseRepository<Ve> {
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
                 throw new SQLException("Không tìm thấy vé với mã: " + maVe);
-
-        ResultSet generatedKeys = null;
-
-        try {
-            conn = dbConnection.getConnection();
-            conn.setAutoCommit(false); // Start transaction
-
-            // Create HoaDon
-            String hoaDonSql = "INSERT INTO HoaDon (maKhachHang, ngayLap, tongTien) VALUES (?, NOW(), ?)";
-            hoaDonStmt = conn.prepareStatement(hoaDonSql, PreparedStatement.RETURN_GENERATED_KEYS);
-            hoaDonStmt.setInt(1, maKhachHang);
-            hoaDonStmt.setBigDecimal(2, giaVe); // tongTien is the ticket price for one seat
-            hoaDonStmt.executeUpdate();
-
-            // Get generated maHoaDon
-            generatedKeys = hoaDonStmt.getGeneratedKeys();
-            int maHoaDon;
-            if (generatedKeys.next()) {
-                maHoaDon = generatedKeys.getInt(1);
-            } else {
-                throw new SQLException("Không thể lấy mã hóa đơn!");
-            }
-
-            // Create Ve
-            Ve ve = new Ve(0, maSuatChieu, maPhong, soGhe, maHoaDon, giaVe, TrangThaiVe.BOOKED, LocalDateTime.now());
-            veStmt = conn.prepareStatement(
-                    "INSERT INTO Ve (maSuatChieu, maPhong, soGhe, maHoaDon, giaVe, trangThai, ngayDat) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    PreparedStatement.RETURN_GENERATED_KEYS
-            );
-            veStmt.setInt(1, ve.getMaSuatChieu());
-            veStmt.setInt(2, ve.getMaPhong());
-            veStmt.setString(3, ve.getSoGhe());
-            veStmt.setInt(4, ve.getMaHoaDon());
-            veStmt.setBigDecimal(5, ve.getGiaVe());
-            veStmt.setString(6, ve.getTrangThai().toString());
-            veStmt.setTimestamp(7, java.sql.Timestamp.valueOf(ve.getNgayDat()));
-            veStmt.executeUpdate();
-
-            // Get generated maVe
-            generatedKeys = veStmt.getGeneratedKeys();
-            int maVe;
-            if (generatedKeys.next()) {
-                maVe = generatedKeys.getInt(1);
-            } else {
-                throw new SQLException("Không thể lấy mã vé!");
-            }
-
-            // Create ChiTietHoaDon
-            String chiTietHoaDonSql = "INSERT INTO ChiTietHoaDon (maHoaDon, maVe) VALUES (?, ?)";
-            chiTietHoaDonStmt = conn.prepareStatement(chiTietHoaDonSql);
-            chiTietHoaDonStmt.setInt(1, maHoaDon);
-            chiTietHoaDonStmt.setInt(2, maVe);
-            chiTietHoaDonStmt.executeUpdate();
-
-            conn.commit(); // Commit transaction
-        } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback(); // Rollback on error
-                } catch (SQLException rollbackEx) {
-                    rollbackEx.printStackTrace();
-                }
-            }
-            throw e;
-        } finally {
-            if (generatedKeys != null) try { generatedKeys.close(); } catch (SQLException e) { e.printStackTrace(); }
-            if (hoaDonStmt != null) try { hoaDonStmt.close(); } catch (SQLException e) { e.printStackTrace(); }
-            if (veStmt != null) try { veStmt.close(); } catch (SQLException e) { e.printStackTrace(); }
-            if (chiTietHoaDonStmt != null) try { chiTietHoaDonStmt.close(); } catch (SQLException e) { e.printStackTrace(); }
-            if (conn != null) try { conn.close(); } catch (SQLException e) { e.printStackTrace(); }
-        }
-    }
-
-    public BigDecimal findTicketPriceBySuatChieu(int maSuatChieu) throws SQLException {
-        String sql = "SELECT giaVe FROM Ve WHERE maSuatChieu = ? AND trangThai = 'available' LIMIT 1";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, maSuatChieu);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getBigDecimal("giaVe");
-                }
-
             }
         }
-        return null;
     }
-
 
     public BigDecimal findTicketPriceBySuatChieu(int maSuatChieu) throws SQLException {
         String sql = "SELECT giaVe FROM Ve WHERE maSuatChieu = ? LIMIT 1"; // Không cần kiểm tra AVAILABLE
@@ -450,23 +359,6 @@ public class VeRepository extends BaseRepository<Ve> {
                 if (rs.next()) {
                     return rs.getBigDecimal("giaVe");
                 }
-
-    private boolean isSuatChieuExists(int maSuatChieu) throws SQLException {
-        String sql = "SELECT 1 FROM SuatChieu WHERE maSuatChieu = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, maSuatChieu);
-            try (ResultSet rs = stmt.executeQuery()) {
-                return !rs.next();
-            }
-        }
-    }
-
-    private boolean isPhongExists(int maPhong) throws SQLException {
-        String sql = "SELECT 1 FROM PhongChieu WHERE maPhong = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, maPhong);
-            try (ResultSet rs = stmt.executeQuery()) {
-                return !rs.next();
             }
         }
         return null; // Có thể lấy giá từ SuatChieu nếu cần
@@ -506,7 +398,7 @@ public class VeRepository extends BaseRepository<Ve> {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, maSuatChieu);
             try (ResultSet rs = stmt.executeQuery()) {
-                return !rs.next();
+                return rs.next();
             }
         }
     }
@@ -516,7 +408,7 @@ public class VeRepository extends BaseRepository<Ve> {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, maPhong);
             try (ResultSet rs = stmt.executeQuery()) {
-                return !rs.next();
+                return rs.next();
             }
         }
     }

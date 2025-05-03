@@ -44,7 +44,6 @@ public class SuatChieuController {
     }
 
     private void addListeners() {
-        view.getSuatChieuSearchField().addActionListener(e -> searchSuatChieu());
         view.getSuatChieuTable().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = view.getSuatChieuTable().getSelectedRow();
@@ -74,24 +73,6 @@ public class SuatChieuController {
             view.getCbMaPhong().addItem(phong);
         }
     }
-
-    private void searchSuatChieu() {
-        String ngayChieuStr = view.getSuatChieuSearchText().trim();
-        try {
-            if (ngayChieuStr.isEmpty() || ngayChieuStr.equals("dd/MM/yyyy HH:mm:ss")) {
-                loadSuatChieuList(service.getAllSuatChieuDetail());
-            } else {
-                LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayChieuStr, formatter);
-                loadSuatChieuList(service.searchSuatChieuByNgay(ngayGioChieu));
-            }
-        } catch (DateTimeParseException e) {
-            JOptionPane.showMessageDialog(view, "Ngày giờ chiếu không đúng định dạng (dd/MM/yyyy HH:mm:ss)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(view, "Lỗi khi tìm kiếm suất chiếu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
 
     private void loadSuatChieuList(List<SuatChieu> suatChieus) {
         DefaultTableModel model = view.getSuatChieuTableModel();
@@ -248,13 +229,6 @@ public class SuatChieuController {
                 ngayGioChieu,
                 soSuatChieu
         );
-
-        if (selectedPhim == null || selectedPhong == null) {
-            throw new IllegalArgumentException("Vui lòng chọn phim và phòng chiếu!");
-        }
-
-        return new SuatChieu(0, selectedPhim.getMaPhim(), selectedPhong.getMaPhong(), ngayGioChieu);
-
     }
 
     private LocalDateTime getLocalDateTime(Phim selectedPhim, PhongChieu selectedPhong) {
