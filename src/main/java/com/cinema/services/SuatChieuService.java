@@ -23,6 +23,10 @@ public class SuatChieuService {
         return suatChieuRepository.findByMaPhim(maPhim);
     }
 
+    public List<SuatChieu> searchSuatChieuByNgay(LocalDateTime ngayGioChieu) throws SQLException {
+        return suatChieuRepository.searchSuatChieuByNgay(ngayGioChieu);
+    }
+
     public void addSuatChieu(SuatChieu suatChieu) throws SQLException {
         if (suatChieu.getMaPhim() <= 0 || suatChieu.getMaPhong() <= 0 || suatChieu.getNgayGioChieu() == null) {
             throw new IllegalArgumentException("Dữ liệu suất chiếu không hợp lệ.");

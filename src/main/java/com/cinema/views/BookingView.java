@@ -20,6 +20,7 @@ public class BookingView extends JDialog {
     private BigDecimal ticketPrice;
     private Integer maVe; // Track maVe for payment confirmation
 
+
     public BookingView(JFrame parent, DatVeController datVeController, int maPhim, int maKhachHang, Consumer<BookingResult> confirmCallback) {
         super(parent, "Đặt vé", true);
         this.datVeController = datVeController;
@@ -60,7 +61,9 @@ public class BookingView extends JDialog {
             selectedSeatLabel.setText("Ghế đã chọn: None");
             selectedSuatChieu = (SuatChieu) suatChieuCombo.getSelectedItem();
             ticketPrice = null;
+
             maVe = null; // Reset maVe
+
             if (selectedSuatChieu != null) {
                 try {
                     // Get all seats for the room
@@ -69,7 +72,11 @@ public class BookingView extends JDialog {
                     List<Ghe> availableSeats = datVeController.getGheTrongByPhongAndSuatChieu(
                             selectedSuatChieu.getMaPhong(), selectedSuatChieu.getMaSuatChieu());
 
+
                     // Get ticket price for this showtime
+
+                    // Get ticket price for this showtime (assume uniform pricing for simplicity)
+
                     ticketPrice = datVeController.getTicketPriceBySuatChieu(selectedSuatChieu.getMaSuatChieu());
                     if (ticketPrice == null) {
                         JOptionPane.showMessageDialog(this, "Không tìm thấy giá vé!", "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -138,6 +145,7 @@ public class BookingView extends JDialog {
                         selectedGhe.getSoGhe(),
                         ticketPrice,
                         maKhachHang
+
                 );
                 // Retrieve maVe
                 maVe = datVeController.getMaVeFromBooking(
@@ -168,6 +176,14 @@ public class BookingView extends JDialog {
             } catch (SQLException e) {
                 e.printStackTrace();
                 JOptionPane.showMessageDialog(this, "Lỗi khi xác nhận thanh toán: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                );
+                confirmCallback.accept(new BookingResult(selectedSuatChieu, selectedGhe, ticketPrice));
+                JOptionPane.showMessageDialog(this, "Đặt vé và tạo hóa đơn thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                dispose();
+            } catch (SQLException e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Lỗi khi đặt vé hoặc tạo hóa đơn: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+
             }
         });
 

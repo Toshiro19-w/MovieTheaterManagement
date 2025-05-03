@@ -1,9 +1,13 @@
 package com.cinema.controllers;
 
 import com.cinema.models.*;
+import com.cinema.models.repositories.VeRepository;
 import com.cinema.services.*;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -48,5 +52,6 @@ public class DatVeController {
 
     public int getMaHoaDonFromVe(int maVe) throws SQLException {
         return veService.getMaHoaDonFromVe(maVe);
+
     }
 }

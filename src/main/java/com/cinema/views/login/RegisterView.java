@@ -235,6 +235,7 @@ public class RegisterView extends JFrame {
             return;
         }
 
+
         DatabaseConnection db;
         Connection connection = null;
         PreparedStatement checkStmt = null;
