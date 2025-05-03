@@ -8,13 +8,13 @@ import com.cinema.services.PhongChieuService;
 import com.cinema.services.SuatChieuService;
 import com.cinema.views.admin.SuatChieuView;
 
+import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
-import javax.swing.JOptionPane;
 
 public class SuatChieuController {
     private final SuatChieuView view;
@@ -44,7 +44,6 @@ public class SuatChieuController {
     }
 
     private void addListeners() {
-        view.getSuatChieuSearchField().addActionListener(e -> searchSuatChieu());
         view.getSuatChieuTable().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = view.getSuatChieuTable().getSelectedRow();
@@ -75,23 +74,6 @@ public class SuatChieuController {
         }
     }
 
-    private void searchSuatChieu() {
-        String ngayChieuStr = view.getSuatChieuSearchText().trim();
-        try {
-            if (ngayChieuStr.isEmpty() || ngayChieuStr.equals("dd/MM/yyyy HH:mm:ss")) {
-                loadSuatChieuList(service.getAllSuatChieuDetail());
-            } else {
-                LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayChieuStr, formatter);
-                loadSuatChieuList(service.searchSuatChieuByNgay(ngayGioChieu));
-            }
-        } catch (DateTimeParseException e) {
-            JOptionPane.showMessageDialog(view, "Ngày giờ chiếu không đúng định dạng (dd/MM/yyyy HH:mm:ss)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(view, "Lỗi khi tìm kiếm suất chiếu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
     private void loadSuatChieuList(List<SuatChieu> suatChieus) {
         DefaultTableModel model = view.getSuatChieuTableModel();
         model.setRowCount(0);
@@ -103,7 +85,8 @@ public class SuatChieuController {
                     sc.getMaSuatChieu(),
                     sc.getTenPhim(),
                     sc.getTenPhong(),
-                    ngayGioChieuFormatted
+                    ngayGioChieuFormatted,
+                    sc.getSoSuatChieu()
             });
         }
     }
@@ -114,6 +97,7 @@ public class SuatChieuController {
         String tenPhim = model.getValueAt(row, 1).toString();
         String tenPhong = model.getValueAt(row, 2).toString();
         String ngayGioChieu = model.getValueAt(row, 3).toString();
+        String soSuatChieu = model.getValueAt(row, 4).toString();
 
         // Tìm và chọn phim trong combobox
         for (int i = 0; i < view.getCbMaPhim().getItemCount(); i++) {
@@ -134,6 +118,7 @@ public class SuatChieuController {
         }
 
         view.getTxtNgayGioChieu().setText(ngayGioChieu);
+        view.getTxtSoSuatChieu().setText(soSuatChieu);
     }
 
     private void themSuatChieu() {
@@ -204,22 +189,46 @@ public class SuatChieuController {
         view.getCbMaPhim().setSelectedIndex(-1);
         view.getCbMaPhong().setSelectedIndex(-1);
         view.getTxtNgayGioChieu().setText("dd/MM/yyyy HH:mm:ss");
+        view.getTxtSoSuatChieu().setText("");
         view.getSuatChieuTable().clearSelection();
     }
 
     private SuatChieu createSuatChieuFromForm() {
+        // Retrieve selected Phim and PhongChieu from combo boxes
         Phim selectedPhim = (Phim) view.getCbMaPhim().getSelectedItem();
         PhongChieu selectedPhong = (PhongChieu) view.getCbMaPhong().getSelectedItem();
+
+        // Validate Phim and PhongChieu selection
+        if (selectedPhim == null || selectedPhong == null) {
+            throw new IllegalArgumentException("Vui lòng chọn phim và phòng chiếu hợp lệ!");
+        }
+
+        // Retrieve and validate soSuatChieu from text field
+        int soSuatChieu;
+        try {
+            String soSuatChieuText = view.getTxtSoSuatChieu().getText().trim();
+            soSuatChieu = Integer.parseInt(soSuatChieuText);
+            if (soSuatChieu <= 0) {
+                throw new IllegalArgumentException("Số suất chiếu phải là số nguyên dương!");
+            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Số suất chiếu phải là số nguyên hợp lệ!");
+        }
+
+        // Get ngayGioChieu and validate it
         LocalDateTime ngayGioChieu = getLocalDateTime(selectedPhim, selectedPhong);
         if (ngayGioChieu.isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Ngày giờ chiếu phải sau thời điểm hiện tại!");
         }
 
-        if (selectedPhim == null || selectedPhong == null) {
-            throw new IllegalArgumentException("Vui lòng chọn phim và phòng chiếu!");
-        }
-
-        return new SuatChieu(0, selectedPhim.getMaPhim(), selectedPhong.getMaPhong(), ngayGioChieu);
+        // Create and return new SuatChieu
+        return new SuatChieu(
+                0, // maSuatChieu, auto-generated by database
+                selectedPhim.getMaPhim(),
+                selectedPhong.getMaPhong(),
+                ngayGioChieu,
+                soSuatChieu
+        );
     }
 
     private LocalDateTime getLocalDateTime(Phim selectedPhim, PhongChieu selectedPhong) {

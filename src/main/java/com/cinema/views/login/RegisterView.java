@@ -1,6 +1,7 @@
 package com.cinema.views.login;
 
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.utils.ValidationUtils;
 import com.formdev.flatlaf.FlatLightLaf;
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -217,7 +218,7 @@ public class RegisterView extends JFrame {
         }
 
         // Kiểm tra định dạng email
-        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+        if (!ValidationUtils.isValidEmail(email)) {
             JOptionPane.showMessageDialog(this, "Email không hợp lệ!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -229,12 +230,12 @@ public class RegisterView extends JFrame {
         }
 
         // Kiểm tra định dạng số điện thoại (10-15 số)
-        if (!phone.matches("^[0-9]{10,15}$")) {
+        if (!ValidationUtils.isValidPhoneNumber(phone)) {
             JOptionPane.showMessageDialog(this, "Số điện thoại không hợp lệ! Phải có 10-15 số.", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        DatabaseConnection db = null;
+        DatabaseConnection db;
         Connection connection = null;
         PreparedStatement checkStmt = null;
         PreparedStatement nguoiDungStmt = null;
@@ -337,9 +338,5 @@ public class RegisterView extends JFrame {
     // Hàm mã hóa mật khẩu bằng bcrypt
     private String hashPassword(String password) {
         return BCrypt.hashpw(password, BCrypt.gensalt(12)); // 12 là work factor
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new RegisterView().setVisible(true));
     }
 }

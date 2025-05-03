@@ -24,7 +24,8 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
                         rs.getInt("maSuatChieu"),
                         rs.getInt("maPhim"),
                         rs.getInt("maPhong"),
-                        rs.getTimestamp("ngayGioChieu").toLocalDateTime()
+                        rs.getTimestamp("ngayGioChieu").toLocalDateTime(),
+                        rs.getInt("soSuatChieu")
                 ));
             }
         } catch (SQLException e) {
@@ -36,7 +37,7 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
     public List<SuatChieu> findAllDetail() {
         List<SuatChieu> list = new ArrayList<>();
         String sql = "SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, sc.maPhong, pc.tenPhong, " +
-                "sc.ngayGioChieu, p.thoiLuong, p.dinhDang " +
+                "sc.ngayGioChieu, p.thoiLuong, p.dinhDang, sc.soSuatChieu " +
                 "FROM SuatChieu sc " +
                 "JOIN Phim p ON sc.maPhim = p.maPhim " +
                 "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong";
@@ -51,7 +52,8 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
                         rs.getString("tenPhong"),
                         rs.getTimestamp("ngayGioChieu").toLocalDateTime(),
                         rs.getInt("thoiLuong"),
-                        rs.getString("dinhDang")
+                        rs.getString("dinhDang"),
+                        rs.getInt("soSuatChieu")
                 ));
             }
         } catch (SQLException e) {
@@ -63,7 +65,7 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
     public List<SuatChieu> findByMaPhim(int maPhim) throws SQLException {
         List<SuatChieu> list = new ArrayList<>();
         String sql = "SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, sc.maPhong, pc.tenPhong, " +
-                "sc.ngayGioChieu, p.thoiLuong, p.dinhDang " +
+                "sc.ngayGioChieu, p.thoiLuong, p.dinhDang, sc.soSuatChieu " +
                 "FROM SuatChieu sc " +
                 "JOIN Phim p ON sc.maPhim = p.maPhim " +
                 "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong " +
@@ -80,34 +82,8 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
                         rs.getString("tenPhong"),
                         rs.getTimestamp("ngayGioChieu").toLocalDateTime(),
                         rs.getInt("thoiLuong"),
-                        rs.getString("dinhDang")
-                ));
-            }
-        }
-        return list;
-    }
-
-    public List<SuatChieu> searchSuatChieuByNgay(LocalDateTime ngayGioChieu) throws SQLException {
-        List<SuatChieu> list = new ArrayList<>();
-        String sql = "SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, sc.maPhong, pc.tenPhong, " +
-                "sc.ngayGioChieu, p.thoiLuong, p.dinhDang " +
-                "FROM SuatChieu sc " +
-                "JOIN Phim p ON sc.maPhim = p.maPhim " +
-                "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong " +
-                "WHERE DATE(sc.ngayGioChieu) = DATE(?)";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setTimestamp(1, Timestamp.valueOf(ngayGioChieu));
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                list.add(new SuatChieu(
-                        rs.getInt("maSuatChieu"),
-                        rs.getInt("maPhim"),
-                        rs.getString("tenPhim"),
-                        rs.getInt("maPhong"),
-                        rs.getString("tenPhong"),
-                        rs.getTimestamp("ngayGioChieu").toLocalDateTime(),
-                        rs.getInt("thoiLuong"),
-                        rs.getString("dinhDang")
+                        rs.getString("dinhDang"),
+                        rs.getInt("soSuatChieu")
                 ));
             }
         }

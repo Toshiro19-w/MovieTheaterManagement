@@ -18,6 +18,7 @@ public class BookingView extends JDialog {
     private SuatChieu selectedSuatChieu;
     private Ghe selectedGhe;
     private BigDecimal ticketPrice;
+    private Integer maVe; // Track maVe for payment confirmation
 
     public BookingView(JFrame parent, DatVeController datVeController, int maPhim, int maKhachHang, Consumer<BookingResult> confirmCallback) {
         super(parent, "Đặt vé", true);
@@ -59,6 +60,7 @@ public class BookingView extends JDialog {
             selectedSeatLabel.setText("Ghế đã chọn: None");
             selectedSuatChieu = (SuatChieu) suatChieuCombo.getSelectedItem();
             ticketPrice = null;
+            maVe = null; // Reset maVe
             if (selectedSuatChieu != null) {
                 try {
                     // Get all seats for the room
@@ -67,7 +69,7 @@ public class BookingView extends JDialog {
                     List<Ghe> availableSeats = datVeController.getGheTrongByPhongAndSuatChieu(
                             selectedSuatChieu.getMaPhong(), selectedSuatChieu.getMaSuatChieu());
 
-                    // Get ticket price for this showtime (assume uniform pricing for simplicity)
+                    // Get ticket price for this showtime
                     ticketPrice = datVeController.getTicketPriceBySuatChieu(selectedSuatChieu.getMaSuatChieu());
                     if (ticketPrice == null) {
                         JOptionPane.showMessageDialog(this, "Không tìm thấy giá vé!", "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -117,10 +119,11 @@ public class BookingView extends JDialog {
         suatChieuPanel.add(suatChieuCombo);
 
         JPanel bottomPanel = new JPanel(new BorderLayout());
+        JPanel buttonPanel = new JPanel(new FlowLayout());
         bottomPanel.add(selectedSeatLabel, BorderLayout.NORTH);
 
-        JButton confirmButton = new JButton("Xác nhận đặt vé");
-        confirmButton.addActionListener(_ -> {
+        JButton bookButton = new JButton("Xác nhận đặt vé");
+        bookButton.addActionListener(_ -> {
             selectedSuatChieu = (SuatChieu) suatChieuCombo.getSelectedItem();
             selectedGhe = selectedGheArray[0];
             if (selectedSuatChieu == null || selectedGhe == null || ticketPrice == null) {
@@ -128,6 +131,7 @@ public class BookingView extends JDialog {
                 return;
             }
             try {
+                // Book the ticket
                 datVeController.datVe(
                         selectedSuatChieu.getMaSuatChieu(),
                         selectedGhe.getMaPhong(),
@@ -135,15 +139,40 @@ public class BookingView extends JDialog {
                         ticketPrice,
                         maKhachHang
                 );
+                // Retrieve maVe
+                maVe = datVeController.getMaVeFromBooking(
+                        selectedSuatChieu.getMaSuatChieu(),
+                        selectedGhe.getSoGhe(),
+                        maKhachHang
+                );
                 confirmCallback.accept(new BookingResult(selectedSuatChieu, selectedGhe, ticketPrice));
-                JOptionPane.showMessageDialog(this, "Đặt vé và tạo hóa đơn thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-                dispose();
+                JOptionPane.showMessageDialog(this, "Đặt vé và tạo hóa đơn thành công! Vui lòng kiểm tra thanh toán.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
             } catch (SQLException e) {
                 e.printStackTrace();
                 JOptionPane.showMessageDialog(this, "Lỗi khi đặt vé hoặc tạo hóa đơn: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         });
-        bottomPanel.add(confirmButton, BorderLayout.SOUTH);
+
+        JButton paymentButton = new JButton("Kiểm tra thanh toán");
+        paymentButton.addActionListener(_ -> {
+            if (maVe == null) {
+                JOptionPane.showMessageDialog(this, "Vui lòng đặt vé trước khi kiểm tra thanh toán!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            try {
+                // Confirm payment
+                int maHoaDon = datVeController.getMaHoaDonFromVe(maVe);
+                datVeController.confirmPayment(maVe, maHoaDon);
+                JOptionPane.showMessageDialog(this, "Thanh toán thành công! Vé đã được xác nhận.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                dispose();
+            } catch (SQLException e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Lỗi khi xác nhận thanh toán: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        buttonPanel.add(bookButton);
+        bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         add(suatChieuPanel, BorderLayout.NORTH);
         add(new JScrollPane(seatPanel), BorderLayout.CENTER);

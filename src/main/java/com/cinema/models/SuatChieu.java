@@ -8,6 +8,7 @@ public class SuatChieu {
     private int maPhim;
     private int maPhong;
     private LocalDateTime ngayGioChieu;
+    private int soSuatChieu;
 
     // Các trường từ JOIN
     private String tenPhim;
@@ -16,24 +17,26 @@ public class SuatChieu {
     private String dinhDangPhim;
 
     // Constructor cho dữ liệu cơ bản
-    public SuatChieu(int maSuatChieu, int maPhim, int maPhong, LocalDateTime ngayGioChieu) {
+    public SuatChieu(int maSuatChieu, int maPhim, int maPhong, LocalDateTime ngayGioChieu, int soSuatChieu) {
         this.maSuatChieu = maSuatChieu;
         this.maPhim = maPhim;
         this.maPhong = maPhong;
         this.ngayGioChieu = ngayGioChieu;
+        this.soSuatChieu = soSuatChieu;
     }
 
     // Constructor cho dữ liệu chi tiết (từ JOIN)
     public SuatChieu(int maSuatChieu, int maPhim, String tenPhim, int maPhong, String tenPhong,
-                     LocalDateTime ngayGioChieu, int thoiLuongPhim, String dinhDangPhim) {
+                     LocalDateTime ngayGioChieu, int thoiLuongPhim, String dinhDangPhim, int soSuatChieu) {
         this.maSuatChieu = maSuatChieu;
         this.maPhim = maPhim;
-        this.tenPhim = tenPhim != null ? tenPhim : "Unknown Film";
+        this.tenPhim = tenPhim;
         this.maPhong = maPhong;
-        this.tenPhong = tenPhong != null ? tenPhong : "Unknown Room";
+        this.tenPhong = tenPhong;
         this.ngayGioChieu = ngayGioChieu;
         this.thoiLuongPhim = thoiLuongPhim;
-        this.dinhDangPhim = dinhDangPhim != null ? dinhDangPhim : "Unknown Format";
+        this.dinhDangPhim = dinhDangPhim;
+        this.soSuatChieu = soSuatChieu;
     }
 
     // Constructor mặc định
@@ -102,6 +105,14 @@ public class SuatChieu {
 
     public void setDinhDangPhim(String dinhDangPhim) {
         this.dinhDangPhim = dinhDangPhim;
+    }
+
+    public int getSoSuatChieu() {
+        return soSuatChieu;
+    }
+
+    public void setSoSuatChieu(int soSuatChieu) {
+        this.soSuatChieu = soSuatChieu;
     }
 
     @Override
