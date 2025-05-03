@@ -67,7 +67,7 @@ public class VeView extends JPanel {
 
     private void initializeFields(JPanel fieldsPanel) {
         txtMaVe = new JLabel();
-        cbTrangThai = new JComboBox<>(new String[]{"AVAILABLE", "BOOKED", "CANCELLED", "PAID"});
+        cbTrangThai = new JComboBox<>(new String[]{"booked", "cancelled", "paid"});
         txtGiaVe = new JTextField();
         txtSoGhe = new JTextField();
         txtNgayDat = new JLabel();

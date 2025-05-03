@@ -51,4 +51,16 @@ public class VeService{
     public BigDecimal getTicketPriceBySuatChieu(int maSuatChieu) throws SQLException {
         return veRepository.findTicketPriceBySuatChieu(maSuatChieu);
     }
+
+    public void confirmPayment(int maVe, int maHoaDon) throws SQLException {
+        veRepository.confirmPayment(maVe, maHoaDon);
+    }
+
+    public int getMaVeFromBooking(int maSuatChieu, String soGhe, int maKhachHang) throws SQLException {
+        return veRepository.getMaVeFromBooking(maSuatChieu, soGhe, maKhachHang);
+    }
+
+    public int getMaHoaDonFromVe(int maVe) throws SQLException {
+        return veRepository.getMaHoaDonFromVe(maVe);
+    }
 }
