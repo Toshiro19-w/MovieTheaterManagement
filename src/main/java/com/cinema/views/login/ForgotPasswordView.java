@@ -20,7 +20,6 @@ public class ForgotPasswordView extends JFrame {
     private final JTextField emailField = new JTextField(20);
     private final JTextField phoneField = new JTextField(20);
     private final JPasswordField passwordField = new JPasswordField(20);
-    private TaiKhoanController controller;
     private Connection conn;
 
     public ForgotPasswordView() {
@@ -32,7 +31,7 @@ public class ForgotPasswordView extends JFrame {
         try {
             DatabaseConnection databaseConnection = new DatabaseConnection();
             conn = databaseConnection.getConnection();
-            controller = new TaiKhoanController(new TaiKhoanService(databaseConnection));
+            new TaiKhoanController(new TaiKhoanService(databaseConnection));
         } catch (IOException e) {
             showError("Không thể đọc cấu hình cơ sở dữ liệu: " + e.getMessage(), true);
         } catch (SQLException e) {

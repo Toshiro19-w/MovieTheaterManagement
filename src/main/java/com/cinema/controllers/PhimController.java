@@ -32,16 +32,16 @@ public class PhimController {
 
     private void initView() {
         try {
-            loadPhimList(service.getAllPhimDetail());
+            loadPhimList(service.getAllPhim());
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(view, "Lỗi khi tải dữ liệu phim!");
         }
     }
 
-    public List<Phim> getAllPhimDetail() {
+    public List<Phim> getAllPhim() {
         try {
-            return service.getAllPhimDetail();
+            return service.getAllPhim();
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(view, "Lỗi khi tải danh sách phim!");
@@ -125,7 +125,7 @@ public class PhimController {
 
         // Tìm phim để lấy posterPath
         try {
-            List<Phim> phimList = service.getAllPhimDetail();
+            List<Phim> phimList = service.getAllPhim();
             Phim selectedPhim = null;
             for (Phim phim : phimList) {
                 if (phim.getMaPhim() == Integer.parseInt(maPhim)) {
@@ -161,7 +161,7 @@ public class PhimController {
             Phim phim = createPhimFromForm();
             service.addPhim(phim);
             JOptionPane.showMessageDialog(view, "Thêm phim thành công!");
-            loadPhimList(service.getAllPhimDetail());
+            loadPhimList(service.getAllPhim());
             clearForm();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -183,7 +183,7 @@ public class PhimController {
             phim.setMaPhim(Integer.parseInt(view.getTxtMaPhim().getText()));
             service.updatePhim(phim);
             JOptionPane.showMessageDialog(view, "Cập nhật phim thành công!");
-            loadPhimList(service.getAllPhimDetail());
+            loadPhimList(service.getAllPhim());
             clearForm();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -208,7 +208,7 @@ public class PhimController {
             try {
                 service.deletePhim(maPhim);
                 JOptionPane.showMessageDialog(view, "Xóa phim thành công!");
-                loadPhimList(service.getAllPhimDetail());
+                loadPhimList(service.getAllPhim());
                 clearForm();
             } catch (SQLException e) {
                 e.printStackTrace();

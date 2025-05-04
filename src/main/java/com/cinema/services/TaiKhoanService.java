@@ -34,7 +34,7 @@ public class TaiKhoanService {
             throw new IllegalArgumentException("Mã người dùng không được để trống");
         }
 
-        // Check if username or maNguoiDung already exists
+        // Kiểm tra nếu tài khoản có tồi tại
         if (taiKhoanRepository.existsByTenDangNhap(taiKhoan.getTenDangNhap())) {
             throw new IllegalArgumentException("Tên đăng nhập đã tồn tại");
         }
@@ -42,11 +42,11 @@ public class TaiKhoanService {
             throw new IllegalArgumentException("Nhân viên này đã có tài khoản");
         }
 
-        // Hash password
+        // mã hoá mật khẩu
         String hashedPassword = BCrypt.hashpw(taiKhoan.getMatKhau(), BCrypt.gensalt());
         taiKhoan.setMatKhau(hashedPassword);
 
-        // Create account
+        // tạo mật khẩu
         taiKhoanRepository.createTaiKhoan(taiKhoan);
     }
 }

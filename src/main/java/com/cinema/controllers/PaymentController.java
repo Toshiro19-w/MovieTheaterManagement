@@ -1,7 +1,7 @@
 package com.cinema.controllers;
 
-import com.cinema.dto.PaymentRequest;
-import com.cinema.dto.PaymentResponse;
+import com.cinema.models.dto.PaymentRequest;
+import com.cinema.models.dto.PaymentResponse;
 import com.cinema.enums.PaymentStatus;
 import com.cinema.services.PaymentService;
 

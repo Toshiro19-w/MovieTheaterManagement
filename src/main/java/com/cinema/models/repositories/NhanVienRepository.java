@@ -16,6 +16,7 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
         super(dbConnection);
     }
 
+    @Override
     public List<NhanVien> findAll() throws SQLException {
         List<NhanVien> list = new ArrayList<>();
         String sql = "SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email, nd.loaiNguoiDung, " +
@@ -93,41 +94,5 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
             stmt.setInt(1, maNguoiDung);
             stmt.executeUpdate();
         }
-    }
-
-    public List<NhanVien> searchNhanVien(String hoTen) throws SQLException {
-        List<NhanVien> nhanVienList = new ArrayList<>();
-        StringBuilder sql = new StringBuilder(
-                "SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email, nd.loaiNguoiDung, " +
-                        "nv.luong, nv.vaiTro " +
-                        "FROM NguoiDung nd " +
-                        "JOIN NhanVien nv ON nd.maNguoiDung = nv.maNguoiDung " +
-                        "WHERE nd.loaiNguoiDung = 'NhanVien'"
-        );
-
-        List<Object> params = new ArrayList<>();
-        if (hoTen != null && !hoTen.trim().isEmpty()) {
-            sql.append(" AND nd.hoTen LIKE ?");
-            params.add("%" + hoTen.trim() + "%");
-        }
-
-        try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                stmt.setObject(i + 1, params.get(i));
-            }
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                nhanVienList.add(new NhanVien(
-                        rs.getInt("maNguoiDung"),
-                        rs.getString("hoTen"),
-                        rs.getString("soDienThoai"),
-                        rs.getString("email"),
-                        LoaiNguoiDung.fromString(rs.getString("loaiNguoiDung")),
-                        rs.getBigDecimal("luong"),
-                        VaiTro.fromString(rs.getString("vaiTro"))
-                ));
-            }
-        }
-        return nhanVienList;
     }
 }

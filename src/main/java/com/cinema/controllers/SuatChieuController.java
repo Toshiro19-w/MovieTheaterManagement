@@ -34,7 +34,7 @@ public class SuatChieuController {
 
     private void initView() {
         try {
-            loadSuatChieuList(service.getAllSuatChieuDetail());
+            loadSuatChieuList(service.getAllSuatChieu());
             loadPhimToComboBox();
             loadPhongChieuToComboBox();
         } catch (SQLException e) {
@@ -59,7 +59,7 @@ public class SuatChieuController {
     }
 
     private void loadPhimToComboBox() throws SQLException {
-        List<Phim> phimList = phimService.getAllPhimDetail();
+        List<Phim> phimList = phimService.getAllPhim();
         view.getCbMaPhim().removeAllItems();
         for (Phim phim : phimList) {
             view.getCbMaPhim().addItem(phim);
@@ -126,7 +126,7 @@ public class SuatChieuController {
             SuatChieu suatChieu = createSuatChieuFromForm();
             service.addSuatChieu(suatChieu);
             JOptionPane.showMessageDialog(view, "Thêm suất chiếu thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadSuatChieuList(service.getAllSuatChieuDetail());
+            loadSuatChieuList(service.getAllSuatChieu());
             clearForm();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -148,7 +148,7 @@ public class SuatChieuController {
             suatChieu.setMaSuatChieu(Integer.parseInt(view.getTxtMaSuatChieu().getText()));
             service.updateSuatChieu(suatChieu);
             JOptionPane.showMessageDialog(view, "Cập nhật suất chiếu thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadSuatChieuList(service.getAllSuatChieuDetail());
+            loadSuatChieuList(service.getAllSuatChieu());
             clearForm();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -173,7 +173,7 @@ public class SuatChieuController {
             if (confirm == JOptionPane.YES_OPTION) {
                 service.deleteSuatChieu(maSuatChieu);
                 JOptionPane.showMessageDialog(view, "Xóa suất chiếu thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-                loadSuatChieuList(service.getAllSuatChieuDetail());
+                loadSuatChieuList(service.getAllSuatChieu());
                 clearForm();
             }
         } catch (SQLException e) {

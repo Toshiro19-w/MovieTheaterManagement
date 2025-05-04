@@ -41,44 +41,4 @@ public class PhongChieuRepository implements IPhongChieuRepository {
         }
         return list;
     }
-
-    @Override
-    public List<PhongChieu> findByTenPhong(String tenPhong) throws SQLException {
-        List<PhongChieu> list = new ArrayList<>();
-        String sql = "SELECT * FROM PhongChieu WHERE tenPhong LIKE ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, "%" + tenPhong + "%");
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                list.add(new PhongChieu(
-                        rs.getInt("maPhong"),
-                        rs.getString("tenPhong"),
-                        rs.getInt("soLuongGhe"),
-                        rs.getString("loaiPhong")
-                ));
-            }
-        }
-        return list;
-    }
-
-    @Override
-    public PhongChieu save(PhongChieu entity) throws SQLException {
-        String sql = "INSERT INTO PhongChieu (tenPhong, soLuongGhe, loaiPhong) VALUES (?, ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setInt(1, entity.getSoLuongGhe());
-            stmt.setString(2, entity.getLoaiPhong());
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException("Thêm phòng chiếu thất bại, không có hàng nào được tạo.");
-            }
-            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    entity.setMaPhong(generatedKeys.getInt(1));
-                    return entity;
-                } else {
-                    throw new SQLException("Thêm phòng chiếu thất bại, không có ID nào được trả về.");
-                }
-            }
-        }
-    }
 }

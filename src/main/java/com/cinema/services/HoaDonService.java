@@ -19,10 +19,6 @@ public class HoaDonService {
         return hoaDonRepository.findAll();
     }
 
-    public List<HoaDon> searchHoaDon(String id, String idKhachHang, String tenKhachHang) throws SQLException {
-        return hoaDonRepository.search(id, idKhachHang, tenKhachHang);
-    }
-
     public List<ChiTietHoaDon> getChiTietHoaDon(int maHoaDon) throws SQLException {
         return hoaDonRepository.findChiTietByMaHoaDon(maHoaDon);
     }

@@ -18,10 +18,6 @@ public class NhanVienService {
         return nhanVienRepository.findAll();
     }
 
-    public List<NhanVien> searchNhanVien(String hoTen) throws SQLException {
-        return nhanVienRepository.searchNhanVien(hoTen);
-    }
-
     public void saveNhanVien(NhanVien entity) throws SQLException {
         nhanVienRepository.save(entity);
     }

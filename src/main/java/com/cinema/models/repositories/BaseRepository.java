@@ -21,9 +21,4 @@ public abstract class BaseRepository<T> implements IRepository<T> {
             throw new RuntimeException("Không thể lấy kết nối cơ sở dữ liệu", e);
         }
     }
-
-    // Đóng kết nối khi cần
-    public void closeConnection() {
-        dbConnection.closeConnection();
-    }
 }

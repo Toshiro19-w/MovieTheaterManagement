@@ -22,43 +22,9 @@ public class KhachHangRepository {
             throw new RuntimeException("Không thể lấy kết nối cơ sở dữ liệu", e);
         }
     }
-    
-    
-   
 
-    public List<KhachHang> getAllKhachHang() {
-        List<KhachHang> list = new ArrayList<>();
-        String sql = """
-                SELECT\s
-                nd.maNguoiDung,
-                nd.hoTen,
-                nd.soDienThoai,
-                nd.email,
-                kh.diemTichLuy
-                FROM\s
-                NguoiDung nd
-                JOIN\s
-                KhachHang kh ON nd.maNguoiDung = kh.maNguoiDung
-                WHERE\s
-                nd.loaiNguoiDung = 'KhachHang';""";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                KhachHang khachHang = new KhachHang();
-                khachHang.setMaNguoiDung(rs.getInt("maNguoiDung"));
-                khachHang.setHoTen(rs.getString("hoTen"));
-                khachHang.setSoDienThoai(rs.getString("soDienThoai"));
-                khachHang.setEmail(rs.getString("email"));
-                khachHang.setDiemTichLuy(rs.getInt("diemTichLuy"));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
-
+    //Lấy thông tin khách hàng qua maHoaDon
     public KhachHang getKhachHangByMaVe(int maVe) throws SQLException {
-        // Giả lập: Truy vấn cơ sở dữ liệu để lấy thông tin khách hàng qua maHoaDon
         String sql = """
                 SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email\s
                 FROM NguoiDung nd\s
@@ -80,27 +46,26 @@ public class KhachHangRepository {
         }
         return null; // Nếu không tìm thấy khách hàng
     }
-    public KhachHang getKhachHangInfoById(int maKhachHang) {
-        String sql = "SELECT nd.hoTen nd.email, nd.soDienThoai, kh.diemTichLuy " +
-                     "FROM KhachHang kh " +
-                     "JOIN NguoiDung nd ON kh.maNguoiDung = nd.maNguoiDung " +
-                     "WHERE kh.maKhachHang = ?";
+
+    public KhachHang getKhachHangByUsername(String username) throws SQLException {
+        String sql = """
+            SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email
+            FROM NguoiDung nd
+            JOIN TaiKhoan tk ON nd.maNguoiDung = tk.maNguoiDung
+            WHERE tk.tenDangNhap = ?""";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, maKhachHang);
+            stmt.setString(1, username);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    KhachHang kh = new KhachHang();
-                    kh.setHoTen(rs.getString("hoTen"));
-                    kh.setEmail(rs.getString("email"));
-                    kh.setSoDienThoai(rs.getString("soDienThoai"));
-                    kh.setDiemTichLuy(rs.getInt("diemTichLuy"));
-                    return kh;
+                    KhachHang khachHang = new KhachHang();
+                    khachHang.setMaNguoiDung(rs.getInt("maNguoiDung"));
+                    khachHang.setHoTen(rs.getString("hoTen"));
+                    khachHang.setSoDienThoai(rs.getString("soDienThoai"));
+                    khachHang.setEmail(rs.getString("email"));
+                    return khachHang;
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
         return null;
     }
-
 }
