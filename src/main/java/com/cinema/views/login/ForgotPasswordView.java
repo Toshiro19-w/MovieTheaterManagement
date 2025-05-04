@@ -64,10 +64,10 @@ public class ForgotPasswordView extends JFrame {
         // Panel nội dung trong suốt
         JPanel innerPanel = new JPanel(new GridBagLayout());
         innerPanel.setOpaque(true);
-        innerPanel.setBackground(new Color(255, 255, 255, 100));
+        innerPanel.setBackground(new Color(255, 255, 255, 150));
         innerPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
         innerPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        innerPanel.setPreferredSize(new Dimension(320, 400));
+        innerPanel.setPreferredSize(new Dimension(320, 500));
 
         GridBagConstraints panelGbc = new GridBagConstraints();
         panelGbc.gridx = 0;
