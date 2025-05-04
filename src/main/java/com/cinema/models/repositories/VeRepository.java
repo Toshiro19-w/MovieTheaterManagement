@@ -45,8 +45,6 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
         }
     }
 
-
-
     public List<Ve> findAllDetail() throws SQLException {
         String sql = """
                 SELECT 
@@ -141,6 +139,7 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
 
     @Override
     public Ve save(Ve ve) throws SQLException {
+        // Kiểm tra trùng lặp ghế
         if (isSeatTaken(ve.getMaSuatChieu(), ve.getSoGhe())) {
             throw new SQLException("Ghế " + ve.getSoGhe() + " đã được đặt cho suất chiếu " + ve.getMaSuatChieu());
         }
@@ -179,6 +178,7 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
 
     @Override
     public Ve update(Ve ve) throws SQLException {
+        // Kiểm tra trùng lặp ghế (trừ vé hiện tại)
         String checkSql = "SELECT maVe FROM Ve WHERE maSuatChieu = ? AND soGhe = ? AND trangThai != 'CANCELLED' AND maVe != ?";
         try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
             checkStmt.setInt(1, ve.getMaSuatChieu());
