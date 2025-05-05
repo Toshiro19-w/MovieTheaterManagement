@@ -177,7 +177,7 @@ public class UserInfoView extends JDialog {
             this.parent = parent;
             button = new JButton();
             button.setOpaque(true);
-            button.addActionListener(e -> fireEditingStopped());
+            button.addActionListener(_ -> fireEditingStopped());
         }
 
         @Override

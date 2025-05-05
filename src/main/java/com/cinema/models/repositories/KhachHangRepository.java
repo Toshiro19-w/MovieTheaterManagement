@@ -4,7 +4,6 @@ import com.cinema.models.KhachHang;
 import com.cinema.models.repositories.Interface.IKhachHangRepository;
 import com.cinema.utils.DatabaseConnection;
 
-import javax.swing.*;
 import java.sql.*;
 
 public class KhachHangRepository implements IKhachHangRepository {

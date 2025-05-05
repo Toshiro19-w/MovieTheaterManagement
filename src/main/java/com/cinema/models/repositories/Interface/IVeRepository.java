@@ -3,7 +3,6 @@ package com.cinema.models.repositories.Interface;
 import com.cinema.models.Ve;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 

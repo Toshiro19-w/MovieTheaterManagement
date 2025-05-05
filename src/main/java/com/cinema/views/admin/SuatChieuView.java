@@ -32,11 +32,11 @@ public class SuatChieuView extends JPanel {
     // PhongChieu components
     private JTable phongChieuTable;
     private DefaultTableModel phongChieuTableModel;
-    private JTextField phongChieuSearchField;
-    private TableRowSorter<DefaultTableModel> phongChieuSorter;
+    private final JTextField phongChieuSearchField;
     private Integer selectedMaPhong;
 
-    public SuatChieuView() throws SQLException {
+    public SuatChieuView(JTextField phongChieuSearchField) throws SQLException {
+        this.phongChieuSearchField = phongChieuSearchField;
         initializeDatabase();
         initializeUI();
         new SuatChieuController(this);
@@ -116,7 +116,7 @@ public class SuatChieuView extends JPanel {
         addField(fieldsPanel, "Phim:", cbMaPhim);
         addField(fieldsPanel, "Phòng chiếu:", cbMaPhong);
         addField(fieldsPanel, "Ngày giờ chiếu:", txtNgayGioChieu);
-        setPlaceholder(txtNgayGioChieu, "dd/MM/yyyy HH:mm:ss");
+        setPlaceholder(txtNgayGioChieu);
         addField(fieldsPanel, "Số Suất Chiếu", txtSoSuatChieu);
         addField(fieldsPanel, "Tìm Kiếm:", suatChieuSearchField);
 
@@ -173,7 +173,7 @@ public class SuatChieuView extends JPanel {
         phongChieuTable = new JTable(phongChieuTableModel);
         phongChieuTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        phongChieuSorter = new TableRowSorter<>(phongChieuTableModel);
+        TableRowSorter<DefaultTableModel> phongChieuSorter = new TableRowSorter<>(phongChieuTableModel);
         phongChieuTable.setRowSorter(phongChieuSorter);
 
         phongChieuTable.getSelectionModel().addListSelectionListener(e -> {
@@ -201,13 +201,13 @@ public class SuatChieuView extends JPanel {
         JOptionPane.showMessageDialog(this, message, "Lỗi", JOptionPane.ERROR_MESSAGE);
     }
 
-    private void setPlaceholder(JTextField field, String placeholder) {
-        field.setText(placeholder);
+    private void setPlaceholder(JTextField field) {
+        field.setText("dd/MM/yyyy HH:mm:ss");
         field.setForeground(Color.GRAY);
         field.addFocusListener(new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
-                if (field.getText().equals(placeholder)) {
+                if (field.getText().equals("dd/MM/yyyy HH:mm:ss")) {
                     field.setText("");
                     field.setForeground(Color.BLACK);
                 }
@@ -217,7 +217,7 @@ public class SuatChieuView extends JPanel {
             public void focusLost(FocusEvent e) {
                 if (field.getText().isEmpty()) {
                     field.setForeground(Color.GRAY);
-                    field.setText(placeholder);
+                    field.setText("dd/MM/yyyy HH:mm:ss");
                 }
             }
         });

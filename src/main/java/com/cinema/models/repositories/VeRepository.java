@@ -48,7 +48,7 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
     @Override
     public List<Ve> findAllDetail() throws SQLException {
         String sql = """
-                SELECT 
+                SELECT\s
                     Ve.maVe,
                     Ve.trangThai,
                     Ve.giaVe,
@@ -95,7 +95,7 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
     public List<Ve> findBySoGhe(String soGhe) throws SQLException {
         List<Ve> veList = new ArrayList<>();
         String sql = """
-                SELECT 
+                SELECT\s
                     Ve.maVe,
                     Ve.trangThai,
                     Ve.giaVe,
@@ -141,7 +141,7 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
     @Override
     public Ve findVeByMaVe(int maVe) throws SQLException {
         String sql = """
-                SELECT 
+                SELECT\s
                     Ve.maVe,
                     Ve.trangThai,
                     Ve.giaVe,

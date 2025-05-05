@@ -40,7 +40,7 @@ public class RegisterView extends JFrame {
 
         // Panel nền với ảnh
         JPanel backgroundPanel = new JPanel() {
-            Image background = new ImageIcon(Objects.requireNonNull(getClass().getResource("/images/Icon/nen1.jpg"))).getImage();
+            final Image background = new ImageIcon(Objects.requireNonNull(getClass().getResource("/images/Icon/nen1.jpg"))).getImage();
 
             @Override
             protected void paintComponent(Graphics g) {
@@ -286,7 +286,7 @@ public class RegisterView extends JFrame {
 
             // Lấy mã người dùng được sinh tự động
             generatedKeys = nguoiDungStmt.getGeneratedKeys();
-            int maNguoiDung = -1;
+            int maNguoiDung;
             if (generatedKeys.next()) {
                 maNguoiDung = generatedKeys.getInt(1);
             } else {

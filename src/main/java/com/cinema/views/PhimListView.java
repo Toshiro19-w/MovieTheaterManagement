@@ -11,9 +11,6 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -25,7 +22,6 @@ public class PhimListView extends JPanel {
     private final KhachHangController khachHangController;
     private final BiConsumer<Integer, Integer> bookTicketCallback;
     private final String username;
-    private final DatabaseConnection databaseConnection;
     private JPanel phimPanel;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -34,7 +30,7 @@ public class PhimListView extends JPanel {
         this.khachHangController = new KhachHangController(new KhachHangService(new DatabaseConnection()));
         this.bookTicketCallback = bookTicketCallback;
         this.username = username;
-        this.databaseConnection = new DatabaseConnection();
+        DatabaseConnection databaseConnection = new DatabaseConnection();
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
@@ -82,7 +78,6 @@ public class PhimListView extends JPanel {
                         .toList();
             }
         } catch (Exception e) {
-            e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Lỗi khi tải danh sách phim!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -139,7 +134,7 @@ public class PhimListView extends JPanel {
         datVeButton.setForeground(Color.WHITE);
         datVeButton.setFont(new Font("Arial", Font.BOLD, 14));
         datVeButton.addActionListener(_ -> {
-            int maKhachHang = 0;
+            int maKhachHang;
             try {
                 maKhachHang = khachHangController.getMaKhachHangFromSession(username);
             } catch (SQLException e) {

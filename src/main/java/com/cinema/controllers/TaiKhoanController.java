@@ -2,7 +2,6 @@ package com.cinema.controllers;
 
 import com.cinema.services.TaiKhoanService;
 
-import javax.swing.*;
 import java.awt.*;
 import java.sql.SQLException;
 

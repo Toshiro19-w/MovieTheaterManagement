@@ -122,7 +122,7 @@ public class ForgotPasswordView extends JFrame {
         submitButton.setForeground(Color.WHITE);
         submitButton.setFocusPainted(false);
         submitButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        submitButton.addActionListener(e -> handlePasswordReset());
+        submitButton.addActionListener(_ -> handlePasswordReset());
         innerPanel.add(submitButton, updateGBC(gbc, 0, 5, 1, GridBagConstraints.NONE, 0.0));
 
         // Nút Quay Lại
@@ -132,7 +132,7 @@ public class ForgotPasswordView extends JFrame {
         backButton.setForeground(Color.WHITE);
         backButton.setFocusPainted(false);
         backButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        backButton.addActionListener(e -> {
+        backButton.addActionListener(_ -> {
             new LoginView().setVisible(true);
             dispose();
         });

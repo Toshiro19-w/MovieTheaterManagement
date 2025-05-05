@@ -4,8 +4,6 @@ import com.cinema.models.KhachHang;
 import com.cinema.models.repositories.KhachHangRepository;
 import com.cinema.utils.DatabaseConnection;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class KhachHangService {

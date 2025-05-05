@@ -90,7 +90,7 @@ public class TaiKhoanRepository implements ITaiKhoanRepository {
         }
     }
 
-    public boolean verifyUser(String username, String email, String phone) throws SQLException {
+    public boolean verifyUser(String username, String email, String phone) {
         String sql = "SELECT t.tenDangNhap FROM TaiKhoan t " +
                 "JOIN NguoiDung n ON t.maNguoiDung = n.maNguoiDung " +
                 "WHERE t.tenDangNhap = ? AND n.email = ? AND n.soDienThoai = ?";
@@ -108,7 +108,7 @@ public class TaiKhoanRepository implements ITaiKhoanRepository {
         }
     }
 
-    public boolean updatePassword(String username, String hashedPassword) throws SQLException {
+    public boolean updatePassword(String username, String hashedPassword) {
         String sql = "UPDATE TaiKhoan SET matKhau = ? WHERE tenDangNhap = ?";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
