@@ -38,6 +38,7 @@ public class BookingView extends JDialog {
     }
 
     private void initializeComponents() {
+        //Hiện suất chiếu
         JPanel suatChieuPanel = new JPanel(new FlowLayout());
         JLabel suatChieuLabel = new JLabel("Chọn suất chiếu:");
         JComboBox<SuatChieu> suatChieuCombo = new JComboBox<>();
@@ -59,6 +60,7 @@ public class BookingView extends JDialog {
             return;
         }
 
+        //Sơ đồ ghế
         JPanel seatPanel = new JPanel();
         seatPanel.setLayout(new GridLayout(0, 10, 5, 5));
         seatPanel.setBorder(BorderFactory.createTitledBorder("Sơ đồ ghế"));
@@ -138,6 +140,7 @@ public class BookingView extends JDialog {
         JPanel buttonPanel = new JPanel(new FlowLayout());
         bottomPanel.add(selectedSeatLabel, BorderLayout.NORTH);
 
+        //Nút xác nhận
         JButton bookButton = ConfirmButton(suatChieuCombo, selectedGheArray);
         buttonPanel.add(bookButton);
         bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
@@ -151,6 +154,7 @@ public class BookingView extends JDialog {
         }
     }
 
+    //Nút xác nhận
     private JButton ConfirmButton(JComboBox<SuatChieu> suatChieuCombo, Ghe[] selectedGheArray) {
         JButton bookButton = new JButton("Xác nhận");
         bookButton.addActionListener(_ -> {

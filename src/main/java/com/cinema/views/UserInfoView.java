@@ -2,6 +2,7 @@ package com.cinema.views;
 
 import com.cinema.controllers.KhachHangController;
 import com.cinema.models.*;
+import com.cinema.models.repositories.DatVeRepository;
 import com.cinema.models.repositories.HoaDonRepository;
 import com.cinema.models.repositories.VeRepository;
 import com.cinema.services.KhachHangService;
@@ -19,6 +20,7 @@ public class UserInfoView extends JDialog {
     private final KhachHangController khachHangController;
     private final HoaDonRepository hoaDonRepository;
     private final VeRepository veRepository;
+    private final DatVeRepository datVeRepository;
     private JTable bookingTable;
 
     public UserInfoView(JFrame parent, String username) throws IOException {
@@ -28,6 +30,7 @@ public class UserInfoView extends JDialog {
         this.khachHangController = new KhachHangController(new KhachHangService(databaseConnection));
         this.hoaDonRepository = new HoaDonRepository(databaseConnection);
         this.veRepository = new VeRepository(databaseConnection);
+        this.datVeRepository = new DatVeRepository(databaseConnection);
 
         setSize(1000, 600);
         setLayout(new BorderLayout());
@@ -36,7 +39,7 @@ public class UserInfoView extends JDialog {
     }
 
     private void initializeComponents() {
-        // Top: User information
+        // Thông tin người dùng
         JPanel infoPanel = new JPanel(new GridLayout(4, 2, 10, 10));
         infoPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         infoPanel.setBackground(Color.WHITE);
@@ -60,7 +63,7 @@ public class UserInfoView extends JDialog {
 
         add(infoPanel, BorderLayout.NORTH);
 
-        // Center: Booking history table
+        // Lịch sử vé
         String[] columns = {"Mã vé", "Tên phim", "Suất chiếu", "Ghế", "Số tiền", "Trạng thái", "Hành động"};
         DefaultTableModel tableModel = new DefaultTableModel(columns, 0);
         bookingTable = new JTable(tableModel);
@@ -69,13 +72,6 @@ public class UserInfoView extends JDialog {
         JScrollPane tableScrollPane = new JScrollPane(bookingTable);
         tableScrollPane.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         add(tableScrollPane, BorderLayout.CENTER);
-
-        // South: Close button
-        JButton closeButton = new JButton("Đóng");
-        closeButton.addActionListener(_ -> dispose());
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.add(closeButton);
-        add(buttonPanel, BorderLayout.SOUTH);
     }
 
     private void loadBookingHistory(DefaultTableModel tableModel) {
@@ -132,7 +128,7 @@ public class UserInfoView extends JDialog {
                 return;
             }
 
-            veRepository.cancelVe(maVe);
+            datVeRepository.cancelVe(maVe);
             JOptionPane.showMessageDialog(this, "Hủy vé thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
             loadBookingHistory((DefaultTableModel) bookingTable.getModel());
         } catch (SQLException e) {
@@ -152,7 +148,7 @@ public class UserInfoView extends JDialog {
         }
     }
 
-    // Button renderer for table
+    // Button renderer cho bảng
     private static class ButtonRenderer extends JButton implements javax.swing.table.TableCellRenderer {
         public ButtonRenderer() {
             setOpaque(true);

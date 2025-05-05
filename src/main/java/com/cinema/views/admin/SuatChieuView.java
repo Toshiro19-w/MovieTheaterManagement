@@ -18,8 +18,8 @@ import java.sql.SQLException;
 
 public class SuatChieuView extends JPanel {
     private DatabaseConnection databaseConnection;
-    // SuatChieu components
 
+    // SuatChieu components
     private JTextField txtNgayGioChieu, txtSoSuatChieu, suatChieuSearchField;
     private JLabel txtMaSuatChieu;
     private JComboBox cbMaPhim, cbMaPhong;
@@ -28,6 +28,7 @@ public class SuatChieuView extends JPanel {
     private JButton btnThemSuat, btnSuaSuat, btnXoaSuat, btnClearSuat;
     private TableRowSorter<DefaultTableModel> suatChieuSorter;
     private Integer selectedMaSuatChieu;
+
     // PhongChieu components
     private JTable phongChieuTable;
     private DefaultTableModel phongChieuTableModel;

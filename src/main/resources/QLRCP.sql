@@ -1,13 +1,14 @@
-﻿  SET FOREIGN_KEY_CHECKS = 0;
-  SET @tables = NULL;
-  SELECT GROUP_CONCAT(table_schema, '.', table_name) INTO @tables
-    FROM information_schema.tables 
+﻿-- lệnh xoá bảng và ràng buộc
+SET FOREIGN_KEY_CHECKS = 0;
+SET @tables = NULL;
+SELECT GROUP_CONCAT(table_schema, '.', table_name) INTO @tables
+    FROM information_schema.tables
     WHERE table_schema = 'quanlyrcp';
-  SET @tables = CONCAT('DROP TABLE ', @tables);
-  PREPARE stmt FROM @tables;
-  EXECUTE stmt;
-  DEALLOCATE PREPARE stmt;
-  SET FOREIGN_KEY_CHECKS = 1;
+SET @tables = CONCAT('DROP TABLE ', @tables);
+PREPARE stmt FROM @tables;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+SET FOREIGN_KEY_CHECKS = 1;
 
 USE quanlyrcp;
 
@@ -25,13 +26,6 @@ CREATE TABLE IF NOT EXISTS KhachHang (
     maNguoiDung INT PRIMARY KEY,
     diemTichLuy INT DEFAULT 0 CHECK (diemTichLuy >= 0),
     FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS ResetToken (
-    token VARCHAR(255) PRIMARY KEY,
-    email NVARCHAR(100) NOT NULL,
-    expiration_time TIMESTAMP NOT NULL,
-    FOREIGN KEY (email) REFERENCES NguoiDung(email) ON DELETE CASCADE
 );
 
 -- Tạo bảng NhanVien (thừa kế từ NguoiDung)
@@ -267,7 +261,7 @@ INSERT INTO Ve (maSuatChieu, maPhong, soGhe, maHoaDon, giaVe, trangThai, ngayDat
 (3, 3, 'A1', 3, 100000.00, 'paid', '2025-04-05 13:00:00'),
 (4, 4, 'A1', 4, 150000.00, 'paid', '2025-04-05 15:00:00'),
 (5, 5, 'A1', 5, 125000.00, 'paid', '2025-04-05 17:00:00'),
-(1, 1, 'B1', NULL, 75000.00, 'booked', NULL),
+(1, 1, 'B1', NULL, 75000.00, 'booked', '2025-04-05 11:00:00'),
 (2, 2, 'A2', NULL, 100000.00, 'booked', '2025-04-05 10:00:00'),
 (3, 3, 'B1', NULL, 100000.00, 'pending', '2025-04-05 12:00:00'),
 (5, 5, 'A2', NULL, 125000.00, 'cancelled', '2025-04-05 14:00:00');

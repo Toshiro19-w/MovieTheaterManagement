@@ -52,7 +52,7 @@ public class LoginView extends JFrame {
 
         // Panel nền với ảnh
         JPanel backgroundPanel = new JPanel() {
-            Image background = new ImageIcon(Objects.requireNonNull(getClass().getResource("/img/nen1.jpg"))).getImage();
+            final Image background = new ImageIcon(Objects.requireNonNull(getClass().getResource("/images/Icon/nen1.jpg"))).getImage();
 
             @Override
             protected void paintComponent(Graphics g) {
@@ -64,7 +64,7 @@ public class LoginView extends JFrame {
         setContentPane(backgroundPanel);
 
         // Icon
-        ImageIcon icon = new ImageIcon(Objects.requireNonNull(getClass().getResource("/img/nen1.jpg")));
+        ImageIcon icon = new ImageIcon(Objects.requireNonNull(getClass().getResource("/images/Icon/LogoApp.jpg")));
         setIconImage(icon.getImage());
 
         // Panel đăng nhập với nền trong suốt
@@ -96,7 +96,6 @@ public class LoginView extends JFrame {
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
-//        titleLabel.setForeground(new Color(255, 215, 0));
         innerPanel.add(titleLabel, gbc);
 
         // Username

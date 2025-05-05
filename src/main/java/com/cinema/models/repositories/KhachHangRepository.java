@@ -1,13 +1,13 @@
 package com.cinema.models.repositories;
 
 import com.cinema.models.KhachHang;
+import com.cinema.models.repositories.Interface.IKhachHangRepository;
 import com.cinema.utils.DatabaseConnection;
 
+import javax.swing.*;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
-public class KhachHangRepository {
+public class KhachHangRepository implements IKhachHangRepository {
     protected Connection conn;
     protected DatabaseConnection dbConnection;
 
@@ -24,6 +24,7 @@ public class KhachHangRepository {
     }
 
     //Lấy thông tin khách hàng qua maHoaDon
+    @Override
     public KhachHang getKhachHangByMaVe(int maVe) throws SQLException {
         String sql = """
                 SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email\s
@@ -47,6 +48,7 @@ public class KhachHangRepository {
         return null; // Nếu không tìm thấy khách hàng
     }
 
+    @Override
     public KhachHang getKhachHangByUsername(String username) throws SQLException {
         String sql = """
             SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email
@@ -67,5 +69,19 @@ public class KhachHangRepository {
             }
         }
         return null;
+    }
+
+    @Override
+    public int getMaKhachHangFromSession(String username) throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement(
+                     "SELECT nd.maNguoiDung FROM NguoiDung nd JOIN TaiKhoan tk ON nd.maNguoiDung = tk.maNguoiDung " +
+                             "WHERE tk.tenDangNhap = ? AND nd.loaiNguoiDung = 'KhachHang'")) {
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("maNguoiDung");
+            }
+        }
+        return -1;
     }
 }

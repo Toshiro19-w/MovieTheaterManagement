@@ -7,6 +7,8 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Objects;
@@ -36,11 +38,20 @@ public class HeaderPanel extends JPanel {
     }
 
     private void initComponents() {
-        // Left: Logo + Cinema App Button
+        // Trái: Logo Cinema
         JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         logoPanel.setOpaque(false);
 
-        JLabel logoLabel = new JLabel(new ImageIcon("")); // Thay bằng đường dẫn logo thực tế
+        JLabel logoLabel = new JLabel();
+        try {
+            ImageIcon labelIcon = new ImageIcon(Objects.requireNonNull(getClass().getClassLoader().getResource("images/Icon/Cinema.jpg")));
+            Image logoImage = labelIcon.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH);
+            logoLabel.setIcon(new ImageIcon(logoImage));
+        } catch (Exception e) {
+            logoLabel.setText("Logo");
+            logoLabel.setForeground(Color.WHITE);
+            logoLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        }
         logoPanel.add(logoLabel);
 
         JButton homeButton = new JButton("Cinema App");
@@ -53,34 +64,47 @@ public class HeaderPanel extends JPanel {
 
         add(logoPanel, BorderLayout.WEST);
 
-        // Center: Search bar
+        // Giữa: menu cho người dùng và quản lý
         if (loaiTaiKhoan == LoaiTaiKhoan.USER) {
-            JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+            JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
             searchPanel.setOpaque(false);
+
+            JLabel searchLabel = new JLabel("Tìm kiếm phim:");
+            searchLabel.setForeground(Color.WHITE);
+            searchLabel.setFont(new Font("Arial", Font.PLAIN, 14));
 
             JTextField searchField = new JTextField(30);
             searchField.setPreferredSize(new Dimension(400, 30));
+            searchField.setFont(new Font("Arial", Font.PLAIN, 14));
+            searchField.setForeground(Color.BLACK);
+            searchField.setBackground(Color.WHITE);
             searchField.getDocument().addDocumentListener(new DocumentListener() {
                 @Override
                 public void insertUpdate(DocumentEvent e) {
-                    searchCallback.accept(searchField.getText().trim());
+                    if (!searchField.getText().equals("Tìm phim...")) {
+                        searchCallback.accept(searchField.getText().trim());
+                    }
                 }
 
                 @Override
                 public void removeUpdate(DocumentEvent e) {
-                    searchCallback.accept(searchField.getText().trim());
+                    if (!searchField.getText().equals("Tìm phim...")) {
+                        searchCallback.accept(searchField.getText().trim());
+                    }
                 }
 
                 @Override
                 public void changedUpdate(DocumentEvent e) {
-                    searchCallback.accept(searchField.getText().trim());
+                    if (!searchField.getText().equals("Tìm phim...")) {
+                        searchCallback.accept(searchField.getText().trim());
+                    }
                 }
             });
+            setPlaceholder(searchField);
+            searchPanel.add(searchLabel);
             searchPanel.add(searchField);
-
             add(searchPanel, BorderLayout.CENTER);
         } else {
-            // Keep original menu for other roles
             JPanel menuPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
             menuPanel.setOpaque(false);
 
@@ -96,17 +120,19 @@ public class HeaderPanel extends JPanel {
             add(menuPanel, BorderLayout.CENTER);
         }
 
-        // Right: User avatar + username button
+        // Phải: tên và avater người dùng
         JPanel userPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         userPanel.setOpaque(false);
 
         JLabel avatarLabel = new JLabel();
         try {
-            ImageIcon avatarIcon = new ImageIcon(Objects.requireNonNull(getClass().getClassLoader().getResource("images/avatars/default.png")));
-            Image scaledImage = avatarIcon.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+            ImageIcon avatarIcon = new ImageIcon(Objects.requireNonNull(getClass().getClassLoader().getResource("images/Icon/user.png")));
+            Image scaledImage = avatarIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
             avatarLabel.setIcon(new ImageIcon(scaledImage));
         } catch (Exception e) {
             avatarLabel.setText("Avatar");
+            avatarLabel.setForeground(Color.WHITE);
+            avatarLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         }
         userPanel.add(avatarLabel);
 
@@ -132,5 +158,27 @@ public class HeaderPanel extends JPanel {
         userPanel.add(logoutButton);
 
         add(userPanel, BorderLayout.EAST);
+    }
+
+    private void setPlaceholder(JTextField field) {
+        field.setText("Tìm phim...");
+        field.setForeground(Color.GRAY);
+        field.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (field.getText().equals("Tìm phim...")) {
+                    field.setText("");
+                    field.setForeground(Color.BLACK);
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (field.getText().isEmpty()) {
+                    field.setForeground(Color.GRAY);
+                    field.setText("Tìm phim...");
+                }
+            }
+        });
     }
 }

@@ -118,7 +118,7 @@ public class SuatChieu {
     @Override
     public String toString() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        return String.format("%s - Phòng %s - %s",
+        return String.format("%s - %s - %s",
                 tenPhim != null ? tenPhim : "N/A",
                 tenPhong != null ? tenPhong : "N/A",
                 ngayGioChieu != null ? ngayGioChieu.format(formatter) : "N/A");

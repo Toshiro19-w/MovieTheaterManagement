@@ -4,6 +4,7 @@ import com.cinema.services.TaiKhoanService;
 
 import javax.swing.*;
 import java.awt.*;
+import java.sql.SQLException;
 
 public class TaiKhoanController extends Component {
     private final TaiKhoanService taiKhoanService;
@@ -12,26 +13,11 @@ public class TaiKhoanController extends Component {
         this.taiKhoanService = taiKhoanService;
     }
 
-    public void saveResetTokenToDB(String email, String token) {
-        try{
-            taiKhoanService.saveResetTokenToDB(email, token);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Có lỗi xảy ra: " + ex.getMessage(),
-                    "Lỗi",
-                    JOptionPane.ERROR_MESSAGE);
-        }
+    public boolean verifyUserForPasswordReset(String username, String email, String phone) throws SQLException {
+        return taiKhoanService.verifyUserForPasswordReset(username, email, phone);
     }
 
-    public boolean isEmailExists(String email) {
-        try{
-            return taiKhoanService.checkEmailExists(email);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Có lỗi xảy ra: " + ex.getMessage(),
-                    "Lỗi",
-                    JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
+    public boolean updatePassword(String username, String hashedPassword) throws SQLException {
+        return taiKhoanService.updatePassword(username, hashedPassword);
     }
 }

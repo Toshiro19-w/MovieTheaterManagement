@@ -1,12 +1,12 @@
 package com.cinema.views;
 
+import com.cinema.controllers.KhachHangController;
 import com.cinema.controllers.PhimController;
 import com.cinema.models.Phim;
+import com.cinema.services.KhachHangService;
 import com.cinema.utils.DatabaseConnection;
 
 import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -22,15 +22,16 @@ import java.util.function.BiConsumer;
 
 public class PhimListView extends JPanel {
     private final PhimController phimController;
+    private final KhachHangController khachHangController;
     private final BiConsumer<Integer, Integer> bookTicketCallback;
     private final String username;
     private final DatabaseConnection databaseConnection;
-    private JTextField searchField;
     private JPanel phimPanel;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     public PhimListView(PhimController phimController, BiConsumer<Integer, Integer> bookTicketCallback, String username) throws IOException {
         this.phimController = phimController;
+        this.khachHangController = new KhachHangController(new KhachHangService(new DatabaseConnection()));
         this.bookTicketCallback = bookTicketCallback;
         this.username = username;
         this.databaseConnection = new DatabaseConnection();
@@ -42,7 +43,7 @@ public class PhimListView extends JPanel {
     }
 
     private void initializeComponents() {
-        // Content panel (tiêu đề, tìm kiếm, danh sách phim)
+        // Content panel (tiêu đề, danh sách phim)
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setBackground(Color.WHITE);
@@ -54,36 +55,6 @@ public class PhimListView extends JPanel {
         titleLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         contentPanel.add(titleLabel);
-
-        // Ô tìm kiếm
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        searchPanel.setBackground(Color.WHITE);
-        searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        searchPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JLabel searchLabel = new JLabel("Tìm kiếm phim:");
-        searchField = new JTextField(20);
-        searchField.setPreferredSize(new Dimension(200, 30));
-        searchField.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                loadPhimList(searchField.getText().trim());
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                loadPhimList(searchField.getText().trim());
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                loadPhimList(searchField.getText().trim());
-            }
-        });
-
-        searchPanel.add(searchLabel);
-        searchPanel.add(searchField);
-        contentPanel.add(searchPanel);
 
         // Danh sách phim
         phimPanel = new JPanel(new GridBagLayout());
@@ -168,7 +139,12 @@ public class PhimListView extends JPanel {
         datVeButton.setForeground(Color.WHITE);
         datVeButton.setFont(new Font("Arial", Font.BOLD, 14));
         datVeButton.addActionListener(_ -> {
-            int maKhachHang = getMaKhachHangFromSession();
+            int maKhachHang = 0;
+            try {
+                maKhachHang = khachHangController.getMaKhachHangFromSession(username);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
             bookTicketCallback.accept(phim.getMaPhim(), maKhachHang);
         });
         datVeButton.addMouseListener(new MouseAdapter() {
@@ -257,7 +233,12 @@ public class PhimListView extends JPanel {
         datVeButton.setForeground(Color.WHITE);
         datVeButton.setFont(new Font("Arial", Font.BOLD, 14));
         datVeButton.addActionListener(_ -> {
-            int maKhachHang = getMaKhachHangFromSession();
+            int maKhachHang;
+            try {
+                maKhachHang = khachHangController.getMaKhachHangFromSession(username);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
             bookTicketCallback.accept(phim.getMaPhim(), maKhachHang);
             detailDialog.dispose();
         });
@@ -275,23 +256,5 @@ public class PhimListView extends JPanel {
         detailDialog.add(mainDetailPanel, BorderLayout.CENTER);
         detailDialog.add(datVeButton, BorderLayout.SOUTH);
         detailDialog.setVisible(true);
-    }
-
-    private int getMaKhachHangFromSession() {
-        try (Connection conn = databaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(
-                     "SELECT nd.maNguoiDung FROM NguoiDung nd JOIN TaiKhoan tk ON nd.maNguoiDung = tk.maNguoiDung " +
-                             "WHERE tk.tenDangNhap = ? AND nd.loaiNguoiDung = 'KhachHang'")) {
-            stmt.setString(1, username);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt("maNguoiDung");
-            }
-            throw new SQLException("Không tìm thấy khách hàng cho tài khoản: " + username);
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Lỗi khi lấy thông tin khách hàng: " + e.getMessage(),
-                    "Lỗi", JOptionPane.ERROR_MESSAGE);
-            throw new RuntimeException("Lỗi khi lấy maKhachHang: " + e.getMessage(), e);
-        }
     }
 }

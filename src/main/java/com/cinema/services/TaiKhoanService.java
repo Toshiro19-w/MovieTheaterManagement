@@ -14,14 +14,6 @@ public class TaiKhoanService {
         this.taiKhoanRepository = new TaiKhoanRepository(databaseConnection);
     }
 
-    public void saveResetTokenToDB(String email, String token) {
-        taiKhoanRepository.saveResetTokenToDB(email, token);
-    }
-
-    public boolean checkEmailExists(String email) {
-        return taiKhoanRepository.checkEmailExists(email);
-    }
-
     public void createTaiKhoan(TaiKhoan taiKhoan) throws SQLException {
         // Validate input
         if (taiKhoan.getTenDangNhap() == null || taiKhoan.getTenDangNhap().isEmpty()) {
@@ -48,5 +40,13 @@ public class TaiKhoanService {
 
         // tạo mật khẩu
         taiKhoanRepository.createTaiKhoan(taiKhoan);
+    }
+
+    public boolean verifyUserForPasswordReset(String username, String email, String phone) throws SQLException {
+        return taiKhoanRepository.verifyUser(username, email, phone);
+    }
+
+    public boolean updatePassword(String username, String hashedPassword) throws SQLException {
+        return taiKhoanRepository.updatePassword(username, hashedPassword);
     }
 }

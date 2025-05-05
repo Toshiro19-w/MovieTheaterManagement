@@ -89,4 +89,36 @@ public class TaiKhoanRepository implements ITaiKhoanRepository {
             return false;
         }
     }
+
+    public boolean verifyUser(String username, String email, String phone) throws SQLException {
+        String sql = "SELECT t.tenDangNhap FROM TaiKhoan t " +
+                "JOIN NguoiDung n ON t.maNguoiDung = n.maNguoiDung " +
+                "WHERE t.tenDangNhap = ? AND n.email = ? AND n.soDienThoai = ?";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            stmt.setString(2, email);
+            stmt.setString(3, phone);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi xác minh người dùng: " + e.getMessage());
+        }
+    }
+
+    public boolean updatePassword(String username, String hashedPassword) throws SQLException {
+        String sql = "UPDATE TaiKhoan SET matKhau = ? WHERE tenDangNhap = ?";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, hashedPassword);
+            stmt.setString(2, username);
+
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi cập nhật mật khẩu: " + e.getMessage());
+        }
+    }
 }
