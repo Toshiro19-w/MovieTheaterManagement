@@ -32,11 +32,9 @@ public class SuatChieuView extends JPanel {
     // PhongChieu components
     private JTable phongChieuTable;
     private DefaultTableModel phongChieuTableModel;
-    private final JTextField phongChieuSearchField;
     private Integer selectedMaPhong;
 
-    public SuatChieuView(JTextField phongChieuSearchField) throws SQLException {
-        this.phongChieuSearchField = phongChieuSearchField;
+    public SuatChieuView() throws SQLException {
         initializeDatabase();
         initializeUI();
         new SuatChieuController(this);
@@ -243,7 +241,5 @@ public class SuatChieuView extends JPanel {
     // Getters for PhongChieuController
     public JTable getPhongChieuTable() { return phongChieuTable; }
     public DefaultTableModel getPhongChieuTableModel() { return phongChieuTableModel; }
-    public JTextField getPhongChieuSearchField() { return phongChieuSearchField; }
-    public String getPhongChieuSearchText() { return phongChieuSearchField.getText(); }
     public Integer getSelectedMaPhong() { return selectedMaPhong; }
 }

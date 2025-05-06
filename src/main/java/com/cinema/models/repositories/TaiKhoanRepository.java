@@ -3,122 +3,179 @@ package com.cinema.models.repositories;
 import com.cinema.models.TaiKhoan;
 import com.cinema.models.repositories.Interface.ITaiKhoanRepository;
 import com.cinema.utils.DatabaseConnection;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.*;
-import java.time.LocalDateTime;
+import java.util.logging.Logger;
 
 public class TaiKhoanRepository implements ITaiKhoanRepository {
-    protected Connection conn;
-    protected DatabaseConnection dbConnection;
+    private static final Logger LOGGER = Logger.getLogger(TaiKhoanRepository.class.getName());
+    private final DatabaseConnection dbConnection;
 
     public TaiKhoanRepository(DatabaseConnection dbConnection) {
         if (dbConnection == null) {
             throw new IllegalArgumentException("DatabaseConnection cannot be null");
         }
         this.dbConnection = dbConnection;
-        try {
-            this.conn = dbConnection.getConnection();
-        } catch (SQLException e) {
-            throw new RuntimeException("Không thể lấy kết nối cơ sở dữ liệu", e);
-        }
-    }
-
-    @Override
-    public void saveResetTokenToDB(String email, String token) {
-        String sql = "INSERT INTO ResetToken (email, token, expiration_time) VALUES (?, ?, ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, email);
-            stmt.setString(2, token);
-            stmt.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now().plusMinutes(15))); // token có hiệu lực 15 phút
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public boolean checkEmailExists(String email) {
-        String query = "SELECT COUNT(*) FROM NguoiDung WHERE email = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setString(1, email);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt(1) > 0; // Trả về true nếu email tồn tại
-            }
-            return false;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Lỗi khi kiểm tra email: " + e.getMessage());
-        }
     }
 
     @Override
     public void createTaiKhoan(TaiKhoan taiKhoan) throws SQLException {
         String sql = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maNguoiDung) VALUES (?, ?, ?, ?)";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, taiKhoan.getTenDangNhap());
             pstmt.setString(2, taiKhoan.getMatKhau());
             pstmt.setString(3, taiKhoan.getLoaiTaiKhoan());
             pstmt.setInt(4, taiKhoan.getMaNguoiDung());
             pstmt.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.severe("Lỗi khi tạo tài khoản: " + e.getMessage());
+            throw e;
         }
     }
 
     @Override
     public boolean existsByTenDangNhap(String tenDangNhap) throws SQLException {
         String sql = "SELECT COUNT(*) FROM TaiKhoan WHERE tenDangNhap = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, tenDangNhap);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+                return false;
             }
-            return false;
+        } catch (SQLException e) {
+            LOGGER.severe("Lỗi khi kiểm tra tên đăng nhập: " + e.getMessage());
+            throw e;
         }
     }
 
     @Override
     public boolean existsByMaNguoiDung(Integer maNguoiDung) throws SQLException {
         String sql = "SELECT COUNT(*) FROM TaiKhoan WHERE maNguoiDung = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, maNguoiDung);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+                return false;
             }
-            return false;
+        } catch (SQLException e) {
+            LOGGER.severe("Lỗi khi kiểm tra mã người dùng: " + e.getMessage());
+            throw e;
         }
     }
 
-    public boolean verifyUser(String username, String email, String phone) {
+    public boolean verifyUser(String username, String email, String phone) throws SQLException {
         String sql = "SELECT t.tenDangNhap FROM TaiKhoan t " +
                 "JOIN NguoiDung n ON t.maNguoiDung = n.maNguoiDung " +
                 "WHERE t.tenDangNhap = ? AND n.email = ? AND n.soDienThoai = ?";
-
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, username);
             stmt.setString(2, email);
             stmt.setString(3, phone);
-
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next();
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Lỗi xác minh người dùng: " + e.getMessage());
+            LOGGER.severe("Lỗi xác minh người dùng: " + e.getMessage());
+            throw e;
         }
     }
 
-    public boolean updatePassword(String username, String hashedPassword) {
+    public boolean updatePassword(String username, String hashedPassword) throws SQLException {
         String sql = "UPDATE TaiKhoan SET matKhau = ? WHERE tenDangNhap = ?";
-
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, hashedPassword);
             stmt.setString(2, username);
-
             int rowsAffected = stmt.executeUpdate();
             return rowsAffected > 0;
         } catch (SQLException e) {
-            throw new RuntimeException("Lỗi cập nhật mật khẩu: " + e.getMessage());
+            LOGGER.severe("Lỗi cập nhật mật khẩu: " + e.getMessage());
+            throw e;
+        }
+    }
+
+    public int registerUser(String username, String fullName, String phone, String email, String password) throws SQLException {
+        // Kiểm tra tham số đầu vào
+        if (username == null || username.trim().isEmpty() ||
+                fullName == null || fullName.trim().isEmpty() ||
+                phone == null || phone.trim().isEmpty() ||
+                email == null || email.trim().isEmpty() ||
+                password == null || password.trim().isEmpty()) {
+            throw new IllegalArgumentException("Thông tin người dùng không được để trống");
+        }
+
+        try (Connection connection = dbConnection.getConnection()) {
+            connection.setAutoCommit(false);
+
+            // Kiểm tra username, email, và số điện thoại đã tồn tại
+            String checkSQL = "SELECT COUNT(*) FROM TaiKhoan WHERE tenDangNhap = ? " +
+                    "UNION SELECT COUNT(*) FROM NguoiDung WHERE email = ? " +
+                    "UNION SELECT COUNT(*) FROM NguoiDung WHERE soDienThoai = ?";
+            try (PreparedStatement checkStmt = connection.prepareStatement(checkSQL)) {
+                checkStmt.setString(1, username);
+                checkStmt.setString(2, email);
+                checkStmt.setString(3, phone);
+                try (ResultSet rs = checkStmt.executeQuery()) {
+                    while (rs.next()) {
+                        if (rs.getInt(1) > 0) {
+                            return -1; // Trùng lặp
+                        }
+                    }
+                }
+            }
+
+            // Thêm vào bảng NguoiDung
+            String insertNguoiDung = "INSERT INTO NguoiDung (hoTen, soDienThoai, email, loaiNguoiDung) VALUES (?, ?, ?, ?)";
+            int maNguoiDung;
+            try (PreparedStatement nguoiDungStmt = connection.prepareStatement(insertNguoiDung, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                nguoiDungStmt.setString(1, fullName);
+                nguoiDungStmt.setString(2, phone);
+                nguoiDungStmt.setString(3, email);
+                nguoiDungStmt.setString(4, "KhachHang");
+                nguoiDungStmt.executeUpdate();
+
+                try (ResultSet generatedKeys = nguoiDungStmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        maNguoiDung = generatedKeys.getInt(1);
+                    } else {
+                        throw new SQLException("Không thể lấy mã người dùng!");
+                    }
+                }
+            }
+
+            // Thêm vào bảng TaiKhoan
+            String insertTaiKhoan = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maNguoiDung) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement taiKhoanStmt = connection.prepareStatement(insertTaiKhoan)) {
+                taiKhoanStmt.setString(1, username);
+                taiKhoanStmt.setString(2, BCrypt.hashpw(password, BCrypt.gensalt(12)));
+                taiKhoanStmt.setString(3, "User");
+                taiKhoanStmt.setInt(4, maNguoiDung);
+                taiKhoanStmt.executeUpdate();
+            }
+
+            // Thêm vào bảng KhachHang
+            String insertKhachHang = "INSERT INTO KhachHang (maNguoiDung, diemTichLuy) VALUES (?, ?)";
+            try (PreparedStatement khachHangStmt = connection.prepareStatement(insertKhachHang)) {
+                khachHangStmt.setInt(1, maNguoiDung);
+                khachHangStmt.setInt(2, 0);
+                khachHangStmt.executeUpdate();
+            }
+
+            connection.commit();
+            return maNguoiDung;
+
+        } catch (SQLException ex) {
+            LOGGER.severe("Lỗi đăng ký người dùng: " + ex.getMessage());
+            throw ex;
         }
     }
 }
