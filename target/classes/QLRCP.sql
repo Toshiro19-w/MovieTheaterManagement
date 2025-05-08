@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS Ve (
     maVe INT AUTO_INCREMENT PRIMARY KEY,
     maSuatChieu INT NOT NULL,
     maPhong INT NOT NULL,
+    maRap int not null,
     soGhe NVARCHAR(5) NOT NULL,
     maHoaDon INT NULL,
     giaVe DECIMAL(10,2) CHECK (giaVe >= 0) NOT NULL,
@@ -130,6 +131,7 @@ CREATE TABLE IF NOT EXISTS Ve (
     FOREIGN KEY (maSuatChieu) REFERENCES SuatChieu(maSuatChieu) ON DELETE CASCADE,
     FOREIGN KEY (maHoaDon) REFERENCES HoaDon(maHoaDon) ON DELETE SET NULL,
     FOREIGN KEY (maPhong, soGhe) REFERENCES Ghe(maPhong, soGhe) ON DELETE NO ACTION,
+    foreign key (maRap) references RAPCHIEU(maRap),
     CONSTRAINT UQ_SuatChieu_SoGhe UNIQUE (maSuatChieu, soGhe)
 );
 
