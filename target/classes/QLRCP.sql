@@ -1,4 +1,4 @@
-﻿-- Active: 1746521847255@@127.0.0.1@3306@quanlyrcp
+-- Active: 1746521847255@@127.0.0.1@3306@quanlyrcp
 SET FOREIGN_KEY_CHECKS = 0;
 SET @tables = NULL;
 SELECT GROUP_CONCAT(table_schema, '.', table_name) INTO @tables
