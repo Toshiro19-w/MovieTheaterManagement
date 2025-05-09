@@ -1,9 +1,9 @@
-﻿-- lệnh xoá bảng và ràng buộc
+﻿-- Active: 1746521847255@@127.0.0.1@3306@quanlyrcp
 SET FOREIGN_KEY_CHECKS = 0;
 SET @tables = NULL;
 SELECT GROUP_CONCAT(table_schema, '.', table_name) INTO @tables
-    FROM information_schema.tables
-    WHERE table_schema = 'quanlyrcp';
+	FROM information_schema.tables 
+	WHERE table_schema = 'quanlyrcp';
 SET @tables = CONCAT('DROP TABLE ', @tables);
 PREPARE stmt FROM @tables;
 EXECUTE stmt;
@@ -27,6 +27,20 @@ CREATE TABLE IF NOT EXISTS KhachHang (
     diemTichLuy INT DEFAULT 0 CHECK (diemTichLuy >= 0),
     FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung) ON DELETE CASCADE
 );
+
+-- trigger tính điểm tích luỹ cho khách hàng
+DELIMITER //
+CREATE TRIGGER after_hoadon_insert
+AFTER INSERT ON HoaDon
+FOR EACH ROW
+BEGIN
+    IF NEW.maKhachHang IS NOT NULL THEN
+        UPDATE KhachHang
+        SET diemTichLuy = diemTichLuy + FLOOR(NEW.tongTien / 100000)
+        WHERE maNguoiDung = NEW.maKhachHang;
+    END IF;
+END //
+DELIMITER ;
 
 -- Tạo bảng NhanVien (thừa kế từ NguoiDung)
 CREATE TABLE IF NOT EXISTS NhanVien (
@@ -59,12 +73,139 @@ CREATE TABLE IF NOT EXISTS Phim (
     thoiLuong INT CHECK (thoiLuong > 0) NOT NULL,
     ngayKhoiChieu DATE NOT NULL,
     nuocSanXuat NVARCHAR(50) NOT NULL,
-    dinhDang NVARCHAR(20) NOT NULL,
+    kieuPhim NVARCHAR(20) NOT NULL,
     moTa TEXT,
     daoDien NVARCHAR(100) NOT NULL,
     duongDanPoster TEXT,
+    trangThai ENUM('active', 'deleted') DEFAULT 'active',
     FOREIGN KEY (maTheLoai) REFERENCES TheLoaiPhim(maTheLoai) ON DELETE CASCADE
 );
+
+-- Procedure xóa mềm phim
+DELIMITER //
+CREATE PROCEDURE SoftDeletePhim(IN p_maPhim INT)
+BEGIN
+    -- Cập nhật trạng thái phim thành deleted
+    UPDATE Phim 
+    SET trangThai = 'deleted'
+    WHERE maPhim = p_maPhim;
+    
+    -- Hủy các vé chưa thanh toán
+    UPDATE Ve
+    SET trangThai = 'cancelled'
+    WHERE maSuatChieu IN (
+        SELECT maSuatChieu 
+        FROM SuatChieu 
+        WHERE maPhim = p_maPhim
+    )
+    AND trangThai IN ('pending', 'booked');
+END //
+DELIMITER ;
+
+-- trigger kiểm tra trước khi xoá phim
+DELIMITER //
+CREATE TRIGGER before_delete_phim
+BEFORE DELETE ON Phim
+FOR EACH ROW
+BEGIN
+    -- Kiểm tra xem phim có vé đã bán không
+    DECLARE has_paid_tickets BOOLEAN;
+    
+    SELECT EXISTS(
+        SELECT 1 FROM Ve v
+        JOIN SuatChieu sc ON v.maSuatChieu = sc.maSuatChieu
+        WHERE sc.maPhim = OLD.maPhim
+        AND v.trangThai = 'paid'
+    ) INTO has_paid_tickets;
+    
+    IF has_paid_tickets THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Không thể xóa phim đã có vé bán. Hãy sử dụng soft delete.';
+    END IF;
+END //
+DELIMITER ;
+
+-- Procedure lấy danh sách phim đang chiếu
+DELIMITER //
+CREATE PROCEDURE GetActiveMovies()
+BEGIN
+    SELECT p.*, tl.tenTheLoai 
+    FROM Phim p
+    JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai
+    WHERE p.trangThai = 'active'
+    AND p.ngayKhoiChieu <= CURDATE();
+END //
+DELIMITER;
+
+-- Function tính tổng doanh thu theo phim
+DELIMITER //
+CREATE FUNCTION GetMovieRevenue(p_maPhim INT) 
+RETURNS DECIMAL(10,2)
+DETERMINISTIC
+BEGIN
+    DECLARE revenue DECIMAL(10,2);
+    
+    SELECT COALESCE(SUM(gv.giaVe), 0)
+    INTO revenue
+    FROM Phim p
+    LEFT JOIN SuatChieu sc ON p.maPhim = sc.maPhim
+    LEFT JOIN Ve v ON sc.maSuatChieu = v.maSuatChieu
+    LEFT JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
+    WHERE p.maPhim = p_maPhim
+    AND v.trangThai = 'paid';
+    
+    RETURN revenue;
+END //
+DELIMITER ;
+
+DROP FUNCTION GetMovieRevenue;
+
+-- Xem doanh thu của một phim cụ thể
+SELECT GetMovieRevenue(1) as DoanhThu;
+
+-- Xem doanh thu của tất cả các phim
+SELECT p.maPhim, p.tenPhim, GetMovieRevenue(p.maPhim) as DoanhThu
+FROM Phim p;
+
+-- View thống kê doanh thu theo phim
+CREATE OR REPLACE VIEW ThongKeDoanhThuPhim AS
+SELECT 
+    p.maPhim,
+    p.tenPhim,
+    COUNT(DISTINCT CASE WHEN v.trangThai = 'paid' THEN v.maVe END) as SoVeDaBan,
+    COALESCE(SUM(CASE WHEN v.trangThai = 'paid' THEN gv.giaVe END), 0) as DoanhThu,
+    COALESCE((
+        SELECT AVG(dg.diemDanhGia)
+        FROM DanhGia dg
+        WHERE dg.maPhim = p.maPhim
+    ), 0) as DiemDanhGiaTrungBinh
+FROM Phim p
+LEFT JOIN SuatChieu sc ON p.maPhim = sc.maPhim
+LEFT JOIN Ve v ON sc.maSuatChieu = v.maSuatChieu
+LEFT JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
+GROUP BY p.maPhim, p.tenPhim;
+
+SELECT * FROM thongkedoanhthuphim;
+
+-- View lịch chiếu phim
+CREATE VIEW LichChieuPhim AS
+SELECT 
+    p.maPhim,
+    p.tenPhim,
+    sc.maSuatChieu,
+    sc.ngayGioChieu,
+    pc.tenPhong,
+    pc.loaiPhong,
+    COUNT(v.maVe) as SoVeDaBan,
+    pc.soLuongGhe - COUNT(v.maVe) as SoGheConLai
+FROM Phim p
+JOIN SuatChieu sc ON p.maPhim = sc.maPhim
+JOIN PhongChieu pc ON sc.maPhong = pc.maPhong
+LEFT JOIN Ve v ON sc.maSuatChieu = v.maSuatChieu
+WHERE p.trangThai = 'active'
+GROUP BY p.maPhim, p.tenPhim, sc.maSuatChieu, sc.ngayGioChieu, pc.tenPhong;
+
+SELECT * FROM lichchieuphim;
 
 -- Tạo bảng PhongChieu
 CREATE TABLE IF NOT EXISTS PhongChieu (
@@ -78,9 +219,23 @@ CREATE TABLE IF NOT EXISTS PhongChieu (
 CREATE TABLE IF NOT EXISTS Ghe (
     maPhong INT NOT NULL,
     soGhe NVARCHAR(5) NOT NULL,
+    loaiGhe ENUM('Thuong', 'VIP') DEFAULT 'Thuong',
     PRIMARY KEY (maPhong, soGhe),
     FOREIGN KEY (maPhong) REFERENCES PhongChieu(maPhong) ON DELETE CASCADE
 );
+
+-- Procedure kiểm tra ghế trống
+DELIMITER //
+CREATE PROCEDURE CheckAvailableSeats(IN p_maSuatChieu INT)
+BEGIN
+    SELECT g.maPhong, g.soGhe, g.loaiGhe
+    FROM Ghe g
+    LEFT JOIN Ve v ON g.maPhong = v.maPhong 
+        AND g.soGhe = v.soGhe 
+        AND v.maSuatChieu = p_maSuatChieu
+    WHERE v.maVe IS NULL;
+END //
+DELIMITER ;
 
 -- Tạo bảng SuatChieu (thêm ràng buộc thời gian)
 CREATE TABLE IF NOT EXISTS SuatChieu (
@@ -93,6 +248,35 @@ CREATE TABLE IF NOT EXISTS SuatChieu (
     FOREIGN KEY (maPhong) REFERENCES PhongChieu(maPhong) ON DELETE CASCADE
 );
 
+-- Tránh xung đột thời gian giữa các suất chiếu
+DELIMITER //
+CREATE TRIGGER before_insert_suatchieu
+BEFORE INSERT ON SuatChieu
+FOR EACH ROW
+BEGIN
+    DECLARE phim_end_time DATETIME;
+    SELECT DATE_ADD(ngayGioChieu, INTERVAL p.thoiLuong MINUTE)
+    INTO phim_end_time
+    FROM Phim p
+    WHERE p.maPhim = NEW.maPhim;
+    
+    IF EXISTS (
+        SELECT 1
+        FROM SuatChieu sc
+        JOIN Phim p ON sc.maPhim = p.maPhim
+        WHERE sc.maPhong = NEW.maPhong
+        AND (
+            (NEW.ngayGioChieu BETWEEN sc.ngayGioChieu AND DATE_ADD(sc.ngayGioChieu, INTERVAL p.thoiLuong MINUTE))
+            OR (phim_end_time BETWEEN sc.ngayGioChieu AND DATE_ADD(sc.ngayGioChieu, INTERVAL p.thoiLuong MINUTE))
+            OR (NEW.ngayGioChieu < sc.ngayGioChieu AND phim_end_time > DATE_ADD(sc.ngayGioChieu, INTERVAL p.thoiLuong MINUTE))
+        )
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Phòng chiếu đã được sử dụng trong khoảng thời gian này.';
+    END IF;
+END //
+DELIMITER ;
+
 -- Tạo bảng HoaDon
 CREATE TABLE IF NOT EXISTS HoaDon (
     maHoaDon INT AUTO_INCREMENT PRIMARY KEY,
@@ -104,6 +288,40 @@ CREATE TABLE IF NOT EXISTS HoaDon (
     FOREIGN KEY (maKhachHang) REFERENCES KhachHang(maNguoiDung) ON DELETE SET NULL
 );
 
+-- Tạo trigger để tự động cập nhật tongTien trong HoaDon
+DELIMITER //
+CREATE TRIGGER after_ve_insert
+AFTER INSERT ON ChiTietHoaDon
+FOR EACH ROW
+BEGIN
+    UPDATE HoaDon h
+    SET tongTien = (
+        SELECT COALESCE(SUM(gv.giaVe), 0)
+        FROM ChiTietHoaDon cthd
+        JOIN Ve v ON cthd.maVe = v.maVe
+        JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
+        WHERE cthd.maHoaDon = NEW.maHoaDon
+        AND v.trangThai = 'paid'
+    )
+    WHERE h.maHoaDon = NEW.maHoaDon;
+END //
+
+CREATE TRIGGER after_ve_delete
+AFTER DELETE ON ChiTietHoaDon
+FOR EACH ROW
+BEGIN
+    UPDATE HoaDon h
+    SET tongTien = (
+        SELECT COALESCE(SUM(gv.giaVe), 0)
+        FROM ChiTietHoaDon cthd
+        JOIN Ve v ON cthd.maVe = v.maVe
+        JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
+        WHERE cthd.maHoaDon = OLD.maHoaDon
+    )
+    WHERE h.maHoaDon = OLD.maHoaDon;
+END//
+DELIMITER ;
+
 -- Tạo bảng Ve
 CREATE TABLE IF NOT EXISTS Ve (
     maVe INT AUTO_INCREMENT PRIMARY KEY,
@@ -111,12 +329,13 @@ CREATE TABLE IF NOT EXISTS Ve (
     maPhong INT NOT NULL,
     soGhe NVARCHAR(5) NOT NULL,
     maHoaDon INT NULL,
-    giaVe DECIMAL(10,2) CHECK (giaVe >= 0) NOT NULL,
+    maGiaVe INT NOT NULL,
     trangThai ENUM('booked', 'paid', 'cancelled', 'pending') NOT NULL,
     ngayDat DATETIME NULL,
     FOREIGN KEY (maSuatChieu) REFERENCES SuatChieu(maSuatChieu) ON DELETE CASCADE,
     FOREIGN KEY (maHoaDon) REFERENCES HoaDon(maHoaDon) ON DELETE SET NULL,
     FOREIGN KEY (maPhong, soGhe) REFERENCES Ghe(maPhong, soGhe) ON DELETE NO ACTION,
+    FOREIGN KEY (maGiaVe) REFERENCES GiaVe(maGiaVe),
     CONSTRAINT UQ_SuatChieu_SoGhe UNIQUE (maSuatChieu, soGhe)
 );
 
@@ -127,6 +346,39 @@ CREATE TABLE IF NOT EXISTS ChiTietHoaDon (
     PRIMARY KEY (maHoaDon, maVe),
     FOREIGN KEY (maHoaDon) REFERENCES HoaDon(maHoaDon) ON DELETE CASCADE,
     FOREIGN KEY (maVe) REFERENCES Ve(maVe) ON DELETE CASCADE
+);
+
+-- Tạo bảng GiaVe
+CREATE TABLE IF NOT EXISTS GiaVe (
+    maGiaVe INT AUTO_INCREMENT PRIMARY KEY,
+    loaiGhe ENUM('Thuong', 'VIP') NOT NULL,
+    ngayApDung DATE NOT NULL,
+    giaVe DECIMAL(10,2) NOT NULL,
+    ghiChu TEXT
+);
+
+-- Thêm bảng KhuyenMai
+CREATE TABLE IF NOT EXISTS KhuyenMai (
+    maKhuyenMai INT AUTO_INCREMENT PRIMARY KEY,
+    tenKhuyenMai NVARCHAR(100) NOT NULL,
+    moTa TEXT,
+    phanTramGiam INT CHECK (phanTramGiam BETWEEN 0 AND 100),
+    ngayBatDau DATE NOT NULL,
+    ngayKetThuc DATE NOT NULL,
+    CHECK (ngayKetThuc >= ngayBatDau);
+    dieuKienApDung TEXT
+);
+
+-- Thêm bảng DanhGia để lưu feedback của khách hàng
+CREATE TABLE IF NOT EXISTS DanhGia (
+    maDanhGia INT AUTO_INCREMENT PRIMARY KEY,
+    maPhim INT NOT NULL,
+    maNguoiDung INT NOT NULL,
+    diemDanhGia INT CHECK (diemDanhGia BETWEEN 1 AND 5),
+    nhanXet TEXT,
+    ngayDanhGia DATETIME DEFAULT NOW(),
+    FOREIGN KEY (maPhim) REFERENCES Phim(maPhim),
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung)
 );
 
 INSERT INTO NguoiDung (hoTen, soDienThoai, email, loaiNguoiDung) VALUES
@@ -185,17 +437,17 @@ INSERT INTO TheLoaiPhim (tenTheLoai) VALUES
 ('Cổ trang');
 
 -- Dữ liệu cho bảng Phim
-INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien, duongDanPoster) VALUES
-('Fast & Furious 9', 1, 143, '2021-06-25', 'Mỹ', '2D', 'Phim hành động tốc độ cao', 'Justin Lin', 'FastAndFurious.jpg'),
-('Titanic', 2, 195, '1997-12-19', 'Mỹ', '3D', 'Tình yêu trên tàu định mệnh', 'James Cameron', 'Titanic.jpg'),
-('The Conjuring', 3, 112, '2013-07-19', 'Mỹ', '2D', 'Kinh dị dựa trên sự kiện có thật', 'James Wan', 'TheConjuring.jpg'),
-('Home Alone', 4, 103, '1990-11-16', 'Mỹ', '2D', 'Hài hước mùa Giáng sinh', 'Chris Columbus', 'HomeAlone.jpg'),
-('Interstellar', 5, 169, '2014-11-07', 'Mỹ', 'IMAX', 'Hành trình khám phá vũ trụ', 'Christopher Nolan', 'Interstellar.jpg'),
-('Coco', 6, 105, '2017-11-22', 'Mỹ', '3D', 'Hành trình âm nhạc gia đình', 'Lee Unkrich', 'Coco.jpg'),
-('Joker', 7, 122, '2019-10-04', 'Mỹ', '2D', 'Tâm lý tội phạm', 'Todd Phillips', 'Joker.jpg'),
-('Avatar', 8, 162, '2009-12-18', 'Mỹ', '3D', 'Phiêu lưu trên Pandora', 'James Cameron', 'Avatar.jpg'),
-('Planet Earth', 9, 60, '2006-03-05', 'Anh', '2D', 'Tài liệu về thiên nhiên', 'Alastair Fothergill', 'PlanetEarth.jpg'),
-('Tam Quốc Diễn Nghĩa', 10, 120, '1994-01-01', 'Trung Quốc', '2D', 'Lịch sử cổ trang', 'Wang Fulin', 'TamQuocDienNghia.jpg');
+INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, kieuPhim, moTa, daoDien, duongDanPoster) VALUES
+('Avatar 3', 8, 180, '2025-01-20', 'Mỹ', '3D IMAX', 'Phần tiếp theo của Avatar', 'James Cameron', 'Avatar3.jpg'),
+('Mission: Impossible 8', 1, 150, '2025-05-23', 'Mỹ', 'IMAX', 'Nhiệm vụ bất khả thi mới', 'Christopher McQuarrie', 'MI8.jpg'),
+('The Batman 2', 1, 165, '2025-10-03', 'Mỹ', 'IMAX', 'Phần tiếp theo của Batman', 'Matt Reeves', 'Batman2.jpg'),
+('Fantastic Beasts 4', 8, 140, '2025-07-15', 'Mỹ', '3D', 'Phần mới của Sinh vật huyền bí', 'David Yates', 'FB4.jpg'),
+('Captain America 4', 1, 155, '2025-03-14', 'Mỹ', 'IMAX', 'Cuộc phiêu lưu mới của Captain America', 'Julius Onah', 'Cap4.jpg'),
+('Deadpool 3', 1, 130, '2025-07-26', 'Mỹ', 'IMAX', 'Deadpool trở lại với Wolverine', 'Shawn Levy', 'Deadpool3.jpg'),
+('Joker 2', 7, 138, '2025-10-04', 'Mỹ', 'IMAX', 'Phần tiếp theo của Joker', 'Todd Phillips', 'Joker2.jpg'),
+('Spider-Man 4', 1, 145, '2025-06-27', 'Mỹ', 'IMAX', 'Cuộc phiêu lưu mới của Spider-Man', 'Jon Watts', 'SpiderMan4.jpg'),
+('The Matrix 5', 5, 160, '2025-08-22', 'Mỹ', 'IMAX', 'Phần tiếp theo của The Matrix', 'Lana Wachowski', 'Matrix5.jpg'),
+('Black Panther 3', 1, 150, '2025-11-07', 'Mỹ', 'IMAX', 'Phần tiếp theo của Black Panther', 'Ryan Coogler', 'BP3.jpg');
 
 -- Dữ liệu cho bảng PhongChieu
 INSERT INTO PhongChieu (tenPhong, soLuongGhe, loaiPhong) VALUES
@@ -234,43 +486,102 @@ INSERT INTO Ghe (maPhong, soGhe) VALUES
 
 -- Dữ liệu cho bảng SuatChieu
 INSERT INTO SuatChieu (maPhim, maPhong, ngayGioChieu) VALUES
-(1, 1, '2025-04-06 14:00:00'),
-(2, 2, '2025-04-06 16:00:00'),
-(3, 3, '2025-04-06 20:00:00'),
-(4, 4, '2025-04-07 10:00:00'),
-(5, 5, '2025-04-07 15:00:00'),
-(6, 1, '2025-04-07 17:00:00'), -- Coco
-(7, 2, '2025-04-07 19:00:00'), -- Joker
-(8, 3, '2025-04-07 21:00:00'), -- Avatar
-(9, 4, '2025-04-08 14:00:00'), -- Planet Earth
-(10, 5, '2025-04-08 16:00:00'); -- Tam Quốc Diễn Nghĩa
+(1, 1, '2025-01-20 10:00:00'), -- Avatar 3
+(1, 2, '2025-01-20 14:00:00'), -- Avatar 3
+(2, 3, '2025-05-23 10:00:00'), -- Mission: Impossible 8
+(2, 4, '2025-05-23 14:00:00'), -- Mission: Impossible 8
+(3, 5, '2025-10-03 10:00:00'), -- The Batman 2
+(3, 1, '2025-10-03 14:00:00'), -- The Batman 2
+(4, 2, '2025-07-15 10:00:00'), -- Fantastic Beasts 4
+(4, 3, '2025-07-15 14:00:00'), -- Fantastic Beasts 4
+(5, 4, '2025-03-14 10:00:00'), -- Captain America 4
+(5, 5, '2025-03-14 14:00:00'), -- Captain America 4
+(6, 1, '2025-07-26 10:00:00'), -- Deadpool 3
+(6, 2, '2025-07-26 14:00:00'), -- Deadpool 3
+(7, 3, '2025-10-04 10:00:00'), -- Joker 2
+(7, 4, '2025-10-04 14:00:00'), -- Joker 2
+(8, 5, '2025-06-27 10:00:00'), -- Spider-Man 4
+(8, 1, '2025-06-27 14:00:00'), -- Spider-Man 4
+(9, 2, '2025-08-22 10:00:00'), -- The Matrix 5
+(9, 3, '2025-08-22 14:00:00'), -- The Matrix 5
+(10, 4, '2025-11-07 10:00:00'), -- Black Panther 3
+(10, 5, '2025-11-07 14:00:00'); -- Black Panther 3
 
 -- Dữ liệu cho bảng HoaDon
 INSERT INTO HoaDon (maNhanVien, maKhachHang, ngayLap, tongTien) VALUES
-(3, 1, '2025-04-05 10:00:00', 150000.00),
-(4, 2, '2025-04-05 12:00:00', 200000.00),
-(NULL, 5, '2025-04-05 14:00:00', 100000.00),
-(6, 7, '2025-04-05 16:00:00', 300000.00),
-(8, 9, '2025-04-05 18:00:00', 250000.00);
+(3, 1, '2025-01-15 09:00:00', 330000.00),  -- 3 vé thường
+(4, 2, '2025-01-15 10:00:00', 440000.00),  -- 2 vé VIP
+(6, 3, '2025-01-15 13:00:00', 440000.00),  -- 2 vé VIP
+(8, 1, '2025-01-15 14:00:00', 220000.00),  -- 1 vé VIP
+(10, 2, '2025-01-15 16:00:00', 220000.00); -- 2 vé thường
 
 -- Dữ liệu cho bảng Vechitiethoadon
-INSERT INTO Ve (maSuatChieu, maPhong, soGhe, maHoaDon, giaVe, trangThai, ngayDat) VALUES
-(1, 1, 'A1', 1, 75000.00, 'paid', '2025-04-05 09:00:00'),
-(1, 1, 'A2', 1, 75000.00, 'paid', '2025-04-05 09:00:00'),
-(2, 2, 'A1', 2, 100000.00, 'paid', '2025-04-05 11:00:00'),
-(3, 3, 'A1', 3, 100000.00, 'paid', '2025-04-05 13:00:00'),
-(4, 4, 'A1', 4, 150000.00, 'paid', '2025-04-05 15:00:00'),
-(5, 5, 'A1', 5, 125000.00, 'paid', '2025-04-05 17:00:00'),
-(1, 1, 'B1', NULL, 75000.00, 'booked', '2025-04-05 11:00:00'),
-(2, 2, 'A2', NULL, 100000.00, 'booked', '2025-04-05 10:00:00'),
-(3, 3, 'B1', NULL, 100000.00, 'pending', '2025-04-05 12:00:00'),
-(5, 5, 'A2', NULL, 125000.00, 'cancelled', '2025-04-05 14:00:00');
+INSERT INTO Ve (maSuatChieu, maPhong, soGhe, maHoaDon, maGiaVe, trangThai, ngayDat) VALUES
+-- Suất chiếu Avatar 3
+(1, 1, 'A1', 1, 1, 'paid', '2025-01-15 09:00:00'),
+(1, 1, 'A2', 1, 1, 'paid', '2025-01-15 09:00:00'),
+(1, 1, 'A3', 1, 1, 'paid', '2025-01-15 09:00:00'),
+(1, 1, 'B1', 2, 2, 'paid', '2025-01-15 10:00:00'),
+(1, 1, 'B2', 2, 2, 'paid', '2025-01-15 10:00:00'),
+(1, 1, 'C1', NULL, 1, 'booked', '2025-01-15 11:00:00'),
+(1, 1, 'C2', NULL, 1, 'pending', '2025-01-15 11:00:00'),
+
+-- Suất chiếu Mission: Impossible 8
+(2, 3, 'A1', 3, 2, 'paid', '2025-01-15 13:00:00'),
+(2, 3, 'A2', 3, 2, 'paid', '2025-01-15 13:00:00'),
+(2, 3, 'B1', 4, 2, 'paid', '2025-01-15 14:00:00'),
+(2, 3, 'B2', NULL, 2, 'booked', '2025-01-15 15:00:00'),
+(2, 3, 'C1', NULL, 2, 'pending', '2025-01-15 15:00:00'),
+
+-- Suất chiếu The Batman 2
+(3, 5, 'A1', 5, 1, 'paid', '2025-01-15 16:00:00'),
+(3, 5, 'A2', 5, 1, 'paid', '2025-01-15 16:00:00'),
+(3, 5, 'B1', NULL, 2, 'booked', '2025-01-15 17:00:00'),
+(3, 5, 'B2', NULL, 2, 'cancelled', '2025-01-15 17:00:00'),
+(3, 5, 'C1', NULL, 1, 'pending', '2025-01-15 18:00:00');
 
 -- Dữ liệu cho bảng ChiTietHoaDon
 INSERT INTO ChiTietHoaDon (maHoaDon, maVe) VALUES
-(1, 1),
-(1, 2),
-(2, 3),
-(3, 4),
-(4, 5),
-(5, 6);
+(1, 1), (1, 2), (1, 3),           -- Hóa đơn 1: 3 vé
+(2, 4), (2, 5),                   -- Hóa đơn 2: 2 vé
+(3, 8), (3, 9),                   -- Hóa đơn 3: 2 vé
+(4, 10),                          -- Hóa đơn 4: 1 vé
+(5, 12), (5, 13);                 -- Hóa đơn 5: 2 vé
+
+-- Dữ liệu cho bảng GiaVe
+INSERT INTO GiaVe (loaiGhe, ngayApDung, giaVe, ghiChu) VALUES
+('Thuong', '2025-01-01', 110000.00, 'Giá vé thường 2025'),
+('VIP', '2025-01-01', 220000.00, 'Giá vé VIP 2025'),
+('Thuong', '2025-02-01', 120000.00, 'Tết 2025'),
+('VIP', '2025-02-01', 240000.00, 'Tết 2025');
+
+-- Dữ liệu cho bảng KhuyenMai
+INSERT INTO KhuyenMai (tenKhuyenMai, moTa, phanTramGiam, ngayBatDau, ngayKetThuc, dieuKienApDung) VALUES
+('Tết Nguyên Đán 2025', 'Ưu đãi đặc biệt dịp Tết', 25, '2025-02-01', '2025-02-07', 'Áp dụng cho tất cả các suất chiếu'),
+('Mùa hè 2025', 'Khuyến mãi mùa hè', 20, '2025-06-01', '2025-08-31', 'Áp dụng cho học sinh, sinh viên'),
+('Sinh nhật rạp 2025', 'Kỷ niệm thành lập', 30, '2025-07-01', '2025-07-07', 'Áp dụng cho thành viên');
+
+-- Dữ liệu cho bảng DanhGia
+INSERT INTO DanhGia (maPhim, maNguoiDung, diemDanhGia, nhanXet, ngayDanhGia) VALUES
+(1, 1, 5, 'Phim hay, hiệu ứng đẹp', '2025-01-15 20:30:00'),
+(1, 2, 4, 'Phim hấp dẫn, diễn viên đóng tốt', '2025-01-16 21:00:00'),
+(2, 1, 5, 'Phim hành động xuất sắc', '2025-01-17 19:45:00'),
+(2, 3, 3, 'Phim dài hơi', '2025-01-18 22:15:00'),
+(3, 2, 4, 'Phim siêu anh hùng đúng chất', '2025-01-19 20:00:00'),
+(3, 3, 5, 'Hiệu ứng đặc biệt tuyệt vời', '2025-01-20 21:30:00'),
+(4, 1, 4, 'Phim phiêu lưu hấp dẫn', '2025-01-21 19:00:00'),
+(4, 2, 5, 'Phim phù hợp với mọi lứa tuổi', '2025-01-22 20:45:00'),
+(5, 3, 5, 'Phim siêu anh hùng xuất sắc', '2025-01-23 21:15:00'),
+(5, 1, 4, 'Hiệu ứng đặc biệt ấn tượng', '2025-01-24 22:00:00'),
+(6, 2, 5, 'Hài hước và hành động xuất sắc', '2025-01-25 20:30:00'),
+(6, 3, 4, 'Deadpool trở lại ấn tượng', '2025-01-26 21:00:00'),
+(7, 1, 5, 'Diễn xuất xuất sắc của Joaquin Phoenix', '2025-01-27 19:45:00'),
+(7, 2, 4, 'Phim tâm lý đỉnh cao', '2025-01-28 22:15:00'),
+(8, 3, 5, 'Spider-Man mới thú vị', '2025-01-29 20:00:00'),
+(8, 1, 4, 'Hiệu ứng đặc biệt ấn tượng', '2025-01-30 21:30:00'),
+(9, 2, 5, 'The Matrix trở lại hoành tráng', '2025-01-31 19:00:00'),
+(9, 3, 4, 'Phim khoa học viễn tưởng xuất sắc', '2025-02-01 20:45:00'),
+(10, 1, 5, 'Black Panther mới ấn tượng', '2025-02-02 21:15:00'),
+(10, 2, 4, 'Phim siêu anh hùng đỉnh cao', '2025-02-03 22:00:00');
+
+SELECT * FROM TaiKhoan;

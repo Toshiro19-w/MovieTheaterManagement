@@ -1,11 +1,13 @@
 package com.cinema.services;
 
+import java.sql.SQLException;
+
+import org.mindrot.jbcrypt.BCrypt;
+
 import com.cinema.models.TaiKhoan;
 import com.cinema.models.repositories.TaiKhoanRepository;
 import com.cinema.utils.DatabaseConnection;
-import org.mindrot.jbcrypt.BCrypt;
-
-import java.sql.SQLException;
+import com.cinema.utils.ValidationUtils;
 
 public class TaiKhoanService {
     private final TaiKhoanRepository taiKhoanRepository;
@@ -48,5 +50,35 @@ public class TaiKhoanService {
 
     public boolean updatePassword(String username, String hashedPassword) throws SQLException {
         return taiKhoanRepository.updatePassword(username, hashedPassword);
+    }
+
+    public boolean authenticateUser(String username, String password) throws SQLException {
+        if (!ValidationUtils.isValidUsername(username) || !ValidationUtils.isValidPassword(password)) {
+            return false;
+        }
+        return taiKhoanRepository.authenticateUser(username, password);
+    }
+
+    public TaiKhoan getTaiKhoanByUsername(String username) throws SQLException {
+        if (!ValidationUtils.isValidUsername(username)) {
+            throw new IllegalArgumentException("Username không hợp lệ");
+        }
+        return taiKhoanRepository.findByUsername(username);
+    }
+
+    public int handleRegistration(String username, String fullName, String phone, String email, String password) throws SQLException {
+        // Validate input
+        if (!ValidationUtils.isValidString(username) || !ValidationUtils.isValidString(fullName) ||
+            !ValidationUtils.isValidPhoneNumber(phone) || !ValidationUtils.isValidEmail(email) ||
+            !ValidationUtils.isValidPassword(password)) {
+            throw new IllegalArgumentException("Dữ liệu đầu vào không hợp lệ");
+        }
+
+        // Check if username already exists
+        if (taiKhoanRepository.existsByTenDangNhap(username)) {
+            throw new IllegalArgumentException("Username đã tồn tại");
+        }
+
+        return taiKhoanRepository.registerUser(username, fullName, phone, email, password);
     }
 }

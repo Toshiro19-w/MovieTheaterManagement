@@ -1,8 +1,8 @@
 package com.cinema;
 
-import com.cinema.views.login.LoginView;
+import javax.swing.SwingUtilities;
 
-import javax.swing.*;
+import com.cinema.views.login.LoginView;
 
 public class App {
     public static void main(String[] args){

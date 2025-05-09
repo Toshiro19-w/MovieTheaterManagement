@@ -1,5 +1,24 @@
 package com.cinema.views;
 
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.SQLException;
+
+import javax.swing.BorderFactory;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+
 import com.cinema.controllers.DatVeController;
 import com.cinema.controllers.PaymentController;
 import com.cinema.controllers.PhimController;
@@ -11,15 +30,10 @@ import com.cinema.services.SuatChieuService;
 import com.cinema.services.VeService;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.PermissionManager;
-import com.cinema.views.admin.*;
+import com.cinema.views.admin.AdminViewManager;
+import com.cinema.views.admin.PhimView;
 import com.cinema.views.login.LoginView;
 import com.formdev.flatlaf.FlatLightLaf;
-
-import javax.swing.*;
-import java.awt.*;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.sql.SQLException;
 
 public class MainView extends JFrame {
     private final String username;
@@ -80,6 +94,8 @@ public class MainView extends JFrame {
                     SwingUtilities.invokeLater(() -> new LoginView().setVisible(true));
                 }
         );
+        headerPanel.setBackground(new Color(0, 123, 255)); // Modern blue header
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         add(headerPanel, BorderLayout.NORTH);
 
         // Main content
@@ -95,15 +111,16 @@ public class MainView extends JFrame {
             PhimListView phimListView = new PhimListView(phimController, this::openBookingView, username);
             mainContentPanel.add(phimListView, BorderLayout.CENTER);
         }
+        mainContentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         add(mainContentPanel, BorderLayout.CENTER);
 
         // Footer
         if (permissionManager.isUser()) {
             JPanel footerPanel = new JPanel();
             footerPanel.setPreferredSize(new Dimension(1280, 50));
-            footerPanel.setBackground(new Color(0, 48, 135));
+            footerPanel.setBackground(new Color(33, 37, 41)); // Dark footer
             JLabel footerLabel = new JLabel("© 2025 Cinema App - Liên hệ: contact@cinema.com", SwingConstants.CENTER);
-            footerLabel.setForeground(Color.WHITE);
+            footerLabel.setForeground(Color.LIGHT_GRAY);
             footerLabel.setFont(new Font("Arial", Font.PLAIN, 14));
             footerPanel.add(footerLabel);
             add(footerPanel, BorderLayout.SOUTH);
