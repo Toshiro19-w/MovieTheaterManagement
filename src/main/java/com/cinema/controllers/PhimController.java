@@ -1,13 +1,6 @@
 package com.cinema.controllers;
 
-import com.cinema.models.Phim;
-import com.cinema.services.PhimService;
-import com.cinema.views.admin.PhimView;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableRowSorter;
-import java.awt.*;
+import java.awt.Image;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.sql.SQLException;
@@ -16,6 +9,16 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Objects;
+
+import javax.swing.ImageIcon;
+import javax.swing.JOptionPane;
+import javax.swing.RowFilter;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
+
+import com.cinema.models.Phim;
+import com.cinema.services.PhimService;
+import com.cinema.views.admin.PhimView;
 
 public class PhimController {
     private final PhimView view;
@@ -67,10 +70,10 @@ public class PhimController {
             }
         });
 
-        view.getBtnThem().addActionListener(e -> themPhim());
-        view.getBtnSua().addActionListener(e -> suaPhim());
-        view.getBtnXoa().addActionListener(e -> xoaPhim());
-        view.getBtnClear().addActionListener(e -> clearForm());
+        view.getBtnThem().addActionListener(_ -> themPhim());
+        view.getBtnSua().addActionListener(_ -> suaPhim());
+        view.getBtnXoa().addActionListener(_ -> xoaPhim());
+        view.getBtnClear().addActionListener(_ -> clearForm());
     }
 
     public void timKiemPhim() {

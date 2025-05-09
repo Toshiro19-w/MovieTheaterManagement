@@ -1,22 +1,20 @@
 package com.cinema.views.admin;
 
-import com.cinema.enums.LoaiTaiKhoan;
-import com.cinema.utils.PermissionManager;
-
-import javax.swing.*;
-import java.awt.*;
+import java.awt.CardLayout;
 import java.io.IOException;
 import java.sql.SQLException;
+
+import javax.swing.JPanel;
+
+import com.cinema.enums.LoaiTaiKhoan;
+import com.cinema.utils.PermissionManager;
 
 public class AdminViewManager {
     private final PermissionManager permissionManager;
     private final JPanel mainContentPanel;
-    private final CardLayout cardLayout;
-
     public AdminViewManager(LoaiTaiKhoan loaiTaiKhoan, JPanel mainContentPanel, CardLayout cardLayout) {
         this.permissionManager = new PermissionManager(loaiTaiKhoan);
         this.mainContentPanel = mainContentPanel;
-        this.cardLayout = cardLayout;
     }
 
     public void initializeAdminPanels() throws IOException, SQLException {

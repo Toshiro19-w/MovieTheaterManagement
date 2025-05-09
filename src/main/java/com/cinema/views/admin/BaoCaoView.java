@@ -1,18 +1,7 @@
 package com.cinema.views.admin;
 
-import com.cinema.controllers.BaoCaoController;
-import com.cinema.models.BaoCao;
-import com.cinema.services.BaoCaoService;
-import com.cinema.utils.DatabaseConnection;
-import com.cinema.utils.ValidationUtils;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.xssf.usermodel.*;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -20,6 +9,30 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.table.DefaultTableModel;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import com.cinema.controllers.BaoCaoController;
+import com.cinema.models.BaoCao;
+import com.cinema.services.BaoCaoService;
+import com.cinema.utils.DatabaseConnection;
+import com.cinema.utils.ValidationUtils;
 public class BaoCaoView extends JPanel {
     private DatabaseConnection databaseConnection;
     private BaoCaoController controller;
@@ -66,7 +79,7 @@ public class BaoCaoView extends JPanel {
 
         // Sự kiện
         xemButton.addActionListener(_ -> xemBaoCao());
-        xuatfileButton.addActionListener(e -> xuatFile());
+        xuatfileButton.addActionListener(_ -> xuatFile());
 
         // Thêm các thành phần vào panel
         add(timePanel, BorderLayout.NORTH);
@@ -129,52 +142,46 @@ public class BaoCaoView extends JPanel {
     }
 
     private void exportToExcel(File file) throws IOException {
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("Báo cáo Doanh thu");
-
-        // Tạo style cho header
-        CellStyle headerStyle = workbook.createCellStyle();
-        Font headerFont = workbook.createFont();
-        headerFont.setBold(true);
-        headerStyle.setFont(headerFont);
-
-        // Ghi header
-        Row headerRow = sheet.createRow(0);
-        for (int col = 0; col < tableModel.getColumnCount(); col++) {
-            Cell cell = headerRow.createCell(col);
-            cell.setCellValue(tableModel.getColumnName(col));
-            cell.setCellStyle(headerStyle);
-        }
-
-        // Ghi dữ liệu
-        for (int row = 0; row < tableModel.getRowCount(); row++) {
-            Row dataRow = sheet.createRow(row + 1);
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Báo cáo Doanh thu");
+            // Tạo style cho header
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+            // Ghi header
+            Row headerRow = sheet.createRow(0);
             for (int col = 0; col < tableModel.getColumnCount(); col++) {
-                Cell cell = dataRow.createCell(col);
-                Object value = tableModel.getValueAt(row, col);
-
-                if (value instanceof String) {
-                    cell.setCellValue((String) value);
-                } else if (value instanceof Integer) {
-                    cell.setCellValue((Integer) value);
-                } else if (value instanceof Double) {
-                    cell.setCellValue((Double) value);
-                } else if (value != null) {
-                    cell.setCellValue(value.toString()); // fallback cho các kiểu khác
+                Cell cell = headerRow.createCell(col);
+                cell.setCellValue(tableModel.getColumnName(col));
+                cell.setCellStyle(headerStyle);
+            }
+            // Ghi dữ liệu
+            for (int row = 0; row < tableModel.getRowCount(); row++) {
+                Row dataRow = sheet.createRow(row + 1);
+                for (int col = 0; col < tableModel.getColumnCount(); col++) {
+                    Cell cell = dataRow.createCell(col);
+                    Object value = tableModel.getValueAt(row, col);
+                    
+                    if (value instanceof String) {
+                        cell.setCellValue((String) value);
+                    } else if (value instanceof Integer) {
+                        cell.setCellValue((Integer) value);
+                    } else if (value instanceof Double) {
+                        cell.setCellValue((Double) value);
+                    } else if (value != null) {
+                        cell.setCellValue(value.toString()); // fallback cho các kiểu khác
+                    }
                 }
             }
+            // Tự động căn chỉnh độ rộng cột
+            for (int col = 0; col < tableModel.getColumnCount(); col++) {
+                sheet.autoSizeColumn(col);
+            }
+            // Ghi ra file
+            try (FileOutputStream fileOut = new FileOutputStream(file)) {
+                workbook.write(fileOut);
+            }
         }
-
-        // Tự động căn chỉnh độ rộng cột
-        for (int col = 0; col < tableModel.getColumnCount(); col++) {
-            sheet.autoSizeColumn(col);
-        }
-
-        // Ghi ra file
-        try (FileOutputStream fileOut = new FileOutputStream(file)) {
-            workbook.write(fileOut);
-        }
-
-        workbook.close();
     }
 }

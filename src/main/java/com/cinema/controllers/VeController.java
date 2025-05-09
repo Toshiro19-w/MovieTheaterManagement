@@ -1,14 +1,5 @@
 package com.cinema.controllers;
 
-import com.cinema.models.KhachHang;
-import com.cinema.enums.TrangThaiVe;
-import com.cinema.models.Ve;
-import com.cinema.services.VeService;
-import com.cinema.utils.ValidationUtils;
-import com.cinema.views.admin.VeView;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,6 +10,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+
+import com.cinema.enums.TrangThaiVe;
+import com.cinema.models.KhachHang;
+import com.cinema.models.Ve;
+import com.cinema.services.VeService;
+import com.cinema.utils.ValidationUtils;
+import com.cinema.views.admin.VeView;
 
 public class VeController {
     private final VeView view;
@@ -43,7 +44,7 @@ public class VeController {
     }
 
     private void addListeners() {
-        view.getSearchField().addActionListener(e -> searchVe());
+        view.getSearchField().addActionListener(_ -> searchVe());
         view.getTable().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = view.getTable().getSelectedRow();
@@ -54,10 +55,10 @@ public class VeController {
                 }
             }
         });
-        view.getBtnThem().addActionListener(e -> themVe());
-        view.getBtnSua().addActionListener(e -> suaVe());
-        view.getBtnXoa().addActionListener(e -> xoaVe());
-        view.getBtnClear().addActionListener(e -> clearForm());
+        view.getBtnThem().addActionListener(_ -> themVe());
+        view.getBtnSua().addActionListener(_ -> suaVe());
+        view.getBtnXoa().addActionListener(_ -> xoaVe());
+        view.getBtnClear().addActionListener(_ -> clearForm());
     }
 
     private void loadVeList(List<Ve> veList) {
