@@ -1,12 +1,11 @@
 package com.cinema.services;
 
+import java.sql.SQLException;
+import java.util.List;
+
 import com.cinema.models.SuatChieu;
 import com.cinema.models.repositories.SuatChieuRepository;
 import com.cinema.utils.DatabaseConnection;
-
-import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.util.List;
 
 public class SuatChieuService {
     private final SuatChieuRepository suatChieuRepository;

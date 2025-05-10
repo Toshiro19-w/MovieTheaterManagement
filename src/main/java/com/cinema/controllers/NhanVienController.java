@@ -1,21 +1,20 @@
 package com.cinema.controllers;
 
-import com.cinema.enums.LoaiNguoiDung;
-import com.cinema.models.NhanVien;
-import com.cinema.models.TaiKhoan;
-import com.cinema.enums.VaiTro;
-import com.cinema.services.NhanVienService;
-import com.cinema.services.TaiKhoanService;
-import com.cinema.views.admin.NhanVienView;
-
-import javax.swing.table.DefaultTableModel;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
+
 import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+
+import com.cinema.enums.LoaiNguoiDung;
+import com.cinema.enums.VaiTro;
+import com.cinema.models.NhanVien;
+import com.cinema.models.TaiKhoan;
+import com.cinema.services.NhanVienService;
+import com.cinema.services.TaiKhoanService;
+import com.cinema.views.admin.NhanVienView;
 
 public class NhanVienController {
     private final NhanVienView view;
@@ -32,7 +31,7 @@ public class NhanVienController {
     }
     
     private void initListeners() {
-        view.getBtnTaoTaiKhoan().addActionListener(e -> taoTaiKhoan());
+        view.getBtnTaoTaiKhoan().addActionListener(_ -> taoTaiKhoan());
     }
 
     private void taoTaiKhoan() {

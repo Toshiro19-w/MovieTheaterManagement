@@ -1,13 +1,11 @@
 package com.cinema.views.admin;
 
-import com.cinema.controllers.PhimController;
-import com.cinema.utils.DatabaseConnection;
-
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableRowSorter;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.awt.Image;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.File;
@@ -17,6 +15,27 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
+
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.RowFilter;
+import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
+
+import com.cinema.controllers.PhimController;
+import com.cinema.utils.DatabaseConnection;
 
 /**
  * PhimView is a JPanel that provides a GUI for managing movie information.
@@ -128,7 +147,7 @@ public class PhimView extends JPanel {
         // Add image selection button
         JPanel chonAnhPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton btnChonAnh = new JButton("Chọn Ảnh");
-        btnChonAnh.addActionListener(e -> chonAnh());
+        btnChonAnh.addActionListener(_ -> chonAnh());
         chonAnhPanel.add(btnChonAnh);
         fieldsPanel.add(new JLabel("Poster:"));
         fieldsPanel.add(chonAnhPanel);

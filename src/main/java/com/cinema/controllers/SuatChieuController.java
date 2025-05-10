@@ -1,5 +1,14 @@
 package com.cinema.controllers;
 
+import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.List;
+
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+
 import com.cinema.models.Phim;
 import com.cinema.models.PhongChieu;
 import com.cinema.models.SuatChieu;
@@ -7,14 +16,6 @@ import com.cinema.services.PhimService;
 import com.cinema.services.PhongChieuService;
 import com.cinema.services.SuatChieuService;
 import com.cinema.views.admin.SuatChieuView;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.List;
 
 public class SuatChieuController {
     private final SuatChieuView view;
@@ -52,10 +53,10 @@ public class SuatChieuController {
                 }
             }
         });
-        view.getBtnThemSuat().addActionListener(e -> themSuatChieu());
-        view.getBtnSuaSuat().addActionListener(e -> suaSuatChieu());
-        view.getBtnXoaSuat().addActionListener(e -> xoaSuatChieu());
-        view.getBtnClearSuat().addActionListener(e -> clearForm());
+        view.getBtnThemSuat().addActionListener(_ -> themSuatChieu());
+        view.getBtnSuaSuat().addActionListener(_ -> suaSuatChieu());
+        view.getBtnXoaSuat().addActionListener(_ -> xoaSuatChieu());
+        view.getBtnClearSuat().addActionListener(_ -> clearForm());
     }
 
     private void loadPhimToComboBox() throws SQLException {

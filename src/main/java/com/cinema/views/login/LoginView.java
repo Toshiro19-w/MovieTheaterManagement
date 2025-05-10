@@ -1,14 +1,16 @@
 package com.cinema.views.login;
 
-import com.cinema.enums.LoaiTaiKhoan;
-import com.cinema.utils.DatabaseConnection;
-import com.cinema.views.MainView;
-import com.formdev.flatlaf.FlatLightLaf;
-import org.mindrot.jbcrypt.BCrypt;
-
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
@@ -16,14 +18,41 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Objects;
+import java.util.ResourceBundle;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.UIManager;
+import javax.swing.border.EmptyBorder;
+
+import org.mindrot.jbcrypt.BCrypt;
+
+import com.cinema.enums.LoaiTaiKhoan;
+import com.cinema.utils.DatabaseConnection;
+import com.cinema.utils.SimpleDocumentListener;
+import com.cinema.utils.ValidationUtils;
+import com.cinema.views.MainView;
+import com.formdev.flatlaf.FlatLightLaf;
 
 public class LoginView extends JFrame {
     private final Connection conn;
     private JTextField usernameField;
     private JPasswordField passwordField;
+    private JLabel errorLabel;
+    private ResourceBundle messages;
+    private JButton loginBtn;
+    private static final int MAX_LOGIN_ATTEMPTS = 3;
+    private int loginAttempts = 0;
 
     public LoginView() {
+        messages = ResourceBundle.getBundle("Messages");
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());
         } catch (Exception ex) {
@@ -45,106 +74,110 @@ public class LoginView extends JFrame {
 
     private void initUI() {
         setTitle("KSL-CINEMA");
-        setSize(400, 600);
+        setSize(600, 800); // Increased size
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
 
-        // Panel nền với ảnh
-        JPanel backgroundPanel = new JPanel() {
-            final Image background = new ImageIcon(Objects.requireNonNull(getClass().getResource("/images/Icon/nen1.jpg"))).getImage();
+        // Main panel with solid color background
+        JPanel mainPanel = new JPanel();
+        mainPanel.setBackground(new Color(245, 245, 245));
+        mainPanel.setLayout(new BorderLayout());
+        setContentPane(mainPanel);
 
+        // Login panel
+        JPanel loginPanel = new JPanel();
+        loginPanel.setOpaque(false);
+        loginPanel.setBorder(new EmptyBorder(40, 40, 40, 40));
+        loginPanel.setLayout(new GridBagLayout());
+
+        // Content panel with white background and shadow effect
+        JPanel contentPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                g.drawImage(background, 0, 0, getWidth(), getHeight(), this);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Draw shadow
+                g2d.setColor(new Color(0, 0, 0, 20));
+                g2d.fillRoundRect(5, 5, getWidth() - 6, getHeight() - 6, 20, 20);
+
+                // Draw panel background
+                g2d.setColor(Color.WHITE);
+                g2d.fillRoundRect(0, 0, getWidth() - 5, getHeight() - 5, 20, 20);
             }
         };
-        backgroundPanel.setLayout(new BorderLayout());
-        setContentPane(backgroundPanel);
+        contentPanel.setOpaque(false);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
+        contentPanel.setLayout(new GridBagLayout());
+        contentPanel.setPreferredSize(new Dimension(450, 500));
 
-        // Icon
-        ImageIcon icon = new ImageIcon(Objects.requireNonNull(getClass().getResource("/images/Icon/LogoApp.jpg")));
-        setIconImage(icon.getImage());
+        // Add panels to frame
+        loginPanel.add(contentPanel, new GridBagConstraints());
+        mainPanel.add(loginPanel, BorderLayout.CENTER);
 
-        // Panel đăng nhập với nền trong suốt
-        JPanel loginPanel = new JPanel();
-        loginPanel.setOpaque(false);
-        loginPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
-        loginPanel.setLayout(new GridBagLayout());
-
-        // Panel con với nền trắng trong suốt nhẹ
-        JPanel innerPanel = new JPanel();
-        innerPanel.setOpaque(true);
-        innerPanel.setBackground(new Color(255, 255, 255, 150));
-        innerPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        innerPanel.setLayout(new GridBagLayout());
-        innerPanel.setPreferredSize(new Dimension(320, 400));
-
-        // Thêm innerPanel vào loginPanel
-        loginPanel.add(innerPanel, new GridBagConstraints());
-        backgroundPanel.add(loginPanel, BorderLayout.CENTER);
-
-        // Set bố cục cho innerPanel
+        // Rest of UI components with updated styling
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(12, 12, 12, 12);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Tiêu đề
+        // Title
         JLabel titleLabel = new JLabel("Đăng nhập", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Montserrat", Font.BOLD, 24));
+        titleLabel.setFont(new Font("Inter", Font.BOLD, 32));
+        titleLabel.setForeground(new Color(51, 51, 51));
+        gbc.gridwidth = 2;
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        innerPanel.add(titleLabel, gbc);
+        contentPanel.add(titleLabel, gbc);
 
         // Username
         gbc.gridwidth = 1;
         gbc.gridy++;
         JLabel usernameLabel = new JLabel("Tài khoản:");
-        usernameLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        innerPanel.add(usernameLabel, gbc);
+        usernameLabel.setFont(new Font("Inter", Font.PLAIN, 14));
+        contentPanel.add(usernameLabel, gbc);
 
         gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1;
-        usernameField = new JTextField(15);
-        usernameField.setFont(new Font("Arial", Font.PLAIN, 14));
-        innerPanel.add(usernameField, gbc);
+        usernameField = createStyledTextField();
+        contentPanel.add(usernameField, gbc);
 
         // Password
         gbc.gridx = 0;
-        gbc.weightx = 0.0;
         gbc.gridy++;
         JLabel passwordLabel = new JLabel("Mật khẩu:");
-        passwordLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        innerPanel.add(passwordLabel, gbc);
+        passwordLabel.setFont(new Font("Inter", Font.PLAIN, 14));
+        contentPanel.add(passwordLabel, gbc);
 
         gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1;
-        passwordField = new JPasswordField(15);
-        passwordField.setFont(new Font("Arial", Font.PLAIN, 14));
-        innerPanel.add(passwordField, gbc);
+        passwordField = new JPasswordField(20);
+        passwordField.setFont(new Font("Inter", Font.PLAIN, 14));
+        passwordField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+        contentPanel.add(passwordField, gbc);
 
-        // Nút đăng nhập
+        // Error label
+        gbc.gridy++;
+        errorLabel = ValidationUtils.createErrorLabel();
+        contentPanel.add(errorLabel, gbc);
+
+        // Login button
         gbc.gridx = 0;
         gbc.gridy++;
         gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
         gbc.fill = GridBagConstraints.NONE;
-        JButton loginBtn = new JButton("Đăng nhập");
-        loginBtn.setFont(new Font("Arial", Font.BOLD, 14));
-        loginBtn.setBackground(new Color(0, 102, 204));
-        loginBtn.setForeground(Color.WHITE);
-        loginBtn.setFocusPainted(false);
-        loginBtn.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        loginBtn = createStyledButton("Đăng nhập");
         loginBtn.addActionListener(_ -> handleLogin());
-        innerPanel.add(loginBtn, gbc);
+        contentPanel.add(loginBtn, gbc);
 
-        // Liên kết Forgot Password
+        // Forgot password link
         gbc.gridy++;
         JLabel forgotLabel = new JLabel("Quên mật khẩu?", SwingConstants.CENTER);
-        forgotLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        forgotLabel.setFont(new Font("Inter", Font.PLAIN, 12));
         forgotLabel.setForeground(new Color(0, 102, 204));
         forgotLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         forgotLabel.addMouseListener(new MouseAdapter() {
@@ -153,12 +186,12 @@ public class LoginView extends JFrame {
                 handleForgotPassword();
             }
         });
-        innerPanel.add(forgotLabel, gbc);
+        contentPanel.add(forgotLabel, gbc);
 
-        // Liên kết Register
+        // Register link
         gbc.gridy++;
         JLabel registerLabel = new JLabel("Không có tài khoản? Đăng ký", SwingConstants.CENTER);
-        registerLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        registerLabel.setFont(new Font("Inter", Font.PLAIN, 12));
         registerLabel.setForeground(new Color(0, 102, 204));
         registerLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         registerLabel.addMouseListener(new MouseAdapter() {
@@ -167,17 +200,59 @@ public class LoginView extends JFrame {
                 handleRegister();
             }
         });
-        innerPanel.add(registerLabel, gbc);
+        contentPanel.add(registerLabel, gbc);
+
+        // Add document listeners for real-time validation
+        usernameField.getDocument().addDocumentListener(new SimpleDocumentListener(() -> {
+            ValidationUtils.validateLoginFields(usernameField, passwordField, errorLabel, messages);
+            updateLoginButtonState();
+        }));
+
+        passwordField.getDocument().addDocumentListener(new SimpleDocumentListener(() -> {
+            ValidationUtils.validateLoginFields(usernameField, passwordField, errorLabel, messages);
+            updateLoginButtonState();
+        }));
+    }
+
+    private void updateLoginButtonState() {
+        loginBtn.setEnabled(!errorLabel.isVisible() && 
+                          !usernameField.getText().trim().isEmpty() && 
+                          passwordField.getPassword().length > 0);
+    }
+
+    private JButton createStyledButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Inter", Font.BOLD, 16));
+        button.setBackground(new Color(0, 102, 204));
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(15, 30, 15, 30));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return button;
+    }
+
+    private JTextField createStyledTextField() {
+        JTextField field = new JTextField(20);
+        field.setFont(new Font("Inter", Font.PLAIN, 14));
+        field.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+        return field;
     }
 
     private void handleLogin() {
-        // Lấy thông tin từ trường nhập liệu
+        if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+            JOptionPane.showMessageDialog(this, messages.getString("accountLocked"));
+            return;
+        }
+
         String username = usernameField.getText().trim();
         String password = new String(passwordField.getPassword());
 
-        // Kiểm tra xem người dùng đã nhập đủ thông tin chưa
-        if (username.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
+        String validationError = ValidationUtils.validateLoginInput(username, password);
+        if (validationError != null) {
+            JOptionPane.showMessageDialog(this, validationError);
             return;
         }
 
@@ -221,9 +296,11 @@ public class LoginView extends JFrame {
                     dispose(); // Đóng cửa sổ đăng nhập
                 } else {
                     JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
+                    loginAttempts++;
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
+                loginAttempts++;
             }
         } catch (SQLException ex) {
             ex.printStackTrace();

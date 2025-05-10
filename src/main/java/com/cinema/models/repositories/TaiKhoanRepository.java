@@ -1,12 +1,16 @@
 package com.cinema.models.repositories;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.logging.Logger;
+
+import org.mindrot.jbcrypt.BCrypt;
+
 import com.cinema.models.TaiKhoan;
 import com.cinema.models.repositories.Interface.ITaiKhoanRepository;
 import com.cinema.utils.DatabaseConnection;
-import org.mindrot.jbcrypt.BCrypt;
-
-import java.sql.*;
-import java.util.logging.Logger;
 
 public class TaiKhoanRepository implements ITaiKhoanRepository {
     private static final Logger LOGGER = Logger.getLogger(TaiKhoanRepository.class.getName());
@@ -177,5 +181,34 @@ public class TaiKhoanRepository implements ITaiKhoanRepository {
             LOGGER.severe("Lỗi đăng ký người dùng: " + ex.getMessage());
             throw ex;
         }
+    }
+
+    public TaiKhoan findByUsername(String username) throws SQLException {
+        String sql = "SELECT t.*, n.hoTen, n.email, n.soDienThoai FROM TaiKhoan t " +
+                "JOIN NguoiDung n ON t.maNguoiDung = n.maNguoiDung " +
+                "WHERE t.tenDangNhap = ?";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    TaiKhoan taiKhoan = new TaiKhoan();
+                    taiKhoan.setTenDangNhap(rs.getString("tenDangNhap"));
+                    taiKhoan.setMatKhau(rs.getString("matKhau"));
+                    taiKhoan.setLoaiTaiKhoan(rs.getString("loaiTaiKhoan"));
+                    taiKhoan.setMaNguoiDung(rs.getInt("maNguoiDung"));
+                    return taiKhoan;
+                }
+                return null;
+            }
+        }
+    }
+
+    public boolean authenticateUser(String username, String password) throws SQLException {
+        TaiKhoan taiKhoan = findByUsername(username);
+        if (taiKhoan != null) {
+            return BCrypt.checkpw(password, taiKhoan.getMatKhau());
+        }
+        return false;
     }
 }

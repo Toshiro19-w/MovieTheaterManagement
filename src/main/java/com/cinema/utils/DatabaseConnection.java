@@ -59,4 +59,9 @@ public class DatabaseConnection {
             }
         }
     }
+
+    public static DatabaseConnection getInstance() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getInstance'");
+    }
 }

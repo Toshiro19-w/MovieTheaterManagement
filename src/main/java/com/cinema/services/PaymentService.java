@@ -1,14 +1,13 @@
 package com.cinema.services;
 
-import com.cinema.models.dto.PaymentRequest;
-import com.cinema.models.dto.PaymentResponse;
+import java.awt.image.BufferedImage;
+
 import com.cinema.enums.PaymentStatus;
 import com.cinema.models.PaymentOrder;
+import com.cinema.models.dto.PaymentRequest;
+import com.cinema.models.dto.PaymentResponse;
 import com.cinema.models.repositories.PaymentOrderRepository;
 import com.cinema.utils.QrCodeGenerator;
-
-import java.awt.image.BufferedImage;
-import java.util.Random;
 
 public class PaymentService {
     private final PaymentOrderRepository paymentOrderRepository;
