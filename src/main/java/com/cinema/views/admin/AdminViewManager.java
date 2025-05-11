@@ -12,9 +12,12 @@ import com.cinema.utils.PermissionManager;
 public class AdminViewManager {
     private final PermissionManager permissionManager;
     private final JPanel mainContentPanel;
+    private final CardLayout cardLayout;
+
     public AdminViewManager(LoaiTaiKhoan loaiTaiKhoan, JPanel mainContentPanel, CardLayout cardLayout) {
         this.permissionManager = new PermissionManager(loaiTaiKhoan);
         this.mainContentPanel = mainContentPanel;
+        this.cardLayout = cardLayout;
     }
 
     public void initializeAdminPanels() throws IOException, SQLException {
@@ -35,6 +38,9 @@ public class AdminViewManager {
         }
         if (permissionManager.hasPermission("Báo cáo")) {
             mainContentPanel.add(new BaoCaoView(), "Báo cáo");
+        }
+        if (permissionManager.hasPermission("Bán vé")) {
+            mainContentPanel.add(new SellTicketView(), "Bán vé");
         }
     }
 }

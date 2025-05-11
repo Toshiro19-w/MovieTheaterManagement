@@ -11,6 +11,7 @@ import org.mindrot.jbcrypt.BCrypt;
 import com.cinema.models.TaiKhoan;
 import com.cinema.models.repositories.Interface.ITaiKhoanRepository;
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.utils.PasswordHasher;
 
 public class TaiKhoanRepository implements ITaiKhoanRepository {
     private static final Logger LOGGER = Logger.getLogger(TaiKhoanRepository.class.getName());
@@ -156,11 +157,12 @@ public class TaiKhoanRepository implements ITaiKhoanRepository {
                 }
             }
 
-            // Thêm vào bảng TaiKhoan
+            // Thêm vào bảng TaiKhoan với mật khẩu đã mã hoá
             String insertTaiKhoan = "INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maNguoiDung) VALUES (?, ?, ?, ?)";
             try (PreparedStatement taiKhoanStmt = connection.prepareStatement(insertTaiKhoan)) {
                 taiKhoanStmt.setString(1, username);
-                taiKhoanStmt.setString(2, BCrypt.hashpw(password, BCrypt.gensalt(12)));
+                String hashedPassword = PasswordHasher.hashPassword(password);
+                taiKhoanStmt.setString(2, hashedPassword);
                 taiKhoanStmt.setString(3, "User");
                 taiKhoanStmt.setInt(4, maNguoiDung);
                 taiKhoanStmt.executeUpdate();

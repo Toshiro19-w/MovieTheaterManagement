@@ -19,6 +19,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ResourceBundle;
+import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -36,6 +37,7 @@ import org.mindrot.jbcrypt.BCrypt;
 
 import com.cinema.enums.LoaiTaiKhoan;
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.utils.PasswordHasher;
 import com.cinema.utils.SimpleDocumentListener;
 import com.cinema.utils.ValidationUtils;
 import com.cinema.views.MainView;
@@ -50,7 +52,9 @@ public class LoginView extends JFrame {
     private JButton loginBtn;
     private static final int MAX_LOGIN_ATTEMPTS = 3;
     private int loginAttempts = 0;
+    private static final Logger LOGGER = Logger.getLogger(LoginView.class.getName());
 
+    @SuppressWarnings("UseSpecificCatch")
     public LoginView() {
         messages = ResourceBundle.getBundle("Messages");
         try {
@@ -74,7 +78,7 @@ public class LoginView extends JFrame {
 
     private void initUI() {
         setTitle("KSL-CINEMA");
-        setSize(600, 800); // Increased size
+        setSize(700, 800);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
@@ -241,6 +245,7 @@ public class LoginView extends JFrame {
         return field;
     }
 
+    @SuppressWarnings("CallToPrintStackTrace")
     private void handleLogin() {
         if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
             JOptionPane.showMessageDialog(this, messages.getString("accountLocked"));
@@ -248,82 +253,63 @@ public class LoginView extends JFrame {
         }
 
         String username = usernameField.getText().trim();
-        String password = new String(passwordField.getPassword());
+        String plainPassword = new String(passwordField.getPassword());
 
-        String validationError = ValidationUtils.validateLoginInput(username, password);
+        String validationError = ValidationUtils.validateLoginInput(username, plainPassword);
         if (validationError != null) {
             JOptionPane.showMessageDialog(this, validationError);
             return;
         }
 
-        // Kết nối cơ sở dữ liệu và kiểm tra thông tin đăng nhập
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        try {
-            String sql = "SELECT loaiTaiKhoan, matKhau FROM TaiKhoan WHERE tenDangNhap = ?";
-            stmt = conn.prepareStatement(sql);
+        try (PreparedStatement stmt = conn.prepareStatement("SELECT loaiTaiKhoan, matKhau FROM TaiKhoan WHERE tenDangNhap = ?")) {
             stmt.setString(1, username);
-            rs = stmt.executeQuery();
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    String storedHash = rs.getString("matKhau");
+                    String role = rs.getString("loaiTaiKhoan");
 
-            // Nếu đăng nhập thành công
-            if (rs.next()) {
-                String storedHash = rs.getString("matKhau");
-                String role = rs.getString("loaiTaiKhoan");
-
-                // Kiểm tra mật khẩu với bcrypt
-                if (BCrypt.checkpw(password, storedHash)) {
-                    JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
-
-                    // Chuyển hướng dựa trên vai trò
-                    switch (role.toLowerCase()) {
-                        case "admin":
-                            openMainView(username, LoaiTaiKhoan.ADMIN);
-                            break;
-                        case "quanlyphim":
-                            openMainView(username, LoaiTaiKhoan.QUANLYPHIM);
-                            break;
-                        case "thungan":
-                            openMainView(username, LoaiTaiKhoan.THUNGAN);
-                            break;
-                        case "banve":
-                            openMainView(username, LoaiTaiKhoan.BANVE);
-                            break;
-                        case "user":
-                        default:
-                            openMainView(username, LoaiTaiKhoan.USER);
-                            break;
+                    // Sử dụng PasswordHasher thay vì BCrypt trực tiếp
+                    if (PasswordHasher.verifyPassword(plainPassword, storedHash)) {
+                        JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
+                        handleSuccessfulLogin(username, role);
+                    } else {
+                        handleFailedLogin();
                     }
-                    dispose(); // Đóng cửa sổ đăng nhập
                 } else {
-                    JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
-                    loginAttempts++;
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
-                loginAttempts++;
-            }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Lỗi truy vấn cơ sở dữ liệu: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } finally {
-            // Đóng PreparedStatement và ResultSet
-            if (rs != null) {
-                try {
-                    rs.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
+                    handleFailedLogin();
                 }
             }
-            if (stmt != null) {
-                try {
-                    stmt.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
+        } catch (SQLException | IOException ex) {
+            LOGGER.severe("Lỗi đăng nhập: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Lỗi truy vấn CSDL: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void handleSuccessfulLogin(String username, String role) throws IOException, SQLException {
+        switch (role.toLowerCase()) {
+            case "admin":
+                openMainView(username, LoaiTaiKhoan.ADMIN);
+                break;
+            case "quanlyphim":
+                openMainView(username, LoaiTaiKhoan.QUANLYPHIM);
+                break;
+            case "thungan":
+                openMainView(username, LoaiTaiKhoan.THUNGAN);
+                break;
+            case "banve":
+                openMainView(username, LoaiTaiKhoan.BANVE);
+                break;
+            case "user":
+            default:
+                openMainView(username, LoaiTaiKhoan.USER);
+                break;
+        }
+        dispose(); // Đóng cửa sổ đăng nhập
+    }
+
+    private void handleFailedLogin() {
+        JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
+        loginAttempts++;
     }
 
     private void openMainView(String username, LoaiTaiKhoan loaiTaiKhoan) throws IOException, SQLException {

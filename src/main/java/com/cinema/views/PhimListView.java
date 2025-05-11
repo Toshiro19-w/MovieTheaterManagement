@@ -210,7 +210,7 @@ public class PhimListView extends JPanel {
         infoPanel.add(new JLabel(phim.getNuocSanXuat() != null ? phim.getNuocSanXuat() : "N/A"));
 
         infoPanel.add(new JLabel("Định dạng:"));
-        infoPanel.add(new JLabel(phim.getDinhDang() != null ? phim.getDinhDang() : "N/A"));
+        infoPanel.add(new JLabel(phim.getKieuPhim() != null ? phim.getKieuPhim() : "N/A"));
 
         infoPanel.add(new JLabel("Đạo diễn:"));
         infoPanel.add(new JLabel(phim.getDaoDien() != null ? phim.getDaoDien() : "N/A"));

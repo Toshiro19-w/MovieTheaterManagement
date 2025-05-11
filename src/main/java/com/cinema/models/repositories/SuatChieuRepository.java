@@ -16,7 +16,7 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
     public List<SuatChieu> findAll() {
         List<SuatChieu> list = new ArrayList<>();
         String sql = "SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, sc.maPhong, pc.tenPhong, " +
-                "sc.ngayGioChieu, p.thoiLuong, p.dinhDang, sc.soSuatChieu " +
+                "sc.ngayGioChieu, p.thoiLuong, p.kieuPhim " +
                 "FROM SuatChieu sc " +
                 "JOIN Phim p ON sc.maPhim = p.maPhim " +
                 "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong";
@@ -31,8 +31,7 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
                         rs.getString("tenPhong"),
                         rs.getTimestamp("ngayGioChieu").toLocalDateTime(),
                         rs.getInt("thoiLuong"),
-                        rs.getString("dinhDang"),
-                        rs.getInt("soSuatChieu")
+                        rs.getString("kieuPhim")
                 ));
             }
         } catch (SQLException e) {
@@ -44,7 +43,7 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
     public List<SuatChieu> findByMaPhim(int maPhim) throws SQLException {
         List<SuatChieu> list = new ArrayList<>();
         String sql = "SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, sc.maPhong, pc.tenPhong, " +
-                "sc.ngayGioChieu, p.thoiLuong, p.dinhDang, sc.soSuatChieu " +
+                "sc.ngayGioChieu, p.thoiLuong, p.kieuPhim " +
                 "FROM SuatChieu sc " +
                 "JOIN Phim p ON sc.maPhim = p.maPhim " +
                 "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong " +
@@ -61,8 +60,7 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
                         rs.getString("tenPhong"),
                         rs.getTimestamp("ngayGioChieu").toLocalDateTime(),
                         rs.getInt("thoiLuong"),
-                        rs.getString("dinhDang"),
-                        rs.getInt("soSuatChieu")
+                        rs.getString("kieuPhim")
                 ));
             }
         }

@@ -1,7 +1,11 @@
 package com.cinema.views.admin;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,7 +13,9 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.ResourceBundle;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -22,31 +28,56 @@ import javax.swing.table.DefaultTableModel;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.category.DefaultCategoryDataset;
 
 import com.cinema.controllers.BaoCaoController;
 import com.cinema.models.BaoCao;
+import com.cinema.models.repositories.BaoCaoRepository;
 import com.cinema.services.BaoCaoService;
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.utils.SimpleDocumentListener;
 import com.cinema.utils.ValidationUtils;
+
 public class BaoCaoView extends JPanel {
     private DatabaseConnection databaseConnection;
     private BaoCaoController controller;
+    private BaoCaoRepository baoCaoRepository;
     private JTextField tuNgayField;
     private JTextField denNgayField;
+    private JLabel tuNgayErrorLabel;
+    private JLabel denNgayErrorLabel;
     private DefaultTableModel tableModel;
+    private JTable baoCaoTable;
+    private JPanel chartPanel;
+    private ResourceBundle messages;
+
+    private static final Font LABEL_FONT = new Font("Inter", Font.PLAIN, 14);
+    private static final Font BUTTON_FONT = new Font("Inter", Font.BOLD, 14);
+    private static final Color PRIMARY_COLOR = new Color(59, 130, 246);
 
     public BaoCaoView() {
         try {
             databaseConnection = new DatabaseConnection();
+            baoCaoRepository = new BaoCaoRepository(databaseConnection);
             controller = new BaoCaoController(new BaoCaoService(databaseConnection));
-        } catch (IOException e) {
+            messages = ResourceBundle.getBundle("Messages");
+            if (!baoCaoRepository.isViewExists()) {
+                JOptionPane.showMessageDialog(this,
+                        "View ThongKeDoanhThuPhim không tồn tại! Vui lòng tạo view trước.",
+                        messages.getString("error"), JOptionPane.ERROR_MESSAGE);
+                System.exit(1);
+            }
+        } catch (IOException | SQLException e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Không thể đọc file cấu hình cơ sở dữ liệu!");
+            JOptionPane.showMessageDialog(this, messages.getString("dbConnectionError"), messages.getString("error"), JOptionPane.ERROR_MESSAGE);
             System.exit(1);
         }
         initializeUI();
@@ -54,73 +85,172 @@ public class BaoCaoView extends JPanel {
 
     private void initializeUI() {
         setLayout(new BorderLayout());
+        setBackground(new Color(245, 245, 245));
 
         // Panel chọn khoảng thời gian
-        JPanel timePanel = new JPanel(new FlowLayout());
+        JPanel timePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        timePanel.setOpaque(false);
+
         JLabel tuNgayLabel = new JLabel("Từ ngày:");
-        tuNgayField = new JTextField("05/04/2025 00:00:00", 15);
+        tuNgayLabel.setFont(LABEL_FONT);
+        tuNgayField = createStyledTextField();
+        tuNgayField.setText("01/01/2025 00:00:00");
+        tuNgayErrorLabel = ValidationUtils.createErrorLabel();
+
         JLabel denNgayLabel = new JLabel("Đến ngày:");
-        denNgayField = new JTextField("07/04/2025 23:59:59", 15);
-        JButton xemButton = new JButton("Xem báo cáo");
-        JButton xuatfileButton = new JButton("Xuất CSV");
+        denNgayLabel.setFont(LABEL_FONT);
+        denNgayField = createStyledTextField();
+        denNgayField.setText("31/12/2025 23:59:59");
+        denNgayErrorLabel = ValidationUtils.createErrorLabel();
+
+        JButton xemButton = createStyledButton("Xem báo cáo");
+        JButton xuatfileButton = createStyledButton("Xuất Excel");
+
         timePanel.add(tuNgayLabel);
         timePanel.add(tuNgayField);
+        timePanel.add(tuNgayErrorLabel);
         timePanel.add(denNgayLabel);
         timePanel.add(denNgayField);
+        timePanel.add(denNgayErrorLabel);
         timePanel.add(xemButton);
         timePanel.add(xuatfileButton);
 
+        // Panel chứa bảng và biểu đồ
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setOpaque(false);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
         // Bảng hiển thị báo cáo
         tableModel = new DefaultTableModel(new String[]{
-                "Tên phim", "Số vé bán ra", "Tổng doanh thu"
+                "Tên phim", "Số vé bán ra", "Tổng doanh thu", "Điểm đánh giá TB"
         }, 0);
-        JTable baoCaoTable = new JTable(tableModel);
+        baoCaoTable = new JTable(tableModel);
         JScrollPane scrollPane = new JScrollPane(baoCaoTable);
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Panel chứa biểu đồ
+        chartPanel = new JPanel(new BorderLayout());
+        chartPanel.setOpaque(false);
+        contentPanel.add(chartPanel, BorderLayout.SOUTH);
 
         // Sự kiện
         xemButton.addActionListener(_ -> xemBaoCao());
         xuatfileButton.addActionListener(_ -> xuatFile());
 
+        // Thêm kiểm tra real-time
+        tuNgayField.getDocument().addDocumentListener(new SimpleDocumentListener(this::validateDateFields));
+        denNgayField.getDocument().addDocumentListener(new SimpleDocumentListener(this::validateDateFields));
+
         // Thêm các thành phần vào panel
         add(timePanel, BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
+        add(contentPanel, BorderLayout.CENTER);
+
+        // Kiểm tra ban đầu
+        validateDateFields();
+    }
+
+    private JTextField createStyledTextField() {
+        JTextField field = new JTextField(15);
+        field.setFont(LABEL_FONT);
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200)),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+        return field;
+    }
+
+    private JButton createStyledButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(BUTTON_FONT);
+        button.setBackground(PRIMARY_COLOR);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return button;
+    }
+
+    private void validateDateFields() {
+        ValidationUtils.validateDateTimeField(tuNgayField, tuNgayErrorLabel, messages, "Ngày bắt đầu");
+        ValidationUtils.validateDateTimeField(denNgayField, denNgayErrorLabel, messages, "Ngày kết thúc");
+        if (!tuNgayErrorLabel.isVisible() && !denNgayErrorLabel.isVisible()) {
+            try {
+                LocalDateTime tuNgay = ValidationUtils.parseDateTime(tuNgayField.getText());
+                LocalDateTime denNgay = ValidationUtils.parseDateTime(denNgayField.getText());
+                if (!ValidationUtils.isValidDateRange(tuNgay, denNgay)) {
+                    ValidationUtils.showError(denNgayErrorLabel, messages.getString("invalidDateRange"));
+                    ValidationUtils.setErrorBorder(denNgayField);
+                }
+            } catch (DateTimeParseException e) {
+                // Lỗi đã được xử lý trong validateDateTimeField
+            }
+        }
     }
 
     private String formatCurrency(double amount) {
         return String.format("%,.0f VND", amount);
     }
 
-    private void xemBaoCao(){
+    private String formatRating(double rating) {
+        return String.format("%.1f", rating);
+    }
+
+    private void xemBaoCao() {
         try {
-            // Validate ngày giờ
-            LocalDateTime tuNgay = ValidationUtils.validateDateTime(tuNgayField.getText(), "Ngày bắt đầu");
-            LocalDateTime denNgay = ValidationUtils.validateDateTime(denNgayField.getText(), "Ngày kết thúc");
+            LocalDateTime tuNgay = ValidationUtils.parseDateTime(tuNgayField.getText());
+            LocalDateTime denNgay = ValidationUtils.parseDateTime(denNgayField.getText());
 
-            // Kiểm tra logic thời gian
-            ValidationUtils.validateDateRange(tuNgay, denNgay);
+            if (!ValidationUtils.isValidDateRange(tuNgay, denNgay)) {
+                JOptionPane.showMessageDialog(this,
+                        messages.getString("invalidDateRange"),
+                        messages.getString("error"), JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
-            // Lấy dữ liệu báo cáo
             List<BaoCao> baoCaoList = controller.getBaoCaoDoanhThuTheoPhim(tuNgay, denNgay);
-            tableModel.setRowCount(0); // Xóa dữ liệu cũ
+            tableModel.setRowCount(0);
+            DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+            if (baoCaoList.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        "Không có dữ liệu báo cáo trong khoảng thời gian này!",
+                        messages.getString("error"), JOptionPane.INFORMATION_MESSAGE);
+            }
             for (BaoCao baoCao : baoCaoList) {
                 tableModel.addRow(new Object[]{
                         baoCao.getTenPhim(),
                         baoCao.getSoVeBanRa(),
-                        formatCurrency(baoCao.getTongDoanhThu())
+                        formatCurrency(baoCao.getTongDoanhThu()),
+                        formatRating(baoCao.getDiemDanhGiaTrungBinh())
                 });
+                dataset.addValue(baoCao.getTongDoanhThu(), "Doanh thu", baoCao.getTenPhim());
             }
+
+            // Tạo và hiển thị biểu đồ
+            JFreeChart barChart = ChartFactory.createBarChart(
+                    "Doanh thu theo phim",
+                    "Tên phim", "Doanh thu (VND)",
+                    dataset, PlotOrientation.VERTICAL,
+                    false, true, false
+            );
+            ChartPanel chart = new ChartPanel(barChart);
+            chart.setPreferredSize(new Dimension(800, 300));
+            chartPanel.removeAll();
+            chartPanel.add(chart, BorderLayout.CENTER);
+            chartPanel.revalidate();
+            chartPanel.repaint();
+
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this,
-                    "Lỗi khi tải báo cáo: " + ex.getMessage(),
-                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    messages.getString("databaseError") + ex.getMessage(),
+                    messages.getString("error"), JOptionPane.ERROR_MESSAGE);
         } catch (DateTimeParseException ex) {
             JOptionPane.showMessageDialog(this,
-                    "Định dạng ngày không hợp lệ! (yyyy-MM-dd HH:mm)",
-                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    messages.getString("invalidDateFormat"),
+                    messages.getString("error"), JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void xuatFile(){
+    private void xuatFile() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Chọn vị trí lưu file Excel");
         fileChooser.setSelectedFile(new File("BaoCaoDoanhThu.xlsx"));
@@ -131,12 +261,12 @@ public class BaoCaoView extends JPanel {
             try {
                 exportToExcel(fileToSave);
                 JOptionPane.showMessageDialog(this,
-                        "Xuất file Excel thành công!",
-                        "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                        messages.getString("exportSuccess"),
+                        messages.getString("success"), JOptionPane.INFORMATION_MESSAGE);
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(this,
-                        "Lỗi khi xuất file Excel: " + ex.getMessage(),
-                        "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        messages.getString("exportError") + ex.getMessage(),
+                        messages.getString("error"), JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -144,41 +274,40 @@ public class BaoCaoView extends JPanel {
     private void exportToExcel(File file) throws IOException {
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Báo cáo Doanh thu");
-            // Tạo style cho header
+
             CellStyle headerStyle = workbook.createCellStyle();
-            Font headerFont = workbook.createFont();
+            org.apache.poi.ss.usermodel.Font headerFont = workbook.createFont();
             headerFont.setBold(true);
             headerStyle.setFont(headerFont);
-            // Ghi header
+
             Row headerRow = sheet.createRow(0);
             for (int col = 0; col < tableModel.getColumnCount(); col++) {
                 Cell cell = headerRow.createCell(col);
                 cell.setCellValue(tableModel.getColumnName(col));
                 cell.setCellStyle(headerStyle);
             }
-            // Ghi dữ liệu
+
             for (int row = 0; row < tableModel.getRowCount(); row++) {
                 Row dataRow = sheet.createRow(row + 1);
                 for (int col = 0; col < tableModel.getColumnCount(); col++) {
                     Cell cell = dataRow.createCell(col);
                     Object value = tableModel.getValueAt(row, col);
-                    
-                    if (value instanceof String) {
-                        cell.setCellValue((String) value);
-                    } else if (value instanceof Integer) {
-                        cell.setCellValue((Integer) value);
-                    } else if (value instanceof Double) {
-                        cell.setCellValue((Double) value);
+                    if (value instanceof String string) {
+                        cell.setCellValue(string);
+                    } else if (value instanceof Integer integer) {
+                        cell.setCellValue(integer);
+                    } else if (value instanceof Double aDouble) {
+                        cell.setCellValue(aDouble);
                     } else if (value != null) {
-                        cell.setCellValue(value.toString()); // fallback cho các kiểu khác
+                        cell.setCellValue(value.toString());
                     }
                 }
             }
-            // Tự động căn chỉnh độ rộng cột
+
             for (int col = 0; col < tableModel.getColumnCount(); col++) {
                 sheet.autoSizeColumn(col);
             }
-            // Ghi ra file
+
             try (FileOutputStream fileOut = new FileOutputStream(file)) {
                 workbook.write(fileOut);
             }

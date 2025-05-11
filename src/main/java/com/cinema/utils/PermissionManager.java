@@ -1,12 +1,12 @@
 package com.cinema.utils;
 
-import com.cinema.enums.LoaiTaiKhoan;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.cinema.enums.LoaiTaiKhoan;
 
 public class PermissionManager {
     private final LoaiTaiKhoan loaiTaiKhoan;
@@ -14,7 +14,7 @@ public class PermissionManager {
 
     static {
         rolePermissions.put(LoaiTaiKhoan.ADMIN, Arrays.asList(
-                "Phim", "Suất chiếu", "Vé", "Nhân viên", "Hoá đơn", "Báo cáo"
+                "Phim", "Suất chiếu", "Vé", "Nhân viên", "Hoá đơn", "Báo cáo", "Bán vé"
         ));
         rolePermissions.put(LoaiTaiKhoan.QUANLYPHIM, Arrays.asList(
                 "Phim", "Suất chiếu", "Nhân viên"
@@ -23,10 +23,10 @@ public class PermissionManager {
                 "Phim đang chiếu", "Đặt vé", "Thông tin cá nhân"
         ));
         rolePermissions.put(LoaiTaiKhoan.THUNGAN, Arrays.asList(
-                "Hoá đơn", "Vé"
+                "Hoá đơn", "Vé", "Bán vé"
         ));
         rolePermissions.put(LoaiTaiKhoan.BANVE, Arrays.asList(
-                "Phim đang chiếu", "Suất chiếu", "Đặt vé"
+                "Phim đang chiếu", "Suất chiếu", "Đặt vé", "Bán vé"
         ));
     }
 

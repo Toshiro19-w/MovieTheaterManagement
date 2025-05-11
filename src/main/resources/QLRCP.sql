@@ -1,4 +1,4 @@
--- Active: 1746521847255@@127.0.0.1@3306@quanlyrcp
+﻿-- Active: 1746521847255@@127.0.0.1@3306@quanlyrcp
 DROP DATABASE IF EXISTS quanlyrcp;
 CREATE DATABASE quanlyrcp;
 USE quanlyrcp;
@@ -311,10 +311,10 @@ CREATE TABLE IF NOT EXISTS DieuKienKhuyenMai (
     maDieuKien INT AUTO_INCREMENT PRIMARY KEY,
     maKhuyenMai INT NOT NULL,
     loaiDieuKien ENUM('Phim') NOT NULL,
-    giaTriPhim INT NOT NULL,
+    maPhim INT NOT NULL,
     FOREIGN KEY (maKhuyenMai) REFERENCES KhuyenMai(maKhuyenMai) ON DELETE CASCADE,
-    FOREIGN KEY (giaTriPhim) REFERENCES Phim(maPhim) ON DELETE CASCADE,
-    CONSTRAINT UQ_KhuyenMai_Phim UNIQUE (maKhuyenMai, giaTriPhim)
+    FOREIGN KEY (maPhim) REFERENCES Phim(maPhim) ON DELETE CASCADE,
+    CONSTRAINT UQ_KhuyenMai_Phim UNIQUE (maKhuyenMai, maPhim)
 );
 
 -- Thêm bảng DanhGia để lưu feedback của khách hàng
@@ -395,6 +395,8 @@ INSERT INTO KhachHang (maNguoiDung, diemTichLuy) VALUES
 (7, 0),
 (9, 30);
 
+select * from khachhang;
+
 -- Dữ liệu cho bảng NhanVien
 INSERT INTO NhanVien (maNguoiDung, luong, vaiTro) VALUES
 (3, 15000000.00, 'QuanLyPhim'),
@@ -415,6 +417,8 @@ INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maNguoiDung) VALUES
 ('vuthih', 'pass161', 'Admin', 8),
 ('ngovani', 'pass718', 'user', 9),
 ('maithik', 'pass192', 'BanVe', 10);
+
+select * from taikhoan;
 
 -- Dữ liệu cho bảng TheLoaiPhim
 INSERT INTO TheLoaiPhim (tenTheLoai) VALUES
@@ -490,7 +494,7 @@ INSERT INTO Ghe (maPhong, loaiGhe, soGhe) VALUES
 (4, 'VIP', 'D1'), (4, 'VIP', 'D2'), (4, 'VIP', 'D3'), (4, 'VIP', 'D4'), (4, 'VIP', 'D5'), (4, 'VIP', 'D6'),
 (4, 'VIP', 'E1'), (4, 'VIP', 'E2'), (4, 'VIP', 'E3'), (4, 'VIP', 'E4'), (4, 'VIP', 'E5'), (4, 'VIP', 'E6'),
 (4, 'VIP', 'F1'), (4, 'VIP', 'F2'), (4, 'VIP', 'F3'), (4, 'VIP', 'F4'), (4, 'VIP', 'F5'), (4, 'VIP', 'F6'),
--- Phòng 5 (150 ghế, full thường, 10 hàng mỗi hàng 15 ghế)
+-- Phòng 5 (150 ghế, full thường, 10 hàng mỗi hàng 15 ghế, thêm tạm 70 ghế)
 (5, 'Thuong', 'A1'), (5, 'Thuong', 'A2'), (5, 'Thuong', 'A3'), (5, 'Thuong', 'A4'), (5, 'Thuong', 'A5'), (5, 'Thuong', 'A6'), (5, 'Thuong', 'A7'), (5, 'Thuong', 'A8'), (5, 'Thuong', 'A9'), (5, 'Thuong', 'A10'),
 (5, 'Thuong', 'B1'), (5, 'Thuong', 'B2'), (5, 'Thuong', 'B3'), (5, 'Thuong', 'B4'), (5, 'Thuong', 'B5'), (5, 'Thuong', 'B6'), (5, 'Thuong', 'B7'), (5, 'Thuong', 'B8'), (5, 'Thuong', 'B9'), (5, 'Thuong', 'B10'),
 (5, 'Thuong', 'C1'), (5, 'Thuong', 'C2'), (5, 'Thuong', 'C3'), (5, 'Thuong', 'C4'), (5, 'Thuong', 'C5'), (5, 'Thuong', 'C6'), (5, 'Thuong', 'C7'), (5, 'Thuong', 'C8'), (5, 'Thuong', 'C9'), (5, 'Thuong', 'C10'),
@@ -572,7 +576,7 @@ INSERT INTO KhuyenMai (tenKhuyenMai, moTa, loaiGiamGia, giaTriGiam, ngayBatDau, 
 ('Black Friday Phim 2025', 'Giảm giá cố định cho phim', 'CoDinh', 20000.00, '2025-11-28', '2025-11-30', 'HoatDong');
 
 -- Thêm dữ liệu mẫu cho bảng DieuKienKhuyenMai
-INSERT INTO DieuKienKhuyenMai (maKhuyenMai, loaiDieuKien, giaTriPhim) VALUES
+INSERT INTO DieuKienKhuyenMai (maKhuyenMai, loaiDieuKien, maPhim) VALUES
 (1, 'Phim', 1),  -- Áp dụng cho Avatar 3
 (1, 'Phim', 2),  -- Áp dụng cho Mission: Impossible 8
 (2, 'Phim', 6),  -- Áp dụng cho Deadpool 3

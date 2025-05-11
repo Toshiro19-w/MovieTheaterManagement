@@ -8,26 +8,24 @@ public class SuatChieu {
     private int maPhim;
     private int maPhong;
     private LocalDateTime ngayGioChieu;
-    private int soSuatChieu;
 
     // Các trường từ JOIN
     private String tenPhim;
     private String tenPhong;
     private int thoiLuongPhim;
-    private String dinhDangPhim;
+    private String kieuPhim;
 
     // Constructor cho dữ liệu cơ bản
-    public SuatChieu(int maSuatChieu, int maPhim, int maPhong, LocalDateTime ngayGioChieu, int soSuatChieu) {
+    public SuatChieu(int maSuatChieu, int maPhim, int maPhong, LocalDateTime ngayGioChieu) {
         this.maSuatChieu = maSuatChieu;
         this.maPhim = maPhim;
         this.maPhong = maPhong;
         this.ngayGioChieu = ngayGioChieu;
-        this.soSuatChieu = soSuatChieu;
     }
 
     // Constructor cho dữ liệu chi tiết (từ JOIN)
     public SuatChieu(int maSuatChieu, int maPhim, String tenPhim, int maPhong, String tenPhong,
-                     LocalDateTime ngayGioChieu, int thoiLuongPhim, String dinhDangPhim, int soSuatChieu) {
+                     LocalDateTime ngayGioChieu, int thoiLuongPhim, String kieuPhim) {
         this.maSuatChieu = maSuatChieu;
         this.maPhim = maPhim;
         this.tenPhim = tenPhim;
@@ -35,8 +33,7 @@ public class SuatChieu {
         this.tenPhong = tenPhong;
         this.ngayGioChieu = ngayGioChieu;
         this.thoiLuongPhim = thoiLuongPhim;
-        this.dinhDangPhim = dinhDangPhim;
-        this.soSuatChieu = soSuatChieu;
+        this.kieuPhim = kieuPhim;
     }
 
     // Constructor mặc định
@@ -99,20 +96,12 @@ public class SuatChieu {
         this.thoiLuongPhim = thoiLuongPhim;
     }
 
-    public String getDinhDangPhim() {
-        return dinhDangPhim;
+    public String getKieugPhim() {
+        return kieuPhim;
     }
 
-    public void setDinhDangPhim(String dinhDangPhim) {
-        this.dinhDangPhim = dinhDangPhim;
-    }
-
-    public int getSoSuatChieu() {
-        return soSuatChieu;
-    }
-
-    public void setSoSuatChieu(int soSuatChieu) {
-        this.soSuatChieu = soSuatChieu;
+    public void setKieuPhim(String kieuPhim) {
+        this.kieuPhim = kieuPhim;
     }
 
     @Override

@@ -1,14 +1,12 @@
 package com.cinema.services;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
+
 import com.cinema.models.Phim;
 import com.cinema.models.repositories.PhimRepository;
 import com.cinema.utils.DatabaseConnection;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.List;
 
 public class PhimService {
     private final PhimRepository phimRepo;
@@ -33,15 +31,13 @@ public class PhimService {
     }
 
     public Phim addPhim(Phim phim) throws SQLException {
-        // Cần lấy maTheLoai từ tenTheLoai trước khi lưu
-        int maTheLoai = getMaTheLoaiByTen(phim.getTenTheLoai());
+        int maTheLoai = phimRepo.getMaTheLoaiByTen(phim.getTenTheLoai());
         phim.setMaTheLoai(maTheLoai);
         return phimRepo.save(phim);
     }
 
     public Phim updatePhim(Phim phim) throws SQLException {
-        // Cần lấy maTheLoai từ tenTheLoai trước khi cập nhật
-        int maTheLoai = getMaTheLoaiByTen(phim.getTenTheLoai());
+        int maTheLoai = phimRepo.getMaTheLoaiByTen(phim.getTenTheLoai());
         phim.setMaTheLoai(maTheLoai);
         return phimRepo.update(phim);
     }
@@ -51,16 +47,22 @@ public class PhimService {
         return true;
     }
 
-    // Phương thức hỗ trợ để lấy maTheLoai từ tenTheLoai
-    private int getMaTheLoaiByTen(String tenTheLoai) throws SQLException {
-        String sql = "SELECT maTheLoai FROM TheLoaiPhim WHERE tenTheLoai = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, tenTheLoai);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt("maTheLoai");
-            }
-            throw new SQLException("Không tìm thấy thể loại phim: " + tenTheLoai);
-        }
+    public boolean isMovieTitleExists(String tenPhim, int excludeMaPhim) throws SQLException {
+        return phimRepo.isMovieTitleExists(tenPhim, excludeMaPhim);
+    }
+
+    // Lấy danh sách thể loại duy nhất
+    public List<String> getAllTheLoai() throws SQLException {
+        return phimRepo.getAllTheLoai();
+    }
+
+    // Lấy danh sách trạng thái duy nhất
+    public List<String> getAllTrangThai() throws SQLException {
+        return phimRepo.getAllTrangThai();
+    }
+
+    // Lấy danh sách định dạng duy nhất
+    public List<String> getAllDinhDang() throws SQLException {
+        return phimRepo.getAllDinhDang();
     }
 }

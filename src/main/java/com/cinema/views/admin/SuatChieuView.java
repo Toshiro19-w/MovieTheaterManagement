@@ -20,7 +20,7 @@ public class SuatChieuView extends JPanel {
     private DatabaseConnection databaseConnection;
 
     // SuatChieu components
-    private JTextField txtNgayGioChieu, txtSoSuatChieu, suatChieuSearchField;
+    private JTextField txtNgayGioChieu, suatChieuSearchField;
     private JLabel txtMaSuatChieu;
     private JComboBox cbMaPhim, cbMaPhong;
     private JTable suatChieuTable;
@@ -106,8 +106,6 @@ public class SuatChieuView extends JPanel {
         cbMaPhim = new JComboBox<>();
         cbMaPhong = new JComboBox<>();
         txtNgayGioChieu = new JTextField();
-
-        txtSoSuatChieu = new JTextField();
         suatChieuSearchField = new JTextField();
 
         addField(fieldsPanel, "Mã Suất Chiếu:", txtMaSuatChieu);
@@ -115,7 +113,6 @@ public class SuatChieuView extends JPanel {
         addField(fieldsPanel, "Phòng chiếu:", cbMaPhong);
         addField(fieldsPanel, "Ngày giờ chiếu:", txtNgayGioChieu);
         setPlaceholder(txtNgayGioChieu);
-        addField(fieldsPanel, "Số Suất Chiếu", txtSoSuatChieu);
         addField(fieldsPanel, "Tìm Kiếm:", suatChieuSearchField);
 
         // Add search functionality
@@ -236,7 +233,6 @@ public class SuatChieuView extends JPanel {
     public JButton getBtnClearSuat() { return btnClearSuat; }
     public String getSuatChieuSearchText() { return suatChieuSearchField.getText(); }
     public Integer getSelectedMaSuatChieu() { return selectedMaSuatChieu; }
-    public JTextField getTxtSoSuatChieu() { return txtSoSuatChieu; }
 
     // Getters for PhongChieuController
     public JTable getPhongChieuTable() { return phongChieuTable; }
