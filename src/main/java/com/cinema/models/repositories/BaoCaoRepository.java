@@ -31,14 +31,16 @@ public class BaoCaoRepository implements IBaoCaoRepository {
     @Override
     public List<BaoCao> getBaoCaoDoanhThuTheoPhim(LocalDateTime tuNgay, LocalDateTime denNgay) throws SQLException {
         List<BaoCao> list = new ArrayList<>();
-        String sql = "SELECT p.tenPhim, COUNT(v.maVe) AS soVeBanRa, SUM(v.giaVe) AS tongDoanhThu " +
-                "FROM Phim p " +
-                "LEFT JOIN SuatChieu sc ON p.maPhim = sc.maPhim " +
-                "LEFT JOIN Ve v ON sc.maSuatChieu = v.maSuatChieu " +
-                "WHERE v.trangThai = 'paid' " +
-                "AND v.ngayDat BETWEEN ? AND ? " +
-                "GROUP BY p.maPhim, p.tenPhim " +
-                "ORDER BY tongDoanhThu DESC";
+        String sql = "SELECT tenPhim, SoVeDaBan AS soVeBanRa, DoanhThu AS tongDoanhThu, DiemDanhGiaTrungBinh " +
+                     "FROM ThongKeDoanhThuPhim " +
+                     "WHERE EXISTS (" +
+                     "    SELECT 1 FROM Ve v " +
+                     "    JOIN SuatChieu sc ON v.maSuatChieu = sc.maSuatChieu " +
+                     "    WHERE sc.maPhim = ThongKeDoanhThuPhim.maPhim " +
+                     "    AND v.trangThai = 'paid' " +
+                     "    AND v.ngayDat BETWEEN ? AND ? " +
+                     ") " +
+                     "ORDER BY DoanhThu DESC";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setTimestamp(1, java.sql.Timestamp.valueOf(tuNgay));
             stmt.setTimestamp(2, java.sql.Timestamp.valueOf(denNgay));
@@ -47,10 +49,23 @@ public class BaoCaoRepository implements IBaoCaoRepository {
                 list.add(new BaoCao(
                         rs.getString("tenPhim"),
                         rs.getInt("soVeBanRa"),
-                        rs.getDouble("tongDoanhThu")
+                        rs.getDouble("tongDoanhThu"),
+                        rs.getDouble("DiemDanhGiaTrungBinh")
                 ));
             }
         }
         return list;
+    }
+
+    // Phương thức kiểm tra view có tồn tại
+    public boolean isViewExists() throws SQLException {
+        String sql = "SELECT COUNT(*) FROM information_schema.views WHERE table_name = 'ThongKeDoanhThuPhim'";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        }
+        return false;
     }
 }

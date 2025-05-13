@@ -1,49 +1,92 @@
 package com.cinema.views.admin;
 
-import com.cinema.controllers.HoaDonController;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableRowSorter;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
+import java.sql.SQLException;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.RowFilter;
+import javax.swing.SwingUtilities;
+import javax.swing.border.TitledBorder;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
+
+import com.cinema.components.UnderlineTextField;
+import com.cinema.controllers.HoaDonController;
 
 public class HoaDonView extends JPanel {
     private JTextField searchField;
-    private JTextField txtTenNhanVien, txtNgayLap, txtTongTien;
+    private UnderlineTextField txtMaHoaDon, txtNgayLap, txtTongTien;
     private JTable tableHoaDon, tableChiTietHoaDon;
     private DefaultTableModel modelHoaDon, modelChiTietHoaDon;
     private TableRowSorter<DefaultTableModel> sorter;
+    private JButton btnThem, btnSua, btnXoa, btnInHoaDon, btnLamMoi;
+    private String username;
+    private HoaDonController controller;
 
-    public HoaDonView() throws IOException {
-        // Thiết lập layout chính
+    public HoaDonView(String username) throws IOException, SQLException {
+        this.username = username;
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         setBackground(new Color(245, 245, 245));
 
-        // Panel tìm kiếm
-        JPanel searchPanel = createSearchPanel();
+        // Panel chính chứa tất cả các thành phần
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        mainPanel.setOpaque(false);
 
-        // Panel thông tin hóa đơn
-        JPanel infoPanel = createInfoPanel();
-
-        // Panel chứa cả search và info
+        // Panel phía trên chứa search và info
         JPanel topPanel = new JPanel(new BorderLayout(10, 10));
         topPanel.setOpaque(false);
-        topPanel.add(searchPanel, BorderLayout.NORTH);
-        topPanel.add(infoPanel, BorderLayout.CENTER);
-
-        // Danh sách hóa đơn
-        JPanel tablePanel = createTablePanel();
-
-        // Thêm các thành phần vào panel chính
-        add(topPanel, BorderLayout.NORTH);
-        add(tablePanel, BorderLayout.CENTER);
+        
+        // Thêm các panel con
+        topPanel.add(createSearchPanel(), BorderLayout.NORTH);
+        topPanel.add(createInfoPanel(), BorderLayout.CENTER);
+        mainPanel.add(topPanel, BorderLayout.NORTH);
+        
+        // Panel chứa bảng và nút
+        JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
+        centerPanel.setOpaque(false);
+        
+        // Thêm panel nút chức năng
+        centerPanel.add(createButtonPanel(), BorderLayout.NORTH);
+        
+        // Panel chứa bảng
+        JPanel tablesPanel = new JPanel(new GridLayout(1, 2, 10, 10));
+        tablesPanel.setOpaque(false);
+        
+        // Tạo và thêm các bảng
+        tablesPanel.add(createHoaDonTablePanel());
+        tablesPanel.add(createChiTietTablePanel());
+        
+        centerPanel.add(tablesPanel, BorderLayout.CENTER);
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
+        
+        // Thêm panel chính vào view
+        add(mainPanel);
 
         // Khởi tạo controller
-        new HoaDonController(this);
+        controller = new HoaDonController(this, username);
     }
 
     private JPanel createSearchPanel() {
@@ -83,92 +126,408 @@ public class HoaDonView extends JPanel {
         infoPanel.setBackground(new Color(255, 255, 255));
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(8, 8, 8, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Initialize text fields
-        txtTenNhanVien = new JTextField(15);
-        txtTenNhanVien.setEditable(false);
-        txtNgayLap = new JTextField(15);
+        // Khởi tạo các trường với UnderlineTextField
+        txtMaHoaDon = new UnderlineTextField(15);
+        txtMaHoaDon.setEditable(false);
+        txtMaHoaDon.setPlaceholder("Mã hóa đơn");
+        txtMaHoaDon.setReadonlyColor(new Color(100, 100, 100));
+
+        txtNgayLap = new UnderlineTextField(15);
         txtNgayLap.setEditable(false);
-        txtTongTien = new JTextField(15);
+        txtNgayLap.setPlaceholder("Ngày lập");
+        txtNgayLap.setReadonlyColor(new Color(100, 100, 100));
+
+        txtTongTien = new UnderlineTextField(15);
         txtTongTien.setEditable(false);
+        txtTongTien.setPlaceholder("Tổng tiền");
+        txtTongTien.setReadonlyColor(new Color(100, 100, 100));
 
-        // Styling text fields
-        Font fieldFont = new Font("Arial", Font.PLAIN, 14);
-        txtTenNhanVien.setFont(fieldFont);
-        txtNgayLap.setFont(fieldFont);
-        txtTongTien.setFont(fieldFont);
+        // Tạo labels với font và màu sắc mới
+        Font labelFont = new Font("Segoe UI", Font.BOLD, 14);
+        Color labelColor = new Color(70, 70, 70);
 
-        // Add components
+        JLabel lblMaHoaDon = new JLabel("Mã Hóa Đơn:");
+        lblMaHoaDon.setFont(labelFont);
+        lblMaHoaDon.setForeground(labelColor);
+
+        JLabel lblNgayLap = new JLabel("Ngày Lập:");
+        lblNgayLap.setFont(labelFont);
+        lblNgayLap.setForeground(labelColor);
+
+        JLabel lblTongTien = new JLabel("Tổng Tiền:");
+        lblTongTien.setFont(labelFont);
+        lblTongTien.setForeground(labelColor);
+
+        // Thêm components vào panel với layout mới
         gbc.gridx = 0;
         gbc.gridy = 0;
-        infoPanel.add(new JLabel("Tên Nhân Viên:"), gbc);
+        gbc.anchor = GridBagConstraints.WEST;
+        infoPanel.add(lblMaHoaDon, gbc);
         gbc.gridx = 1;
-        infoPanel.add(txtTenNhanVien, gbc);
+        gbc.weightx = 1.0;
+        infoPanel.add(txtMaHoaDon, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 1;
-        infoPanel.add(new JLabel("Ngày Lập:"), gbc);
+        gbc.weightx = 0.0;
+        infoPanel.add(lblNgayLap, gbc);
         gbc.gridx = 1;
+        gbc.weightx = 1.0;
         infoPanel.add(txtNgayLap, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 2;
-        infoPanel.add(new JLabel("Tổng Tiền:"), gbc);
+        gbc.weightx = 0.0;
+        infoPanel.add(lblTongTien, gbc);
         gbc.gridx = 1;
+        gbc.weightx = 1.0;
         infoPanel.add(txtTongTien, gbc);
+
+        // Thêm padding cho panel
+        infoPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200)),
+                "THÔNG TIN HÓA ĐƠN",
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 14),
+                new Color(70, 70, 70)
+            ),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
 
         return infoPanel;
     }
 
-    private JPanel createTablePanel() {
-        JPanel tablePanel = new JPanel(new GridLayout(1, 2, 10, 10));
-        tablePanel.setOpaque(false);
+    private JPanel createButtonPanel() {
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        buttonPanel.setBackground(new Color(255, 255, 255));
+        buttonPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
 
-        // Danh sách hóa đơn
+        btnThem = createStyledButton("Thêm", new Color(46, 204, 113));
+        btnSua = createStyledButton("Sửa", new Color(52, 152, 219));
+        btnXoa = createStyledButton("Xóa", new Color(231, 76, 60));
+        btnInHoaDon = createStyledButton("In Hóa Đơn", new Color(155, 89, 182));
+        btnLamMoi = createStyledButton("Làm Mới", new Color(149, 165, 166));
+
+        buttonPanel.add(btnThem);
+        buttonPanel.add(btnSua);
+        buttonPanel.add(btnXoa);
+        buttonPanel.add(btnInHoaDon);
+        buttonPanel.add(btnLamMoi);
+
+        // Thêm nút chọn khách hàng
+        JButton btnChonKhachHang = new JButton("Chọn Khách Hàng");
+        btnChonKhachHang.addActionListener(e -> {
+            int selectedRow = tableHoaDon.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn hóa đơn!");
+                return;
+            }
+            int maHoaDon = (int) tableHoaDon.getValueAt(selectedRow, 0);
+            JDialog dialog = createChonKhachHangDialog();
+            dialog.setVisible(true);
+        });
+        buttonPanel.add(btnChonKhachHang);
+
+        // Thêm nút thêm vé
+        JButton btnThemVe = new JButton("Thêm Vé");
+        btnThemVe.addActionListener(e -> {
+            int selectedRow = tableHoaDon.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn hóa đơn!");
+                return;
+            }
+            int maHoaDon = (int) tableHoaDon.getValueAt(selectedRow, 0);
+            JDialog dialog = createThemChiTietDialog(maHoaDon);
+            dialog.setVisible(true);
+        });
+        buttonPanel.add(btnThemVe);
+
+        return buttonPanel;
+    }
+
+    private JButton createStyledButton(String text, Color backgroundColor) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setForeground(Color.WHITE);
+        button.setBackground(backgroundColor);
+        button.setPreferredSize(new Dimension(120, 35));
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setOpaque(true);
+        
+        // Thêm hiệu ứng hover
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(backgroundColor.darker());
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(backgroundColor);
+            }
+        });
+
+        return button;
+    }
+
+    private JPanel createHoaDonTablePanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            "DANH SÁCH HÓA ĐƠN",
+            TitledBorder.LEFT,
+            TitledBorder.TOP,
+            new Font("Arial", Font.BOLD, 14)
+        ));
+
         String[] columnsHoaDon = {"ID", "Tên NV", "Tên KH", "Ngày", "Tổng Tiền"};
-        modelHoaDon = new DefaultTableModel(columnsHoaDon, 0);
+        modelHoaDon = new DefaultTableModel(columnsHoaDon, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        
         tableHoaDon = new JTable(modelHoaDon);
-        tableHoaDon.setRowHeight(25);
-        tableHoaDon.setFont(new Font("Arial", Font.PLAIN, 13));
-        tableHoaDon.getTableHeader().setFont(new Font("Arial", Font.BOLD, 13));
-        sorter = new TableRowSorter<>(modelHoaDon);
-        tableHoaDon.setRowSorter(sorter);
+        setupTable(tableHoaDon);
+        
+        JScrollPane scrollPane = new JScrollPane(tableHoaDon);
+        panel.add(scrollPane, BorderLayout.CENTER);
+        
+        return panel;
+    }
 
-        JScrollPane scrollHoaDon = new JScrollPane(tableHoaDon);
-        scrollHoaDon.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(100, 100, 100)),
-                "DANH SÁCH HÓA ĐƠN"
+    private JPanel createChiTietTablePanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            "CHI TIẾT HÓA ĐƠN",
+            TitledBorder.LEFT,
+            TitledBorder.TOP,
+            new Font("Arial", Font.BOLD, 14)
         ));
 
-        // Chi tiết hóa đơn
-        String[] columnsChiTiet = {"Mã Vé", "Tên Phim", "Số Ghế", "Ngày Chiếu", "Giá Vé"};
-        modelChiTietHoaDon = new DefaultTableModel(columnsChiTiet, 0);
+        String[] columnsChiTiet = {"Mã Vé", "Số Ghế", "Loại Ghế", "Giá Gốc", "Khuyến Mãi", "Giá Sau Giảm"};
+        modelChiTietHoaDon = new DefaultTableModel(columnsChiTiet, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        
         tableChiTietHoaDon = new JTable(modelChiTietHoaDon);
-        tableChiTietHoaDon.setRowHeight(25);
-        tableChiTietHoaDon.setFont(new Font("Arial", Font.PLAIN, 13));
-        tableChiTietHoaDon.getTableHeader().setFont(new Font("Arial", Font.BOLD, 13));
+        setupTable(tableChiTietHoaDon);
+        
+        // Căn giữa cột giá
+        DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
+        rightRenderer.setHorizontalAlignment(JLabel.RIGHT);
+        tableChiTietHoaDon.getColumnModel().getColumn(3).setCellRenderer(rightRenderer);
+        tableChiTietHoaDon.getColumnModel().getColumn(5).setCellRenderer(rightRenderer);
+        
+        // Format số tiền
+        tableChiTietHoaDon.getColumnModel().getColumn(3).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                if (value instanceof Number) {
+                    value = String.format("%,.0f VNĐ", ((Number) value).doubleValue());
+                }
+                return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            }
+        });
+        
+        tableChiTietHoaDon.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                if (value instanceof Number) {
+                    value = String.format("%,.0f VNĐ", ((Number) value).doubleValue());
+                }
+                return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            }
+        });
+        
+        JScrollPane scrollPane = new JScrollPane(tableChiTietHoaDon);
+        panel.add(scrollPane, BorderLayout.CENTER);
+        
+        return panel;
+    }
 
-        JScrollPane scrollChiTiet = new JScrollPane(tableChiTietHoaDon);
-        scrollChiTiet.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(100, 100, 100)),
-                "CHI TIẾT HÓA ĐƠN"
-        ));
+    private void setupTable(JTable table) {
+        table.setFont(new Font("Arial", Font.PLAIN, 13));
+        table.setRowHeight(25);
+        table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 13));
+        table.getTableHeader().setBackground(new Color(240, 240, 240));
+        table.setSelectionBackground(new Color(232, 241, 249));
+        table.setSelectionForeground(Color.BLACK);
+        table.setGridColor(new Color(230, 230, 230));
+        
+        // Căn giữa header
+        ((DefaultTableCellRenderer)table.getTableHeader().getDefaultRenderer())
+            .setHorizontalAlignment(JLabel.CENTER);
+    }
 
-        tablePanel.add(scrollHoaDon);
-        tablePanel.add(scrollChiTiet);
+    private JDialog createThemChiTietDialog(int maHoaDon) {
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Thêm Vé Vào Hóa Đơn", true);
+        dialog.setSize(800, 600);
+        dialog.setLocationRelativeTo(this);
 
-        return tablePanel;
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        
+        // Panel tìm kiếm
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JTextField txtSearch = new JTextField(20);
+        JButton btnSearch = new JButton("Tìm kiếm");
+        searchPanel.add(new JLabel("Tìm kiếm:"));
+        searchPanel.add(txtSearch);
+        searchPanel.add(btnSearch);
+        
+        // Bảng vé
+        String[] columns = {"Mã Vé", "Tên Phim", "Số Ghế", "Loại Ghế", "Ngày Giờ Chiếu", "Giá Vé", "Trạng Thái"};
+        DefaultTableModel model = new DefaultTableModel(columns, 0);
+        JTable tableVe = new JTable(model);
+        JScrollPane scrollPane = new JScrollPane(tableVe);
+        
+        // Panel nút
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnThem = new JButton("Thêm");
+        JButton btnHuy = new JButton("Hủy");
+        buttonPanel.add(btnThem);
+        buttonPanel.add(btnHuy);
+        
+        mainPanel.add(searchPanel, BorderLayout.NORTH);
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.add(mainPanel);
+        
+        // Xử lý sự kiện
+        btnSearch.addActionListener(e -> {
+            String searchText = txtSearch.getText().trim();
+            // TODO: Implement search functionality
+        });
+        
+        btnThem.addActionListener(e -> {
+            int selectedRow = tableVe.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(dialog, "Vui lòng chọn vé!");
+                return;
+            }
+            int maVe = (int) tableVe.getValueAt(selectedRow, 0);
+            if (controller.themVeVaoHoaDon(maHoaDon, maVe)) {
+                dialog.dispose();
+                refreshTable();
+            }
+        });
+        
+        btnHuy.addActionListener(e -> dialog.dispose());
+        
+        // Load dữ liệu
+        controller.hienThiVeCoTheThem(tableVe);
+        
+        return dialog;
+    }
+
+    private JDialog createChonKhachHangDialog() {
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Chọn Khách Hàng", true);
+        dialog.setSize(600, 400);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        
+        // Panel tìm kiếm
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JTextField txtSearch = new JTextField(20);
+        JButton btnSearch = new JButton("Tìm kiếm");
+        searchPanel.add(new JLabel("Tìm kiếm:"));
+        searchPanel.add(txtSearch);
+        searchPanel.add(btnSearch);
+        
+        // Bảng khách hàng
+        String[] columns = {"Mã KH", "Họ Tên", "Số Điện Thoại", "Email"};
+        DefaultTableModel model = new DefaultTableModel(columns, 0);
+        JTable tableKhachHang = new JTable(model);
+        JScrollPane scrollPane = new JScrollPane(tableKhachHang);
+        
+        // Panel nút
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnChon = new JButton("Chọn");
+        JButton btnHuy = new JButton("Hủy");
+        buttonPanel.add(btnChon);
+        buttonPanel.add(btnHuy);
+        
+        mainPanel.add(searchPanel, BorderLayout.NORTH);
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.add(mainPanel);
+        
+        // Xử lý sự kiện
+        btnSearch.addActionListener(e -> {
+            String searchText = txtSearch.getText().trim();
+            // TODO: Implement search functionality
+        });
+        
+        btnChon.addActionListener(e -> {
+            int selectedRow = tableKhachHang.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(dialog, "Vui lòng chọn khách hàng!");
+                return;
+            }
+            int maKhachHang = (int) tableKhachHang.getValueAt(selectedRow, 0);
+            int maHoaDon = (int) tableHoaDon.getValueAt(tableHoaDon.getSelectedRow(), 0);
+            if (controller.capNhatKhachHang(maHoaDon, maKhachHang)) {
+                dialog.dispose();
+                refreshTable();
+            }
+        });
+        
+        btnHuy.addActionListener(e -> dialog.dispose());
+        
+        // Load dữ liệu
+        controller.hienThiDanhSachKhachHang(tableKhachHang);
+        
+        return dialog;
     }
 
     // Getter cho controller truy cập
     public JTextField getSearchField() { return searchField; }
     public String getSearchText() { return searchField.getText(); }
-    public JTextField getTxtTenNhanVien() { return txtTenNhanVien; }
-    public JTextField getTxtNgayLap() { return txtNgayLap; }
-    public JTextField getTxtTongTien() { return txtTongTien; }
+    public UnderlineTextField getTxtMaHoaDon() { return txtMaHoaDon; }
+    public UnderlineTextField getTxtNgayLap() { return txtNgayLap; }
+    public UnderlineTextField getTxtTongTien() { return txtTongTien; }
     public JTable getTableHoaDon() { return tableHoaDon; }
     public DefaultTableModel getModelHoaDon() { return modelHoaDon; }
     public DefaultTableModel getModelChiTietHoaDon() { return modelChiTietHoaDon; }
+    
+    // Getter cho các nút
+    public JButton getBtnThem() { return btnThem; }
+    public JButton getBtnSua() { return btnSua; }
+    public JButton getBtnXoa() { return btnXoa; }
+    public JButton getBtnInHoaDon() { return btnInHoaDon; }
+    public JButton getBtnLamMoi() { return btnLamMoi; }
+
+    public String getUsername() {
+        return username;
+    }
+
+    // Getter cho các component mới
+    public JDialog getThemChiTietDialog(int maHoaDon) {
+        return createThemChiTietDialog(maHoaDon);
+    }
+
+    public JDialog getChonKhachHangDialog() {
+        return createChonKhachHangDialog();
+    }
+
+    private void refreshTable() {
+        // Implement refresh logic here
+    }
 }

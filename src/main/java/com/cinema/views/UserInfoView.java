@@ -1,19 +1,36 @@
 package com.cinema.views;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.GridLayout;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.text.NumberFormat;
+import java.util.List;
+import java.util.Locale;
+
+import javax.swing.BorderFactory;
+import javax.swing.DefaultCellEditor;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
+
 import com.cinema.controllers.KhachHangController;
-import com.cinema.models.*;
+import com.cinema.models.ChiTietHoaDon;
+import com.cinema.models.KhachHang;
 import com.cinema.models.repositories.DatVeRepository;
 import com.cinema.models.repositories.HoaDonRepository;
 import com.cinema.models.repositories.VeRepository;
 import com.cinema.services.KhachHangService;
 import com.cinema.utils.DatabaseConnection;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.List;
 
 public class UserInfoView extends JDialog {
     private final String username;
@@ -22,6 +39,7 @@ public class UserInfoView extends JDialog {
     private final VeRepository veRepository;
     private final DatVeRepository datVeRepository;
     private JTable bookingTable;
+    private final NumberFormat currencyFormat;
 
     public UserInfoView(JFrame parent, String username) throws IOException {
         super(parent, "Thông tin cá nhân", true);
@@ -31,6 +49,7 @@ public class UserInfoView extends JDialog {
         this.hoaDonRepository = new HoaDonRepository(databaseConnection);
         this.veRepository = new VeRepository(databaseConnection);
         this.datVeRepository = new DatVeRepository(databaseConnection);
+        this.currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
 
         setSize(1000, 600);
         setLayout(new BorderLayout());
@@ -64,10 +83,26 @@ public class UserInfoView extends JDialog {
         add(infoPanel, BorderLayout.NORTH);
 
         // Lịch sử vé
-        String[] columns = {"Mã vé", "Tên phim", "Suất chiếu", "Ghế", "Số tiền", "Trạng thái", "Hành động"};
-        DefaultTableModel tableModel = new DefaultTableModel(columns, 0);
+        String[] columns = {"Mã vé", "Tên phim", "Suất chiếu", "Ghế", "Loại ghế", "Số tiền", "Trạng thái", "Hành động"};
+        DefaultTableModel tableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 7; // Chỉ cho phép chỉnh sửa cột hành động
+            }
+        };
         bookingTable = new JTable(tableModel);
-        loadBookingHistory(tableModel);
+        bookingTable.getColumnModel().getColumn(7).setCellRenderer(new ButtonRenderer());
+        bookingTable.getColumnModel().getColumn(7).setCellEditor(new ButtonEditor(new JCheckBox(), tableModel, this));
+        
+        // Đặt chiều rộng cột
+        bookingTable.getColumnModel().getColumn(0).setPreferredWidth(60);  // Mã vé
+        bookingTable.getColumnModel().getColumn(1).setPreferredWidth(200); // Tên phim
+        bookingTable.getColumnModel().getColumn(2).setPreferredWidth(150); // Suất chiếu
+        bookingTable.getColumnModel().getColumn(3).setPreferredWidth(80);  // Ghế
+        bookingTable.getColumnModel().getColumn(4).setPreferredWidth(100); // Loại ghế
+        bookingTable.getColumnModel().getColumn(5).setPreferredWidth(120); // Số tiền
+        bookingTable.getColumnModel().getColumn(6).setPreferredWidth(100); // Trạng thái
+        bookingTable.getColumnModel().getColumn(7).setPreferredWidth(100); // Hành động
 
         JScrollPane tableScrollPane = new JScrollPane(bookingTable);
         tableScrollPane.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
@@ -77,48 +112,59 @@ public class UserInfoView extends JDialog {
     private void loadBookingHistory(DefaultTableModel tableModel) {
         tableModel.setRowCount(0);
         try {
-            // Giả định HoaDonRepository có phương thức mới để lấy lịch sử đặt vé theo username
             List<ChiTietHoaDon> chiTietHoaDons = hoaDonRepository.findChiTietByUsername(username);
             for (ChiTietHoaDon chiTiet : chiTietHoaDons) {
-                // Lấy trạng thái vé từ VeRepository
                 String trangThai = veRepository.findVeByMaVe(chiTiet.getMaVe()).getTrangThai().toString();
                 String action = "BOOKED".equals(trangThai) ? "Hủy vé" : "-";
                 Object[] row = {
-                        chiTiet.getMaVe(),
-                        chiTiet.getTenPhim(),
-                        chiTiet.getNgayGioChieu() != null ? chiTiet.getNgayGioChieu().format(
-                                java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "N/A",
-                        chiTiet.getSoGhe(),
-                        chiTiet.getGiaVe(),
-                        chiTiet.getMaHoaDon() > 0 ? "PAID" : "PENDING",
-                        action
+                    chiTiet.getMaVe(),
+                    chiTiet.getTenPhim(),
+                    chiTiet.getNgayGioChieu() != null ? chiTiet.getNgayGioChieu().format(
+                            java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "N/A",
+                    chiTiet.getSoGhe(),
+                    chiTiet.getLoaiGhe(),
+                    currencyFormat.format(chiTiet.getGiaVe()),
+                    getTrangThaiDisplay(trangThai),
+                    action
                 };
                 tableModel.addRow(row);
             }
         } catch (SQLException e) {
-            String errorMessage = e.getMessage();
-            if (errorMessage.toLowerCase().contains("closed") || errorMessage.toLowerCase().contains("connection")) {
-                int option = JOptionPane.showConfirmDialog(this,
-                        "Lỗi kết nối cơ sở dữ liệu: Không thể tải lịch sử đặt vé. Vui lòng kiểm tra lại hệ thống.\nBạn có muốn thử lại không?",
-                        "Lỗi Kết Nối",
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.ERROR_MESSAGE);
-                if (option == JOptionPane.YES_OPTION) {
-                    loadBookingHistory(tableModel); // Tải lại nếu người dùng chọn Yes
-                }
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "Lỗi khi tải lịch sử đặt vé: " + errorMessage,
-                        "Lỗi",
-                        JOptionPane.ERROR_MESSAGE);
-            }
-            e.printStackTrace();
+            handleDatabaseError(e);
         }
+    }
+
+    private String getTrangThaiDisplay(String trangThai) {
+        switch (trangThai) {
+            case "BOOKED": return "Chờ thanh toán";
+            case "PAID": return "Đã thanh toán";
+            case "CANCELLED": return "Đã hủy";
+            default: return trangThai;
+        }
+    }
+
+    private void handleDatabaseError(SQLException e) {
+        String errorMessage = e.getMessage();
+        if (errorMessage.toLowerCase().contains("closed") || errorMessage.toLowerCase().contains("connection")) {
+            int option = JOptionPane.showConfirmDialog(this,
+                    "Lỗi kết nối cơ sở dữ liệu: Không thể tải lịch sử đặt vé. Vui lòng kiểm tra lại hệ thống.\nBạn có muốn thử lại không?",
+                    "Lỗi Kết Nối",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.ERROR_MESSAGE);
+            if (option == JOptionPane.YES_OPTION) {
+                loadBookingHistory((DefaultTableModel) bookingTable.getModel());
+            }
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "Lỗi khi tải lịch sử đặt vé: " + errorMessage,
+                    "Lỗi",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+        e.printStackTrace();
     }
 
     private void cancelVe(int maVe) {
         try {
-            // Kiểm tra trạng thái vé trước khi hủy
             String trangThai = veRepository.findVeByMaVe(maVe).getTrangThai().toString();
             if (!"BOOKED".equals(trangThai)) {
                 JOptionPane.showMessageDialog(this,
@@ -128,23 +174,19 @@ public class UserInfoView extends JDialog {
                 return;
             }
 
-            datVeRepository.cancelVe(maVe);
-            JOptionPane.showMessageDialog(this, "Hủy vé thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadBookingHistory((DefaultTableModel) bookingTable.getModel());
-        } catch (SQLException e) {
-            String errorMessage = e.getMessage();
-            if (errorMessage.toLowerCase().contains("closed") || errorMessage.toLowerCase().contains("connection")) {
-                JOptionPane.showMessageDialog(this,
-                        "Lỗi kết nối cơ sở dữ liệu: Không thể hủy vé. Vui lòng kiểm tra lại hệ thống.",
-                        "Lỗi Kết Nối",
-                        JOptionPane.ERROR_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "Lỗi khi hủy vé: " + errorMessage,
-                        "Lỗi",
-                        JOptionPane.ERROR_MESSAGE);
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Bạn có chắc chắn muốn hủy vé này không?",
+                    "Xác nhận hủy vé",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                datVeRepository.cancelVe(maVe);
+                JOptionPane.showMessageDialog(this, "Hủy vé thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                loadBookingHistory((DefaultTableModel) bookingTable.getModel());
             }
-            e.printStackTrace();
+        } catch (SQLException e) {
+            handleDatabaseError(e);
         }
     }
 

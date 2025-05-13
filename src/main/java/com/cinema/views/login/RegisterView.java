@@ -72,7 +72,7 @@ public class RegisterView extends JFrame {
 
     private void initUI() {
         setTitle(messages.getString("appTitle"));
-        setSize(700, 900);
+        setSize(700, 800);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);

@@ -1,60 +1,36 @@
 package com.cinema.models;
 
-import com.cinema.enums.TrangThaiVe;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
+import com.cinema.enums.TrangThaiVe;
 
 public class Ve {
     private int maVe;
     private int maSuatChieu;
-    private Integer maPhong;
+    private int maPhong;
     private String soGhe;
-    private Integer maHoaDon;
     private BigDecimal giaVe;
     private TrangThaiVe trangThai;
     private LocalDateTime ngayDat;
-
-    private String tenPhim;
-    private LocalDateTime ngayGioChieu;
-    private String hoTenKhachHang;
-    private String loaiPhong;
+    private int maHoaDon;
+    
+    // Additional fields for detailed view
     private String tenPhong;
-
-    public Ve(int maVe, int maSuatChieu, Integer maPhong,
-              String soGhe, Integer maHoaDon, BigDecimal giaVe,
-              TrangThaiVe trangThai, LocalDateTime ngayDat) {
-        this.maVe = maVe;
-        this.maSuatChieu = maSuatChieu;
-        this.maPhong = maPhong;
-        this.soGhe = soGhe;
-        this.maHoaDon = maHoaDon;
-        this.giaVe = giaVe;
-        this.trangThai = trangThai;
-        this.ngayDat = ngayDat;
-    }
-
-    public Ve(int maVe, int maSuatChieu, Integer maPhong,
-              String soGhe, Integer maHoaDon, BigDecimal giaVe,
-              TrangThaiVe trangThai, LocalDateTime ngayDat, String tenPhim, LocalDateTime ngayGioChieu,
-              String hoTenKhachHang, String loaiPhong) {
-        this.maVe = maVe;
-        this.maSuatChieu = maSuatChieu;
-        this.maPhong = maPhong;
-        this.soGhe = soGhe;
-        this.maHoaDon = maHoaDon;
-        this.giaVe = giaVe;
-        this.trangThai = trangThai;
-        this.ngayDat = ngayDat;
-        this.tenPhim = tenPhim;
-        this.ngayGioChieu = ngayGioChieu;
-        this.hoTenKhachHang = hoTenKhachHang;
-        this.loaiPhong = loaiPhong;
-    }
+    private LocalDateTime ngayGioChieu;
+    private String tenPhim;
+    private String tenKhachHang;
+    private String soDienThoai;
+    private String email;
+    private int maGhe;
+    private int maKhuyenMai;
+    private String tenKhuyenMai;
 
     public Ve() {}
 
-    public Ve(int maVe, TrangThaiVe trangThai, BigDecimal giaVe, String soGhe, LocalDateTime ngayDat, String tenPhong, LocalDateTime ngayGioChieu, String tenPhim) {
+    // Add the missing constructor
+    public Ve(int maVe, TrangThaiVe trangThai, BigDecimal giaVe, String soGhe, 
+              LocalDateTime ngayDat, String tenPhong, LocalDateTime ngayGioChieu, String tenPhim) {
         this.maVe = maVe;
         this.trangThai = trangThai;
         this.giaVe = giaVe;
@@ -65,14 +41,7 @@ public class Ve {
         this.tenPhim = tenPhim;
     }
 
-    public String getTenPhong() {
-        return tenPhong;
-    }
-
-    public void setTenPhong(String tenPhong) {
-        this.tenPhong = tenPhong;
-    }
-
+    // Getters and Setters
     public int getMaVe() {
         return maVe;
     }
@@ -89,20 +58,12 @@ public class Ve {
         this.maSuatChieu = maSuatChieu;
     }
 
-    public Integer getMaPhong() {
+    public int getMaPhong() {
         return maPhong;
     }
 
-    public void setMaPhong(Integer maPhong) {
+    public void setMaPhong(int maPhong) {
         this.maPhong = maPhong;
-    }
-
-    public Integer getMaHoaDon() {
-        return maHoaDon;
-    }
-
-    public void setMaHoaDon(Integer maHoaDon) {
-        this.maHoaDon = maHoaDon;
     }
 
     public String getSoGhe() {
@@ -129,12 +90,28 @@ public class Ve {
         this.trangThai = trangThai;
     }
 
-    public String getTenPhim() {
-        return tenPhim;
+    public LocalDateTime getNgayDat() {
+        return ngayDat;
     }
 
-    public void setTenPhim(String tenPhim) {
-        this.tenPhim = tenPhim;
+    public void setNgayDat(LocalDateTime ngayDat) {
+        this.ngayDat = ngayDat;
+    }
+
+    public int getMaHoaDon() {
+        return maHoaDon;
+    }
+
+    public void setMaHoaDon(int maHoaDon) {
+        this.maHoaDon = maHoaDon;
+    }
+
+    public String getTenPhong() {
+        return tenPhong;
+    }
+
+    public void setTenPhong(String tenPhong) {
+        this.tenPhong = tenPhong;
     }
 
     public LocalDateTime getNgayGioChieu() {
@@ -145,27 +122,59 @@ public class Ve {
         this.ngayGioChieu = ngayGioChieu;
     }
 
-    public String getHoTenKhachHang() {
-        return hoTenKhachHang;
+    public String getTenPhim() {
+        return tenPhim;
     }
 
-    public void setHoTenKhachHang(String hoTenKhachHang) {
-        this.hoTenKhachHang = hoTenKhachHang;
+    public void setTenPhim(String tenPhim) {
+        this.tenPhim = tenPhim;
     }
 
-    public String getLoaiPhong() {
-        return loaiPhong;
+    public String getTenKhachHang() {
+        return tenKhachHang;
     }
 
-    public void setLoaiPhong(String loaiPhong) {
-        this.loaiPhong = loaiPhong;
+    public void setTenKhachHang(String tenKhachHang) {
+        this.tenKhachHang = tenKhachHang;
     }
 
-    public LocalDateTime getNgayDat() {
-        return ngayDat;
+    public String getSoDienThoai() {
+        return soDienThoai;
     }
 
-    public void setNgayDat(LocalDateTime ngayDat) {
-        this.ngayDat = ngayDat;
+    public void setSoDienThoai(String soDienThoai) {
+        this.soDienThoai = soDienThoai;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public int getMaGhe() {
+        return maGhe;
+    }
+
+    public void setMaGhe(int maGhe) {
+        this.maGhe = maGhe;
+    }
+
+    public int getMaKhuyenMai() {
+        return maKhuyenMai;
+    }
+
+    public void setMaKhuyenMai(int maKhuyenMai) {
+        this.maKhuyenMai = maKhuyenMai;
+    }
+
+    public String getTenKhuyenMai() {
+        return tenKhuyenMai;
+    }
+
+    public void setTenKhuyenMai(String tenKhuyenMai) {
+        this.tenKhuyenMai = tenKhuyenMai;
     }
 }

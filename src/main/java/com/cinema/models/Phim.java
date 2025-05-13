@@ -9,29 +9,31 @@ public class Phim {
     private int thoiLuong;
     private LocalDate ngayKhoiChieu;
     private String nuocSanXuat;
-    private String dinhDang;
+    private String kieuPhim;
     private String moTa;
     private String daoDien;
     private String duongDanPoster;
+    private String trangThai;
 
-    public Phim(int maPhim, String tenPhim, String tenTheLoai, int thoiLuong, LocalDate ngayKhoiChieu, String nuocSanXuat, String dinhDang, String moTa, String daoDien, String duongDanPoster) {
+    public Phim(int maPhim, String tenPhim, String tenTheLoai, int thoiLuong, LocalDate ngayKhoiChieu, String nuocSanXuat, String kieuPhim, String moTa, String daoDien, String duongDanPoster, String trangThai) {
         this.maPhim = maPhim;
         this.tenPhim = tenPhim;
         this.tenTheLoai = tenTheLoai;
         this.thoiLuong = thoiLuong;
         this.ngayKhoiChieu = ngayKhoiChieu;
         this.nuocSanXuat = nuocSanXuat;
-        this.dinhDang = dinhDang;
+        this.kieuPhim = kieuPhim;
         this.moTa = moTa;
         this.daoDien = daoDien;
         this.duongDanPoster = duongDanPoster;
+        this.trangThai = trangThai;
     }
 
     public Phim() {}
 
     public Phim(int maPhim, String tenPhim, int maTheLoai,
                 String tenTheLoai, int thoiLuong, LocalDate ngayKhoiChieu,
-                String nuocSanXuat, String dinhDang, String moTa, String daoDien, int i) {
+                String nuocSanXuat, String kieuPhim, String moTa, String daoDien, int i) {
         this.maPhim = maPhim;
         this.tenPhim = tenPhim;
         this.maTheLoai = maTheLoai;
@@ -39,7 +41,7 @@ public class Phim {
         this.thoiLuong = thoiLuong;
         this.ngayKhoiChieu = ngayKhoiChieu;
         this.nuocSanXuat = nuocSanXuat;
-        this.dinhDang = dinhDang;
+        this.kieuPhim = kieuPhim;
         this.moTa = moTa;
         this.daoDien = daoDien;
     }
@@ -100,12 +102,12 @@ public class Phim {
         this.nuocSanXuat = nuocSanXuat;
     }
 
-    public String getDinhDang() {
-        return dinhDang;
+    public String getKieuPhim() {
+        return kieuPhim;
     }
 
-    public void setDinhDang(String dinhDang) {
-        this.dinhDang = dinhDang;
+    public void setKieuPhim(String kieuPhim) {
+        this.kieuPhim = kieuPhim;
     }
 
     public String getMoTa() {
@@ -135,5 +137,13 @@ public class Phim {
     @Override
     public String toString() {
         return tenPhim;
+    }
+
+    public String getTrangThai() {
+        return trangThai;
+    }
+
+    public void setTrangThai(String trangThai) {
+        this.trangThai = trangThai;
     }
 }

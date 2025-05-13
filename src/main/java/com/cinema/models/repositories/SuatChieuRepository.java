@@ -1,11 +1,15 @@
 package com.cinema.models.repositories;
 
-import com.cinema.models.SuatChieu;
-import com.cinema.utils.DatabaseConnection;
-
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.cinema.models.SuatChieu;
+import com.cinema.utils.DatabaseConnection;
 
 public class SuatChieuRepository extends BaseRepository<SuatChieu> {
     public SuatChieuRepository(DatabaseConnection databaseConnection) {
@@ -16,7 +20,7 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
     public List<SuatChieu> findAll() {
         List<SuatChieu> list = new ArrayList<>();
         String sql = "SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, sc.maPhong, pc.tenPhong, " +
-                "sc.ngayGioChieu, p.thoiLuong, p.dinhDang, sc.soSuatChieu " +
+                "sc.ngayGioChieu, p.thoiLuong, p.kieuPhim " +
                 "FROM SuatChieu sc " +
                 "JOIN Phim p ON sc.maPhim = p.maPhim " +
                 "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong";
@@ -31,8 +35,7 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
                         rs.getString("tenPhong"),
                         rs.getTimestamp("ngayGioChieu").toLocalDateTime(),
                         rs.getInt("thoiLuong"),
-                        rs.getString("dinhDang"),
-                        rs.getInt("soSuatChieu")
+                        rs.getString("kieuPhim")
                 ));
             }
         } catch (SQLException e) {
@@ -44,7 +47,7 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
     public List<SuatChieu> findByMaPhim(int maPhim) throws SQLException {
         List<SuatChieu> list = new ArrayList<>();
         String sql = "SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, sc.maPhong, pc.tenPhong, " +
-                "sc.ngayGioChieu, p.thoiLuong, p.dinhDang, sc.soSuatChieu " +
+                "sc.ngayGioChieu, p.thoiLuong, p.kieuPhim " +
                 "FROM SuatChieu sc " +
                 "JOIN Phim p ON sc.maPhim = p.maPhim " +
                 "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong " +
@@ -61,8 +64,7 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
                         rs.getString("tenPhong"),
                         rs.getTimestamp("ngayGioChieu").toLocalDateTime(),
                         rs.getInt("thoiLuong"),
-                        rs.getString("dinhDang"),
-                        rs.getInt("soSuatChieu")
+                        rs.getString("kieuPhim")
                 ));
             }
         }
@@ -118,5 +120,27 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
                 throw new SQLException("Xóa suất chiếu thất bại, không tìm thấy suất chiếu với ID: " + id);
             }
         }
+    }
+
+    public List<String> getThoiGianChieuByPhongVaPhim(String tenPhong, String tenPhim) throws SQLException {
+        List<String> list = new ArrayList<>();
+        String sql = "SELECT sc.ngayGioChieu FROM SuatChieu sc " +
+                "JOIN Phim p ON sc.maPhim = p.maPhim " +
+                "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong " +
+                "WHERE pc.tenPhong = ? AND p.tenPhim = ? ORDER BY sc.ngayGioChieu";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, tenPhong);
+            stmt.setString(2, tenPhim);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Timestamp ts = rs.getTimestamp("ngayGioChieu");
+                if (ts != null) {
+                    java.time.LocalDateTime ldt = ts.toLocalDateTime();
+                    String formatted = ldt.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+                    list.add(formatted);
+                }
+            }
+        }
+        return list;
     }
 }

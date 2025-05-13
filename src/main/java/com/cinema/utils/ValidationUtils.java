@@ -2,6 +2,8 @@ package com.cinema.utils;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.sql.SQLException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -14,60 +16,89 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
 
-public class ValidationUtils {
+import com.cinema.services.PhimService;
 
-    // Kiểm tra chuỗi không rỗng và không chỉ chứa khoảng trắng
+public class ValidationUtils {
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final int MAX_MOVIE_TITLE_LENGTH = 100;
+
     public static boolean isValidString(String input) {
         return input != null && !input.trim().isEmpty();
     }
 
-    // Kiểm tra email hợp lệ
+    public static boolean isValidNumber(String str) {
+        if (str == null || str.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            Double.parseDouble(str.trim());
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
     public static boolean isValidEmail(String email) {
         return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
     }
 
-    // Kiểm tra số điện thoại hợp lệ (10 chữ số, bắt đầu từ 0)
     public static boolean isValidPhoneNumber(String phoneNumber) {
         return phoneNumber != null && phoneNumber.matches("^0\\d{9}$");
     }
 
-    // Thêm phương thức kiểm tra định dạng ngày giờ
-    public static LocalDateTime validateDateTime(String dateTimeStr, String fieldName) {
-        if (!isValidString(dateTimeStr)) {
-            throw new IllegalArgumentException(fieldName + " không được để trống");
-        }
-
+    public static boolean isValidDuration(String duration) {
         try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-            return LocalDateTime.parse(dateTimeStr, formatter);
+            int value = Integer.parseInt(duration.trim());
+            return value > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    public static boolean isValidStartDate(String dateStr) {
+        if (!isValidString(dateStr)) return false;
+        try {
+            LocalDate date = LocalDate.parse(dateStr, DATE_FORMATTER);
+            return !date.isBefore(LocalDate.now());
         } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException(fieldName + " phải có định dạng dd/MM/yyyy HH:mm:ss");
+            return false;
         }
     }
 
-    // Kiểm tra logic thời gian: ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc
-    public static void validateDateRange(LocalDateTime start, LocalDateTime end) {
-        if (start.isAfter(end)) {
-            throw new IllegalArgumentException("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc");
-        }
+    public static boolean isValidCountry(String country) {
+        return isValidString(country);
     }
 
-    // Thêm phương thức kiểm tra tên người dùng hợp lệ
     public static boolean isValidUsername(String username) {
         return username != null && username.matches("^[a-zA-Z0-9._-]{3,20}$");
     }
 
-    // Thêm phương thức kiểm tra mật khẩu hợp lệ
     public static boolean isValidPassword(String password) {
-        return password != null && password.length() >= 8;
+        return password != null && password.length() >= 6;
     }
 
-    // Kiểm tra tên đầy đủ
     public static boolean isValidFullName(String fullName) {
         return isValidString(fullName);
     }
 
-    // Kiểm tra và trả về thông báo lỗi cho username
+    public static LocalDateTime parseDateTime(String dateTimeStr) throws DateTimeParseException {
+        return LocalDateTime.parse(dateTimeStr, DATE_TIME_FORMATTER);
+    }
+
+    public static boolean isValidDateTime(String dateTimeStr) {
+        try {
+            parseDateTime(dateTimeStr);
+            return true;
+        } catch (DateTimeParseException e) {
+            return false;
+        }
+    }
+
+    public static boolean isValidDateRange(LocalDateTime start, LocalDateTime end) {
+        return !end.isBefore(start);
+    }
+
     public static String validateUserInput(String username, String fullName, String phone, String email, String password, String confirmPassword) {
         if (!isValidUsername(username)) {
             return "Username không hợp lệ";
@@ -87,7 +118,7 @@ public class ValidationUtils {
         if (!password.equals(confirmPassword)) {
             return "Mật khẩu xác nhận không khớp";
         }
-        return null; // Trả về null nếu không có lỗi
+        return null;
     }
 
     public static String validateForgotPasswordInput(String username, String email, String phone, String newPassword) {
@@ -117,28 +148,46 @@ public class ValidationUtils {
     }
 
     public static void showError(JLabel errorLabel, String message) {
-        errorLabel.setText(message);
-        errorLabel.setVisible(true);
+        if (errorLabel != null) {
+            errorLabel.setText(message != null ? message : "");
+            errorLabel.setVisible(true);
+            errorLabel.revalidate();
+            errorLabel.repaint();
+            System.out.println("Hiển thị lỗi: " + message + " tại " + (errorLabel.getName() != null ? errorLabel.getName() : "unknown"));
+        }
     }
 
     public static void hideError(JLabel errorLabel) {
-        errorLabel.setVisible(false);
+        if (errorLabel != null) {
+            errorLabel.setText("");
+            errorLabel.setVisible(false);
+            errorLabel.revalidate();
+            errorLabel.repaint();
+            System.out.println("Ẩn lỗi tại " + (errorLabel.getName() != null ? errorLabel.getName() : "unknown"));
+        }
     }
 
     public static void setErrorBorder(JComponent component) {
-        component.setBorder(BorderFactory.createLineBorder(new Color(220, 53, 69)));
+        if (component != null) {
+            component.setBorder(BorderFactory.createLineBorder(new Color(220, 53, 69), 2));
+            component.revalidate();
+            component.repaint();
+        }
     }
 
     public static void setNormalBorder(JComponent component) {
-        component.setBorder(UIManager.getLookAndFeel().getDefaults().getBorder("TextField.border"));
+        if (component != null) {
+            component.setBorder(UIManager.getLookAndFeel().getDefaults().getBorder("TextField.border"));
+            component.revalidate();
+            component.repaint();
+        }
     }
 
     public static JLabel createErrorLabel() {
         JLabel label = new JLabel("");
         label.setFont(new Font("Arial", Font.PLAIN, 12));
-        label.setForeground(Color.WHITE);
-        label.setBackground(new Color(220, 53, 69));
-        label.setOpaque(true);
+        label.setForeground(new Color(220, 53, 69));
+        label.setOpaque(false);
         label.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
         label.setVisible(false);
         return label;
@@ -230,6 +279,127 @@ public class ValidationUtils {
             hideError(errorLabel);
             setNormalBorder(usernameField);
             setNormalBorder(passwordField);
+        }
+    }
+
+    public static void validateMovieTitleField(JTextField field, JLabel errorLabel, ResourceBundle messages, PhimService service, String currentId) {
+        String title = field.getText().trim();
+        try {
+            if (title.isEmpty()) {
+                showError(errorLabel, messages.getString("movieTitleEmpty"));
+                setErrorBorder(field);
+                System.out.println("Lỗi: Tên phim trống");
+            } else if (title.length() > MAX_MOVIE_TITLE_LENGTH) {
+                showError(errorLabel, messages.getString("movieTitleTooLong"));
+                setErrorBorder(field);
+                System.out.println("Lỗi: Tên phim quá dài - " + title.length() + " ký tự");
+            } else if (service.isMovieTitleExists(title, currentId.isEmpty() ? 0 : Integer.parseInt(currentId))) {
+                showError(errorLabel, messages.getString("movieTitleExists"));
+                setErrorBorder(field);
+                System.out.println("Lỗi: Tên phim đã tồn tại - " + title);
+            } else {
+                hideError(errorLabel);
+                setNormalBorder(field);
+                System.out.println("Xác thực tên phim thành công: " + title);
+            }
+        } catch (SQLException e) {
+            showError(errorLabel, messages.getString("databaseError") + e.getMessage());
+            setErrorBorder(field);
+            System.out.println("Lỗi CSDL khi xác thực tên phim: " + e.getMessage());
+        }
+    }
+
+    public static void validateDurationField(JTextField field, JLabel errorLabel, ResourceBundle messages) {
+        String duration = field.getText().trim();
+        if (duration.isEmpty()) {
+            showError(errorLabel, messages.getString("durationRequired"));
+            setErrorBorder(field);
+            System.out.println("Lỗi: Thời lượng trống");
+        } else if (!isValidDuration(duration)) {
+            showError(errorLabel, messages.getString("durationInvalid"));
+            setErrorBorder(field);
+            System.out.println("Lỗi: Thời lượng không hợp lệ - " + duration);
+        } else {
+            hideError(errorLabel);
+            setNormalBorder(field);
+            System.out.println("Xác thực thời lượng thành công: " + duration);
+        }
+    }
+
+    public static void validateStartDateField(JTextField field, JLabel errorLabel, ResourceBundle messages) {
+        String date = field.getText().trim();
+        if (date.isEmpty()) {
+            showError(errorLabel, messages.getString("startDateRequired"));
+            setErrorBorder(field);
+            System.out.println("Lỗi: Ngày khởi chiếu trống");
+        } else if (!isValidStartDate(date)) {
+            showError(errorLabel, messages.getString("startDateInvalid"));
+            setErrorBorder(field);
+            System.out.println("Lỗi: Ngày khởi chiếu không hợp lệ - " + date);
+        } else {
+            hideError(errorLabel);
+            setNormalBorder(field);
+            System.out.println("Xác thực ngày khởi chiếu thành công: " + date);
+        }
+    }
+
+    public static void validateCountryField(JTextField field, JLabel errorLabel, ResourceBundle messages) {
+        String country = field.getText().trim();
+        if (country.isEmpty()) {
+            showError(errorLabel, messages.getString("countryEmpty"));
+            setErrorBorder(field);
+            System.out.println("Lỗi: Nước sản xuất trống");
+        } else if (country.length() > 50) {
+            showError(errorLabel, messages.getString("countryTooLong"));
+            setErrorBorder(field);
+            System.out.println("Lỗi: Nước sản xuất quá dài - " + country.length() + " ký tự");
+        } else {
+            hideError(errorLabel);
+            setNormalBorder(field);
+            System.out.println("Xác thực nước sản xuất thành công: " + country);
+        }
+    }
+
+    public static void validateDateTimeField(JTextField field, JLabel errorLabel, ResourceBundle messages, String fieldName) {
+        String dateTime = field.getText().trim();
+        if (!isValidDateTime(dateTime)) {
+            showError(errorLabel, messages.getString("invalidDateFormat"));
+            setErrorBorder(field);
+            System.out.println("Lỗi: Định dạng ngày giờ không hợp lệ - " + dateTime);
+        } else {
+            hideError(errorLabel);
+            setNormalBorder(field);
+            System.out.println("Xác thực ngày giờ thành công: " + dateTime);
+        }
+    }
+
+    // Kiểm tra tên khách hàng hợp lệ (có thể mở rộng kiểm tra ký tự đặc biệt, độ dài...)
+    public static boolean isCustomerNameValid(String name) {
+        return name != null && !name.trim().isEmpty();
+    }
+
+    // Hiển thị lỗi khi tên khách hàng không hợp lệ
+    public static void validateCustomerSelection(String name, JLabel errorLabel, ResourceBundle messages) {
+        if (!isCustomerNameValid(name)) {
+            showError(errorLabel, messages.getString("customerNameInvalid"));
+            setErrorBorder(errorLabel);
+        } else {
+            hideError(errorLabel);
+            setNormalBorder(errorLabel);
+        }
+    }
+
+    public static boolean isValidSeatCode(String seat) {
+        return seat != null && seat.matches("^[A-Z][1-9]$|^[A-Z]10$");
+    }
+
+    public static boolean isValidTicketPrice(String priceStr) {
+        if (!isValidNumber(priceStr)) return false;
+        try {
+            double price = Double.parseDouble(priceStr);
+            return price > 0 && price <= 500000;
+        } catch (NumberFormatException e) {
+            return false;
         }
     }
 }

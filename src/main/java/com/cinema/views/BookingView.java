@@ -44,11 +44,6 @@ public class BookingView extends JDialog {
         JComboBox<SuatChieu> suatChieuCombo = new JComboBox<>();
         try {
             List<SuatChieu> suatChieuList = datVeController.getSuatChieuByPhim(maPhim);
-            for (SuatChieu sc : suatChieuList) {
-                if (sc.getSoSuatChieu() > 0) {
-                    suatChieuCombo.addItem(sc);
-                }
-            }
             if (suatChieuCombo.getItemCount() == 0) {
                 JOptionPane.showMessageDialog(this, "Không còn suất chiếu khả dụng cho phim này!", "Thông báo", JOptionPane.WARNING_MESSAGE);
                 dispose();
@@ -77,14 +72,6 @@ public class BookingView extends JDialog {
 
             if (selectedSuatChieu != null) {
                 try {
-                    if (selectedSuatChieu.getSoSuatChieu() <= 0) {
-                        JOptionPane.showMessageDialog(this, "Suất chiếu này đã hết vé!", "Thông báo", JOptionPane.WARNING_MESSAGE);
-                        seatPanel.removeAll();
-                        seatPanel.revalidate();
-                        seatPanel.repaint();
-                        return;
-                    }
-
                     List<Ghe> allSeats = datVeController.getAllGheByPhong(selectedSuatChieu.getMaPhong());
                     List<Ghe> availableSeats = datVeController.getGheTrongByPhongAndSuatChieu(
                             selectedSuatChieu.getMaPhong(), selectedSuatChieu.getMaSuatChieu());

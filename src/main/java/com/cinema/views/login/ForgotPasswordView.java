@@ -53,6 +53,7 @@ public class ForgotPasswordView extends JFrame {
         initUI();
     }
 
+    @SuppressWarnings("LoggerStringConcat")
     private void initController() {
         try {
             DatabaseConnection databaseConnection = new DatabaseConnection();
@@ -72,7 +73,7 @@ public class ForgotPasswordView extends JFrame {
 
     private void initUI() {
         setTitle("Quên Mật Khẩu");
-        setSize(600, 800); // Increased size
+        setSize(700, 800);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
@@ -272,6 +273,7 @@ public class ForgotPasswordView extends JFrame {
         }
     }
 
+    @SuppressWarnings("LoggerStringConcat")
     private void showError(String msg, boolean exitAfter) {
         JOptionPane.showMessageDialog(this, msg, "Lỗi", JOptionPane.ERROR_MESSAGE);
         if (exitAfter) {
