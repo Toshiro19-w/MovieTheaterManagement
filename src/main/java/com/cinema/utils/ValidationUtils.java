@@ -27,6 +27,18 @@ public class ValidationUtils {
         return input != null && !input.trim().isEmpty();
     }
 
+    public static boolean isValidNumber(String str) {
+        if (str == null || str.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            Double.parseDouble(str.trim());
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
     public static boolean isValidEmail(String email) {
         return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
     }
@@ -374,6 +386,20 @@ public class ValidationUtils {
         } else {
             hideError(errorLabel);
             setNormalBorder(errorLabel);
+        }
+    }
+
+    public static boolean isValidSeatCode(String seat) {
+        return seat != null && seat.matches("^[A-Z][1-9]$|^[A-Z]10$");
+    }
+
+    public static boolean isValidTicketPrice(String priceStr) {
+        if (!isValidNumber(priceStr)) return false;
+        try {
+            double price = Double.parseDouble(priceStr);
+            return price > 0 && price <= 500000;
+        } catch (NumberFormatException e) {
+            return false;
         }
     }
 }

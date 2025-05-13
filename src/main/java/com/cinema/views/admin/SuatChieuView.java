@@ -1,20 +1,36 @@
 package com.cinema.views.admin;
 
-import com.cinema.controllers.PhongChieuController;
-import com.cinema.controllers.SuatChieuController;
-import com.cinema.utils.DatabaseConnection;
-
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableRowSorter;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.sql.SQLException;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.RowFilter;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
+
+import com.cinema.controllers.PhongChieuController;
+import com.cinema.controllers.SuatChieuController;
+import com.cinema.utils.DatabaseConnection;
 
 public class SuatChieuView extends JPanel {
     private DatabaseConnection databaseConnection;
@@ -130,7 +146,7 @@ public class SuatChieuView extends JPanel {
     }
 
     private JPanel createSuatChieuTablePanel() {
-        String[] columns = {"Mã Suất Chiếu", "Tên Phim", "Phòng Chiếu", "Ngày Giờ Chiếu", "Số Suất Chiếu"};
+        String[] columns = {"Mã Suất Chiếu", "Tên Phim", "Phòng Chiếu", "Ngày Giờ Chiếu"};
         suatChieuTableModel = new DefaultTableModel(columns, 0);
         suatChieuTable = new JTable(suatChieuTableModel);
         suatChieuTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);

@@ -164,4 +164,36 @@ public class PhimRepository extends BaseRepository<Phim> {
         }
         return dinhDangList;
     }
+
+    // Lấy danh sách phim có thể chiếu ở một phòng (theo tên phòng)
+    public List<Phim> getPhimByTenPhong(String tenPhong) throws SQLException {
+        List<Phim> list = new ArrayList<>();
+        String sql = """
+            SELECT DISTINCT p.* FROM Phim p
+            JOIN SuatChieu sc ON p.maPhim = sc.maPhim
+            JOIN PhongChieu pc ON sc.maPhong = pc.maPhong
+            WHERE pc.tenPhong = ? AND p.trangThai = 'active'
+            ORDER BY p.tenPhim
+        """;
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, tenPhong);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Phim phim = new Phim();
+                phim.setMaPhim(rs.getInt("maPhim"));
+                phim.setTenPhim(rs.getString("tenPhim"));
+                phim.setMaTheLoai(rs.getInt("maTheLoai"));
+                phim.setThoiLuong(rs.getInt("thoiLuong"));
+                phim.setNgayKhoiChieu(rs.getDate("ngayKhoiChieu") != null ? rs.getDate("ngayKhoiChieu").toLocalDate() : null);
+                phim.setNuocSanXuat(rs.getString("nuocSanXuat"));
+                phim.setKieuPhim(rs.getString("kieuPhim"));
+                phim.setMoTa(rs.getString("moTa"));
+                phim.setDaoDien(rs.getString("daoDien"));
+                phim.setDuongDanPoster(rs.getString("duongDanPoster"));
+                phim.setTrangThai(rs.getString("trangThai"));
+                list.add(phim);
+            }
+        }
+        return list;
+    }
 }

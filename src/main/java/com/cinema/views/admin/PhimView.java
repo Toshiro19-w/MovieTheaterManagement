@@ -162,7 +162,7 @@ public class PhimView extends JPanel {
         lblPoster.setBorder(BorderFactory.createLineBorder(Color.GRAY));
         btnChonAnh = createStyledButton("Chọn ảnh", PRIMARY_COLOR);
         btnChonAnh.setPreferredSize(new Dimension(150, 30));
-        btnChonAnh.addActionListener(e -> chonAnh());
+        btnChonAnh.addActionListener(_ -> chonAnh());
 
         // Initialize error labels
         lblTenPhimError = ValidationUtils.createErrorLabel();
@@ -188,7 +188,7 @@ public class PhimView extends JPanel {
         gbc.gridy++;
         addFormField(formPanel, "Đạo diễn:", txtDaoDien, null, gbc);
 
-        // Middle column: Thời lượng, Ngày khởi chiếu, Trạng thái, Định dạng
+        // Middle column: Thời lượng, Ngày khởi chiếu, Trạng thái, Kiểu phim
         gbc.gridx = 2;
         gbc.gridy = 0;
         addFormField(formPanel, "Thời lượng (phút):", txtThoiLuong, lblThoiLuongError, gbc);
@@ -200,7 +200,7 @@ public class PhimView extends JPanel {
         addFormField(formPanel, "Trạng thái:", cbTrangThai, null, gbc);
 
         gbc.gridy++;
-        addFormField(formPanel, "Định dạng:", cbKieuPhim, null, gbc);
+        addFormField(formPanel, "Kiểu phim:", cbKieuPhim, null, gbc);
 
         // Right column: Nước sản xuất, Mô tả, Poster
         gbc.gridx = 4;
@@ -443,7 +443,7 @@ public class PhimView extends JPanel {
     }
 
     private void setupButtonActions() {
-        btnThem.addActionListener(unused -> {
+        btnThem.addActionListener(_ -> {
             if (isFormValid()) {
                 try {
                     controller.themPhim();
@@ -456,7 +456,7 @@ public class PhimView extends JPanel {
             }
         });
 
-        btnSua.addActionListener(unused -> {
+        btnSua.addActionListener(_ -> {
             if (isFormValid()) {
                 try {
                     controller.suaPhim();
@@ -469,7 +469,7 @@ public class PhimView extends JPanel {
             }
         });
 
-        btnXoa.addActionListener(unused -> {
+        btnXoa.addActionListener(_ -> {
             if (JOptionPane.showConfirmDialog(this,
                     messages.getString("confirmDeleteMovie"),
                     messages.getString("confirm"),
@@ -485,7 +485,7 @@ public class PhimView extends JPanel {
             }
         });
 
-        btnClear.addActionListener(unused -> {
+        btnClear.addActionListener(_ -> {
             clearForm();
             updateButtonState();
         });

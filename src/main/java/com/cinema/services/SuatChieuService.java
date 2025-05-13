@@ -42,4 +42,8 @@ public class SuatChieuService {
         }
         suatChieuRepository.delete(maSuatChieu);
     }
+
+    public List<String> getThoiGianChieuByPhongVaPhim(String tenPhong, String tenPhim) throws SQLException {
+        return suatChieuRepository.getThoiGianChieuByPhongVaPhim(tenPhong, tenPhim);
+    }
 }

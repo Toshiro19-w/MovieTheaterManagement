@@ -160,6 +160,8 @@ public class MainView extends JFrame {
                 sidebarPanel.add(Box.createVerticalStrut(5));
                 sidebarPanel.add(createSidebarButton("Bán vé", "Bán vé"));
                 sidebarPanel.add(Box.createVerticalStrut(5));
+                sidebarPanel.add(createSidebarButton("Quản lý hoá đơn", "Hoá đơn"));
+                sidebarPanel.add(Box.createVerticalStrut(5));
             }
             if (permissionManager.isAdmin()) {
                 sidebarPanel.add(createSidebarButton("Quản lý người dùng", "Người dùng"));
@@ -167,8 +169,6 @@ public class MainView extends JFrame {
             }
         } else {
             sidebarPanel.add(createSidebarButton("Phim đang chiếu", "Phim"));
-            sidebarPanel.add(Box.createVerticalStrut(5));
-            sidebarPanel.add(createSidebarButton("Đặt vé", "Đặt vé"));
             sidebarPanel.add(Box.createVerticalStrut(5));
             sidebarPanel.add(createSidebarButton("Thông tin cá nhân", "Thông tin cá nhân"));
             sidebarPanel.add(Box.createVerticalStrut(5));
@@ -183,7 +183,7 @@ public class MainView extends JFrame {
         if (permissionManager.isAdmin() || permissionManager.isQuanLyPhim() || permissionManager.isThuNgan() || permissionManager.isBanVe()) {
             cardLayout = new CardLayout();
             mainContentPanel.setLayout(cardLayout);
-            AdminViewManager adminViewManager = new AdminViewManager(loaiTaiKhoan, mainContentPanel, cardLayout);
+            AdminViewManager adminViewManager = new AdminViewManager(loaiTaiKhoan, mainContentPanel, cardLayout, username);
             adminViewManager.initializeAdminPanels();
             // Thêm panel Quản lý người dùng
             UserManagementView userManagementView = new UserManagementView();

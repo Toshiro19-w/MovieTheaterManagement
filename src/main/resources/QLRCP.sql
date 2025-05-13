@@ -1,4 +1,4 @@
-﻿-- Active: 1746521847255@@127.0.0.1@3306@quanlyrcp
+﻿-- Active: 1746666659429@@127.0.0.1@3306@quanlyrcp
 DROP DATABASE IF EXISTS quanlyrcp;
 CREATE DATABASE quanlyrcp;
 USE quanlyrcp;
@@ -139,7 +139,9 @@ BEGIN
     FROM Ghe g
     LEFT JOIN Ve v ON g.maGhe = v.maGhe 
         AND v.maSuatChieu = p_maSuatChieu
-    WHERE v.maVe IS NULL;
+        AND v.trangThai NOT IN ('cancelled', 'DELETED')
+    WHERE v.maVe IS NULL
+    AND g.maPhong = (SELECT maPhong FROM SuatChieu WHERE maSuatChieu = p_maSuatChieu);
 END //
 DELIMITER ;
 
@@ -337,13 +339,24 @@ BEFORE INSERT ON DanhGia
 FOR EACH ROW
 BEGIN
     DECLARE phim_ngayKhoiChieu DATE;
+    DECLARE ve_trangThai ENUM('booked', 'paid', 'cancelled', 'pending');
+    
     SELECT ngayKhoiChieu INTO phim_ngayKhoiChieu
     FROM Phim
     WHERE maPhim = NEW.maPhim;
     
+    SELECT trangThai INTO ve_trangThai
+    FROM Ve
+    WHERE maVe = NEW.maVe;
+    
     IF DATE(NEW.ngayDanhGia) < phim_ngayKhoiChieu THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Không thể đánh giá phim trước ngày khởi chiếu.';
+    END IF;
+    
+    IF ve_trangThai != 'paid' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Chỉ có thể đánh giá với vé đã thanh toán.';
     END IF;
 END //
 DELIMITER ;

@@ -10,6 +10,7 @@ public class ChiTietHoaDon {
     private BigDecimal giaVe;
     private String tenPhim;
     private LocalDateTime ngayGioChieu;
+    private String loaiGhe;
 
     public ChiTietHoaDon(int maHoaDon, int maVe) {
         this.maHoaDon = maHoaDon;
@@ -32,17 +33,29 @@ public class ChiTietHoaDon {
         this.maVe = maVe;
     }
 
-    public String getSoGhe() { return soGhe; }
+    public String getSoGhe() { 
+        return soGhe; 
+    }
 
-    public void setSoGhe(String soGhe) { this.soGhe = soGhe; }
+    public void setSoGhe(String soGhe) { 
+        this.soGhe = soGhe; 
+    }
 
-    public BigDecimal getGiaVe() { return giaVe; }
+    public BigDecimal getGiaVe() { 
+        return giaVe; 
+    }
 
-    public void setGiaVe(BigDecimal giaVe) { this.giaVe = giaVe; }
+    public void setGiaVe(BigDecimal giaVe) { 
+        this.giaVe = giaVe; 
+    }
 
-    public String getTenPhim() { return tenPhim; }
+    public String getTenPhim() { 
+        return tenPhim; 
+    }
 
-    public void setTenPhim(String tenPhim) { this.tenPhim = tenPhim; }
+    public void setTenPhim(String tenPhim) { 
+        this.tenPhim = tenPhim; 
+    }
 
     public LocalDateTime getNgayGioChieu() {
         return ngayGioChieu;
@@ -50,5 +63,13 @@ public class ChiTietHoaDon {
 
     public void setNgayGioChieu(LocalDateTime ngayGioChieu) {
         this.ngayGioChieu = ngayGioChieu;
+    }
+
+    public String getLoaiGhe() {
+        return loaiGhe;
+    }
+
+    public void setLoaiGhe(String loaiGhe) {
+        this.loaiGhe = loaiGhe;
     }
 }

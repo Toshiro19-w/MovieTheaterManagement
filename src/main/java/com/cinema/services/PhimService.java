@@ -65,4 +65,8 @@ public class PhimService {
     public List<String> getAllDinhDang() throws SQLException {
         return phimRepo.getAllDinhDang();
     }
+
+    public List<Phim> getPhimByTenPhong(String tenPhong) throws SQLException {
+        return phimRepo.getPhimByTenPhong(tenPhong);
+    }
 }
