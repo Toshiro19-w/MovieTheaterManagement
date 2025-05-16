@@ -184,6 +184,53 @@ BEGIN
 END //
 DELIMITER ;
 
+-- Tránh xung đột thời gian giữa các suất chiếu khi cập nhật
+DELIMITER //
+CREATE TRIGGER before_update_suatchieu
+BEFORE UPDATE ON SuatChieu
+FOR EACH ROW
+BEGIN
+    DECLARE phim_end_time DATETIME;
+
+    -- Nếu không thay đổi thời gian hoặc phòng chiếu thì không cần kiểm tra
+    IF NOT (NEW.ngayGioChieu = OLD.ngayGioChieu AND NEW.maPhong = OLD.maPhong) THEN
+
+        -- Tính thời gian kết thúc của suất chiếu mới
+        SELECT DATE_ADD(NEW.ngayGioChieu, INTERVAL p.thoiLuong MINUTE)
+        INTO phim_end_time
+        FROM Phim p
+        WHERE p.maPhim = NEW.maPhim;
+
+        -- Kiểm tra xung đột với các suất chiếu khác
+        IF EXISTS (
+            SELECT 1
+            FROM SuatChieu sc
+            JOIN Phim p ON sc.maPhim = p.maPhim
+            WHERE sc.maPhong = NEW.maPhong
+            AND sc.maSuatChieu != NEW.maSuatChieu
+            AND (
+                (NEW.ngayGioChieu BETWEEN sc.ngayGioChieu AND DATE_ADD(sc.ngayGioChieu, INTERVAL p.thoiLuong MINUTE))
+                OR (phim_end_time BETWEEN sc.ngayGioChieu AND DATE_ADD(sc.ngayGioChieu, INTERVAL p.thoiLuong MINUTE))
+                OR (NEW.ngayGioChieu < sc.ngayGioChieu AND phim_end_time > DATE_ADD(sc.ngayGioChieu, INTERVAL p.thoiLuong MINUTE))
+            )
+        ) THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Phòng chiếu đã được sử dụng trong khoảng thời gian này.';
+        END IF;
+
+        -- Kiểm tra xem suất chiếu đã có vé bán chưa
+        IF EXISTS (
+            SELECT 1 FROM Ve 
+            WHERE maSuatChieu = NEW.maSuatChieu 
+            AND trangThai = 'paid'
+        ) THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Không thể thay đổi thời gian của suất chiếu đã có vé bán.';
+        END IF;
+    END IF;
+END //
+DELIMITER ;
+
 -- Tạo bảng HoaDon
 CREATE TABLE IF NOT EXISTS HoaDon (
     maHoaDon INT AUTO_INCREMENT PRIMARY KEY,

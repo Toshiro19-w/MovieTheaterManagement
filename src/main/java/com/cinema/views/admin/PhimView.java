@@ -30,7 +30,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -40,14 +39,19 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
+import com.cinema.components.CountryComboBox;
+import com.cinema.components.UnderlineTextField;
 import com.cinema.controllers.PhimController;
+import com.cinema.models.repositories.SuatChieuRepository;
+import com.cinema.models.repositories.VeRepository;
 import com.cinema.services.PhimService;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.SimpleDocumentListener;
 import com.cinema.utils.ValidationUtils;
 
 public class PhimView extends JPanel {
-    private JTextField txtMaPhim, txtTenPhim, txtThoiLuong, txtNgayKhoiChieu, txtNuocSanXuat, txtMoTa, txtDaoDien, txtSearch;
+    private UnderlineTextField txtMaPhim, txtTenPhim, txtThoiLuong, txtNgayKhoiChieu, txtMoTa, txtDaoDien, txtSearch;
+    private CountryComboBox cbNuocSanXuat;
     private JComboBox<String> cbTenTheLoai, cbTrangThai, cbKieuPhim;
     private JLabel lblPoster, lblTenPhimError, lblThoiLuongError, lblNgayKhoiChieuError, lblNuocSanXuatError;
     private JButton btnThem, btnSua, btnXoa, btnClear, btnChonAnh;
@@ -134,19 +138,34 @@ public class PhimView extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         // Initialize components
-        txtMaPhim = createStyledTextField();
+        txtMaPhim = createStyledUnderlineTextField();
         txtMaPhim.setEditable(false);
-        txtTenPhim = createStyledTextField();
+        txtMaPhim.setPlaceholder("Mã phim tự động");
+        
+        txtTenPhim = createStyledUnderlineTextField();
+        txtTenPhim.setPlaceholder("Nhập tên phim");
         txtTenPhim.setToolTipText("Nhập tên phim (không trùng lặp)");
-        txtThoiLuong = createStyledTextField();
+        
+        txtThoiLuong = createStyledUnderlineTextField();
+        txtThoiLuong.setPlaceholder("Nhập thời lượng (phút)");
         txtThoiLuong.setToolTipText("Nhập thời lượng phim (số dương)");
-        txtNgayKhoiChieu = createStyledTextField();
+        
+        txtNgayKhoiChieu = createStyledUnderlineTextField();
+        txtNgayKhoiChieu.setPlaceholder("dd/MM/yyyy");
         txtNgayKhoiChieu.setToolTipText("Nhập ngày khởi chiếu (dd/MM/yyyy, từ hôm nay trở đi)");
-        txtNuocSanXuat = createStyledTextField();
-        txtNuocSanXuat.setToolTipText("Nhập nước sản xuất phim");
-        txtMoTa = createStyledTextField();
-        txtDaoDien = createStyledTextField();
-        txtSearch = createStyledTextField();
+        
+        cbNuocSanXuat = new CountryComboBox();
+        cbNuocSanXuat.setFont(LABEL_FONT);
+        cbNuocSanXuat.setPreferredSize(new Dimension(250, 30));
+        
+        txtMoTa = createStyledUnderlineTextField();
+        txtMoTa.setPlaceholder("Nhập mô tả phim");
+        
+        txtDaoDien = createStyledUnderlineTextField();
+        txtDaoDien.setPlaceholder("Nhập tên đạo diễn");
+        
+        txtSearch = createStyledUnderlineTextField();
+        txtSearch.setPlaceholder("Tìm kiếm phim...");
         txtSearch.setToolTipText("Tìm kiếm theo tên phim");
 
         cbTenTheLoai = new JComboBox<>();
@@ -205,7 +224,7 @@ public class PhimView extends JPanel {
         // Right column: Nước sản xuất, Mô tả, Poster
         gbc.gridx = 4;
         gbc.gridy = 0;
-        addFormField(formPanel, "Nước sản xuất:", txtNuocSanXuat, lblNuocSanXuatError, gbc);
+        addFormField(formPanel, "Nước sản xuất:", cbNuocSanXuat, lblNuocSanXuatError, gbc);
 
         gbc.gridy++;
         addFormField(formPanel, "Mô tả:", txtMoTa, null, gbc);
@@ -370,13 +389,13 @@ public class PhimView extends JPanel {
         return button;
     }
 
-    private JTextField createStyledTextField() {
-        JTextField field = new JTextField();
+    private UnderlineTextField createStyledUnderlineTextField() {
+        UnderlineTextField field = new UnderlineTextField(20);
         field.setFont(LABEL_FONT);
-        field.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200)),
-                BorderFactory.createEmptyBorder(8, 10, 8, 10)
-        ));
+        field.setUnderlineColor(new Color(200, 200, 200));
+        field.setFocusColor(PRIMARY_COLOR);
+        field.setErrorColor(new Color(220, 53, 69));
+        field.setReadonlyColor(new Color(180, 180, 180));
         return field;
     }
 
@@ -406,21 +425,32 @@ public class PhimView extends JPanel {
     private void addValidationListeners() {
         txtTenPhim.getDocument().addDocumentListener(new SimpleDocumentListener(() -> {
             ValidationUtils.validateMovieTitleField(txtTenPhim, lblTenPhimError, messages, phimService, txtMaPhim.getText());
+            txtTenPhim.setError(lblTenPhimError.isVisible());
             updateButtonState();
         }));
 
         txtThoiLuong.getDocument().addDocumentListener(new SimpleDocumentListener(() -> {
             ValidationUtils.validateDurationField(txtThoiLuong, lblThoiLuongError, messages);
+            txtThoiLuong.setError(lblThoiLuongError.isVisible());
             updateButtonState();
         }));
 
         txtNgayKhoiChieu.getDocument().addDocumentListener(new SimpleDocumentListener(() -> {
-            ValidationUtils.validateStartDateField(txtNgayKhoiChieu, lblNgayKhoiChieuError, messages);
+            ValidationUtils.validateStartDateField(
+                txtMaPhim,
+                txtNgayKhoiChieu, 
+                lblNgayKhoiChieuError, 
+                messages,
+                new VeRepository(dbConnection),
+                new SuatChieuRepository(dbConnection)
+            );
+            txtNgayKhoiChieu.setError(lblNgayKhoiChieuError.isVisible());
             updateButtonState();
         }));
 
-        txtNuocSanXuat.getDocument().addDocumentListener(new SimpleDocumentListener(() -> {
-            ValidationUtils.validateCountryField(txtNuocSanXuat, lblNuocSanXuatError, messages);
+        cbNuocSanXuat.getDocument().addDocumentListener(new SimpleDocumentListener(() -> {
+            ValidationUtils.validateCountryField(cbNuocSanXuat, lblNuocSanXuatError, messages);
+            cbNuocSanXuat.setError(lblNuocSanXuatError.isVisible());
             updateButtonState();
         }));
     }
@@ -439,7 +469,7 @@ public class PhimView extends JPanel {
                !txtTenPhim.getText().trim().isEmpty() &&
                !txtThoiLuong.getText().trim().isEmpty() &&
                !txtNgayKhoiChieu.getText().trim().isEmpty() &&
-               !txtNuocSanXuat.getText().trim().isEmpty();
+               !cbNuocSanXuat.getText().trim().isEmpty();
     }
 
     private void setupButtonActions() {
@@ -496,7 +526,7 @@ public class PhimView extends JPanel {
         txtTenPhim.setText("");
         txtThoiLuong.setText("");
         txtNgayKhoiChieu.setText("");
-        txtNuocSanXuat.setText("");
+        cbNuocSanXuat.setSelectedIndex(-1);
         txtMoTa.setText("");
         txtDaoDien.setText("");
         cbTenTheLoai.setSelectedIndex(-1);
@@ -506,28 +536,27 @@ public class PhimView extends JPanel {
         lblPoster.setText("Không có ảnh");
         selectedPosterPath = null;
 
+        txtTenPhim.setError(false);
+        txtThoiLuong.setError(false);
+        txtNgayKhoiChieu.setError(false);
+
         ValidationUtils.hideError(lblTenPhimError);
         ValidationUtils.hideError(lblThoiLuongError);
         ValidationUtils.hideError(lblNgayKhoiChieuError);
         ValidationUtils.hideError(lblNuocSanXuatError);
 
-        ValidationUtils.setNormalBorder(txtTenPhim);
-        ValidationUtils.setNormalBorder(txtThoiLuong);
-        ValidationUtils.setNormalBorder(txtNgayKhoiChieu);
-        ValidationUtils.setNormalBorder(txtNuocSanXuat);
-
         table.clearSelection();
     }
 
     // Getters
-    public JTextField getTxtMaPhim() { return txtMaPhim; }
-    public JTextField getTxtTenPhim() { return txtTenPhim; }
-    public JTextField getTxtThoiLuong() { return txtThoiLuong; }
-    public JTextField getTxtNgayKhoiChieu() { return txtNgayKhoiChieu; }
-    public JTextField getTxtNuocSanXuat() { return txtNuocSanXuat; }
-    public JTextField getTxtMoTa() { return txtMoTa; }
-    public JTextField getTxtDaoDien() { return txtDaoDien; }
-    public JTextField getSearchField() { return txtSearch; }
+    public UnderlineTextField getTxtMaPhim() { return txtMaPhim; }
+    public UnderlineTextField getTxtTenPhim() { return txtTenPhim; }
+    public UnderlineTextField getTxtThoiLuong() { return txtThoiLuong; }
+    public UnderlineTextField getTxtNgayKhoiChieu() { return txtNgayKhoiChieu; }
+    public CountryComboBox getCbNuocSanXuat() { return cbNuocSanXuat; }
+    public UnderlineTextField getTxtMoTa() { return txtMoTa; }
+    public UnderlineTextField getTxtDaoDien() { return txtDaoDien; }
+    public UnderlineTextField getSearchField() { return txtSearch; }
     public String getSearchText() { return txtSearch.getText().trim(); }
     public JComboBox<String> getCbTenTheLoai() { return cbTenTheLoai; }
     public JComboBox<String> getCbTrangthai() { return cbTrangThai; }

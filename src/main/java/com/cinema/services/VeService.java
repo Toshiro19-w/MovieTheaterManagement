@@ -6,8 +6,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
+import com.cinema.enums.TrangThaiVe;
 import com.cinema.models.KhachHang;
 import com.cinema.models.Ve;
 import com.cinema.models.repositories.DatVeRepository;
@@ -36,11 +38,57 @@ public class VeService {
         return veRepository.findBySoGhe(soGhe);
     }
 
-    public Ve saveVe(Ve ve) throws SQLException {
+    public Ve saveVe(Ve ve, String tenPhong, String tenKhuyenMai, LocalDateTime ngayGioChieu) throws SQLException {
+        Integer maSuatChieu = getMaSuatChieu(ngayGioChieu, tenPhong);
+        if (maSuatChieu == null) {
+            throw new SQLException("Không tìm thấy suất chiếu phù hợp");
+        }
+        ve.setMaSuatChieu(maSuatChieu);
+
+        if (tenKhuyenMai != null && !tenKhuyenMai.isEmpty() && !tenKhuyenMai.equals("Không có")) {
+            Integer maKhuyenMai = getMaKhuyenMai(tenKhuyenMai);
+            if (maKhuyenMai == null) {
+                throw new SQLException("Khuyến mãi không hợp lệ hoặc đã hết hạn");
+            }
+            ve.setMaKhuyenMai(maKhuyenMai);
+        } else {
+            ve.setMaKhuyenMai(0);
+        }
+
+        if (ve.getTrangThai() == null) {
+            ve.setTrangThai(TrangThaiVe.BOOKED);
+        }
+
+        calculateTicketPrices(ve, maSuatChieu, tenKhuyenMai);
         return veRepository.save(ve);
     }
 
-    public Ve updateVe(Ve ve) throws SQLException {
+    public Ve updateVe(Ve ve, String tenPhong, String tenKhuyenMai, LocalDateTime ngayGioChieu) throws SQLException {
+        Integer maSuatChieu = getMaSuatChieu(ngayGioChieu, tenPhong);
+        if (maSuatChieu == null) {
+            throw new SQLException("Không tìm thấy suất chiếu phù hợp");
+        }
+        ve.setMaSuatChieu(maSuatChieu);
+
+        // Kiểm tra nếu vé đã có khuyến mãi hết hạn
+        if (ve.getMaKhuyenMai() != 0) {
+            String currentKhuyenMai = getTenKhuyenMaiByMa(ve.getMaKhuyenMai());
+            if (currentKhuyenMai != null && !isPromotionValid(currentKhuyenMai)) {
+                throw new SQLException("Không thể chỉnh sửa vé vì khuyến mãi đã hết hạn");
+            }
+        }
+
+        if (tenKhuyenMai != null && !tenKhuyenMai.isEmpty() && !tenKhuyenMai.equals("Không có")) {
+            Integer maKhuyenMai = getMaKhuyenMai(tenKhuyenMai);
+            if (maKhuyenMai == null) {
+                throw new SQLException("Khuyến mãi không hợp lệ hoặc đã hết hạn");
+            }
+            ve.setMaKhuyenMai(maKhuyenMai);
+        } else {
+            ve.setMaKhuyenMai(0);
+        }
+
+        calculateTicketPrices(ve, maSuatChieu, tenKhuyenMai);
         return veRepository.update(ve);
     }
 
@@ -122,20 +170,125 @@ public class VeService {
         }
     }
 
-    public boolean isGheDaDat(int maSuatChieu, String soGhe) throws SQLException {
-        String sql = """
-                SELECT v.maVe 
-                FROM Ve v
-                JOIN Ghe g ON v.maGhe = g.maGhe
-                WHERE v.maSuatChieu = ? 
-                AND g.soGhe = ? 
-                AND v.trangThai != 'CANCELLED'""";
-                
+    public String getTenKhuyenMaiByMa(int maKhuyenMai) throws SQLException {
+        String sql = "SELECT tenKhuyenMai FROM KhuyenMai WHERE maKhuyenMai = ?";
         try (PreparedStatement stmt = databaseConnection.getConnection().prepareStatement(sql)) {
-            stmt.setInt(1, maSuatChieu);
-            stmt.setString(2, soGhe);
+            stmt.setInt(1, maKhuyenMai);
             ResultSet rs = stmt.executeQuery();
-            return rs.next();
+            if (rs.next()) {
+                return rs.getString("tenKhuyenMai");
+            }
+            return null;
         }
+    }
+
+    public boolean isPromotionValid(String tenKhuyenMai) throws SQLException {
+        String sql = """
+                SELECT COUNT(*) 
+                FROM KhuyenMai 
+                WHERE tenKhuyenMai = ? AND trangThai = 'HoatDong' 
+                AND NOW() BETWEEN ngayBatDau AND ngayKetThuc""";
+        try (PreparedStatement stmt = databaseConnection.getConnection().prepareStatement(sql)) {
+            stmt.setString(1, tenKhuyenMai);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+            return false;
+        }
+    }
+
+    public List<String> getValidPromotions() throws SQLException {
+        List<String> promotions = new ArrayList<>();
+        promotions.add("Không có"); // Default option
+        String sql = """
+                SELECT tenKhuyenMai 
+                FROM KhuyenMai 
+                WHERE trangThai = 'HoatDong' 
+                AND NOW() BETWEEN ngayBatDau AND ngayKetThuc""";
+        try (PreparedStatement stmt = databaseConnection.getConnection().prepareStatement(sql)) {
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                promotions.add(rs.getString("tenKhuyenMai"));
+            }
+        }
+        return promotions;
+    }
+
+    public boolean isGheDaDat(int maSuatChieu, String soGhe) throws SQLException {
+        return veRepository.isSeatTaken(maSuatChieu, soGhe);
+    }
+
+    public BigDecimal getGiaVeBySoGheAndSuatChieu(String soGhe, int maSuatChieu) throws SQLException {
+        String sql = """
+                SELECT gv.giaVe 
+                FROM Ghe g
+                JOIN SuatChieu sc ON g.maPhong = sc.maPhong
+                JOIN GiaVe gv ON g.loaiGhe = gv.loaiGhe
+                WHERE g.soGhe = ? AND sc.maSuatChieu = ?
+                AND gv.ngayApDung <= NOW()
+                ORDER BY gv.ngayApDung DESC
+                LIMIT 1""";
+        try (PreparedStatement stmt = databaseConnection.getConnection().prepareStatement(sql)) {
+            stmt.setString(1, soGhe);
+            stmt.setInt(2, maSuatChieu);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                BigDecimal giaVe = rs.getBigDecimal("giaVe");
+                if (giaVe == null || giaVe.compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new SQLException("Giá vé không hợp lệ cho ghế " + soGhe);
+                }
+                return giaVe;
+            }
+            throw new SQLException("Không tìm thấy giá vé cho ghế " + soGhe + " và suất chiếu " + maSuatChieu);
+        }
+    }
+
+    public BigDecimal getDiscountAmount(String tenKhuyenMai, BigDecimal giaVeGoc) throws SQLException {
+        if (tenKhuyenMai == null || tenKhuyenMai.isEmpty() || tenKhuyenMai.equals("Không có")) {
+            return BigDecimal.ZERO;
+        }
+        String sql = """
+                SELECT giaTriGiam 
+                FROM KhuyenMai 
+                WHERE tenKhuyenMai = ? AND trangThai = 'HoatDong' 
+                AND NOW() BETWEEN ngayBatDau AND ngayKetThuc""";
+        try (PreparedStatement stmt = databaseConnection.getConnection().prepareStatement(sql)) {
+            stmt.setString(1, tenKhuyenMai);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                BigDecimal discount = rs.getBigDecimal("giaTriGiam");
+                if (discount == null || discount.compareTo(BigDecimal.ZERO) < 0) {
+                    throw new SQLException("Giá trị giảm giá không hợp lệ cho khuyến mãi " + tenKhuyenMai);
+                }
+                return discount.min(giaVeGoc); // Không giảm quá giá vé gốc
+            }
+            return BigDecimal.ZERO;
+        }
+    }
+
+    public void calculateTicketPrices(Ve ve, int maSuatChieu, String tenKhuyenMai) throws SQLException {
+        if (ve == null || ve.getSoGhe() == null) {
+            throw new SQLException("Thông tin vé hoặc số ghế không hợp lệ");
+        }
+
+        BigDecimal giaVeGoc = getGiaVeBySoGheAndSuatChieu(ve.getSoGhe(), maSuatChieu);
+        BigDecimal tienGiam = getDiscountAmount(tenKhuyenMai, giaVeGoc);
+        BigDecimal giaVeSauGiam = giaVeGoc.subtract(tienGiam);
+
+        // Kiểm tra tính hợp lệ của giá vé
+        if (giaVeGoc.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new SQLException("Giá vé gốc phải lớn hơn 0");
+        }
+        if (tienGiam.compareTo(BigDecimal.ZERO) < 0) {
+            throw new SQLException("Tiền giảm không được âm");
+        }
+        if (giaVeSauGiam.compareTo(BigDecimal.ZERO) < 0) {
+            throw new SQLException("Giá vé sau giảm không được âm");
+        }
+
+        ve.setGiaVeGoc(giaVeGoc);
+        ve.setTienGiam(tienGiam);
+        ve.setGiaVeSauGiam(giaVeSauGiam);
     }
 }

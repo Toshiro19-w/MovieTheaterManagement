@@ -29,7 +29,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableRowSorter;
 
 import com.cinema.components.UnderlineTextField;
 import com.cinema.controllers.VeController;
@@ -38,16 +37,13 @@ import com.cinema.utils.DatabaseConnection;
 public class VeView extends JPanel {
     private DatabaseConnection databaseConnection;
     private JLabel txtMaVe;
-    private JTextField txtGiaVe, txtSoGhe, txtTenPhong, txtTenPhim, txtNgayGioChieu, searchField, txtNgayDat, txtKhuyenMai;
-    private JComboBox<String> cbTrangThai;
+    private JTextField txtSoGhe, txtNgayDat, txtGiaVeGoc, txtGiaVeSauGiam, txtTienGiam;
+    private JComboBox<String> cbTrangThai, cbTenPhong, cbNgayGioChieu, cbTenPhim, cbKhuyenMai;
     private JTable tableVe, tableKhachHang;
     private DefaultTableModel tableVeModel, tableKhachHangModel;
     private JButton btnThem, btnSua, btnXoa, btnClear, btnRefresh;
-    private TableRowSorter<DefaultTableModel> sorter;
-    private JLabel soGheErrorLabel, giaVeErrorLabel, tenPhongErrorLabel, ngayGioChieuErrorLabel, tenPhimErrorLabel;
-    private JComboBox<String> cbTenPhim;
-    private JComboBox<String> cbTenPhong;
-    private JComboBox<String> cbNgayGioChieu;
+    private JTextField searchField;
+    private JLabel soGheErrorLabel, tenPhongErrorLabel, ngayGioChieuErrorLabel, tenPhimErrorLabel, khuyenMaiErrorLabel;
 
     public VeView() throws SQLException {
         initializeDatabase();
@@ -97,7 +93,7 @@ public class VeView extends JPanel {
         searchField = new UnderlineTextField(15);
         searchField.setPreferredSize(new Dimension(200, 30));
         searchField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        ((UnderlineTextField)searchField).setPlaceholder("Nhập vào từ khoá...");
+        ((UnderlineTextField)searchField).setPlaceholder("Nhập mã vé, số ghế, phim...");
         
         searchPanel.add(searchLabel);
         searchPanel.add(searchField);
@@ -120,14 +116,9 @@ public class VeView extends JPanel {
         // Initialize components
         txtMaVe = new JLabel();
         txtMaVe.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        cbTrangThai = new JComboBox<>(new String[]{"booked", "paid", "cancelled"});
+        cbTrangThai = new JComboBox<>(new String[]{"BOOKED", "PAID", "CANCELLED", "PENDING"});
         cbTrangThai.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         cbTrangThai.setPreferredSize(new Dimension(150, 30));
-        txtGiaVe = new UnderlineTextField(10);
-        txtGiaVe.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        giaVeErrorLabel = new JLabel("");
-        giaVeErrorLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-        giaVeErrorLabel.setForeground(new Color(200, 0, 0));
         txtSoGhe = new UnderlineTextField(10);
         txtSoGhe.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         soGheErrorLabel = new JLabel("");
@@ -154,9 +145,21 @@ public class VeView extends JPanel {
         tenPhimErrorLabel = new JLabel("");
         tenPhimErrorLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
         tenPhimErrorLabel.setForeground(new Color(200, 0, 0));
-        txtKhuyenMai = new UnderlineTextField(10);
-        txtKhuyenMai.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        txtKhuyenMai.setEditable(false);
+        cbKhuyenMai = new JComboBox<>();
+        cbKhuyenMai.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        cbKhuyenMai.setPreferredSize(new Dimension(150, 30));
+        khuyenMaiErrorLabel = new JLabel("");
+        khuyenMaiErrorLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        khuyenMaiErrorLabel.setForeground(new Color(200, 0, 0));
+        txtGiaVeGoc = new UnderlineTextField(10);
+        txtGiaVeGoc.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtGiaVeGoc.setEditable(false);
+        txtGiaVeSauGiam = new UnderlineTextField(10);
+        txtGiaVeSauGiam.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtGiaVeSauGiam.setEditable(false);
+        txtTienGiam = new UnderlineTextField(10);
+        txtTienGiam.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtTienGiam.setEditable(false);
 
         // Ticket Details Panel
         JPanel ticketDetailsPanel = new JPanel(new GridBagLayout());
@@ -168,13 +171,14 @@ public class VeView extends JPanel {
 
         addField(ticketDetailsPanel, gbc, 0, 0, "Mã vé:", txtMaVe);
         addField(ticketDetailsPanel, gbc, 0, 1, "Trạng thái:", cbTrangThai);
-        addField(ticketDetailsPanel, gbc, 0, 2, "Giá vé:", txtGiaVe);
-        gbc.gridx = 1; gbc.gridy = 3; ticketDetailsPanel.add(giaVeErrorLabel, gbc);
-        addField(ticketDetailsPanel, gbc, 2, 0, "Số ghế:", txtSoGhe);
-        gbc.gridx = 3; gbc.gridy = 1; ticketDetailsPanel.add(soGheErrorLabel, gbc);
-        addField(ticketDetailsPanel, gbc, 2, 1, "Ngày đặt:", txtNgayDat);
-        addField(ticketDetailsPanel, gbc, 2, 2, "Phòng chiếu:", cbTenPhong);
-        gbc.gridx = 3; gbc.gridy = 3; ticketDetailsPanel.add(tenPhongErrorLabel, gbc);
+        addField(ticketDetailsPanel, gbc, 0, 2, "Số ghế:", txtSoGhe);
+        gbc.gridx = 1; gbc.gridy = 5; ticketDetailsPanel.add(soGheErrorLabel, gbc);
+        addField(ticketDetailsPanel, gbc, 0, 3, "Ngày đặt:", txtNgayDat);
+        addField(ticketDetailsPanel, gbc, 2, 0, "Phòng chiếu:", cbTenPhong);
+        gbc.gridx = 3; gbc.gridy = 1; ticketDetailsPanel.add(tenPhongErrorLabel, gbc);
+        addField(ticketDetailsPanel, gbc, 2, 1, "Giá vé gốc:", txtGiaVeGoc);
+        addField(ticketDetailsPanel, gbc, 2, 2, "Tiền giảm:", txtTienGiam);
+        addField(ticketDetailsPanel, gbc, 2, 3, "Giá vé sau giảm:", txtGiaVeSauGiam);
 
         // Movie Details Panel
         JPanel movieDetailsPanel = new JPanel(new GridBagLayout());
@@ -187,7 +191,7 @@ public class VeView extends JPanel {
         addField(movieDetailsPanel, gbc, 0, 0, "Tên phim:", cbTenPhim);
         gbc.gridx = 1; gbc.gridy = 1; movieDetailsPanel.add(tenPhimErrorLabel, gbc);
         addField(movieDetailsPanel, gbc, 0, 1, "Thời gian chiếu:", cbNgayGioChieu);
-        gbc.gridx = 1; gbc.gridy = 2; movieDetailsPanel.add(ngayGioChieuErrorLabel, gbc);
+        gbc.gridx = 1; gbc.gridy = 3; movieDetailsPanel.add(ngayGioChieuErrorLabel, gbc);
 
         // Promotion Panel
         JPanel promotionPanel = new JPanel(new GridBagLayout());
@@ -197,7 +201,8 @@ public class VeView extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
 
-        addField(promotionPanel, gbc, 0, 0, "Khuyến mãi:", txtKhuyenMai);
+        addField(promotionPanel, gbc, 0, 0, "Khuyến mãi:", cbKhuyenMai);
+        gbc.gridx = 1; gbc.gridy = 1; promotionPanel.add(khuyenMaiErrorLabel, gbc);
 
         // Right Panel
         JPanel rightPanel = new JPanel(new BorderLayout(5, 5));
@@ -216,21 +221,21 @@ public class VeView extends JPanel {
 
     private JSplitPane createCenterPanel() {
         JPanel vePanel = createTablePanel(
-            new String[]{"Mã vé", "Trạng thái", "Giá vé", "Số ghế", "Ngày đặt", "Phòng chiếu", "Thời gian chiếu", "Tên phim", "Khuyến mãi"},
+            new String[]{"Mã vé", "Trạng thái", "Số ghế", "Giá gốc", "Tiền giảm", "Giá sau giảm", "Ngày đặt", "Phòng chiếu", "Thời gian chiếu", "Tên phim", "Khuyến mãi"},
             "DANH SÁCH VÉ"
         );
         tableVe = (JTable) ((JScrollPane) vePanel.getComponent(0)).getViewport().getView();
         tableVeModel = (DefaultTableModel) tableVe.getModel();
 
         JPanel khachHangPanel = createTablePanel(
-            new String[]{"Mã khách hàng", "Tên khách hàng", "Số điện thoại", "Email", "Điểm tích lũy"},
+            new String[]{"Tên khách hàng", "Số điện thoại", "Email", "Điểm tích lũy"},
             "THÔNG TIN KHÁCH HÀNG"
         );
         tableKhachHang = (JTable) ((JScrollPane) khachHangPanel.getComponent(0)).getViewport().getView();
         tableKhachHangModel = (DefaultTableModel) tableKhachHang.getModel();
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, vePanel, khachHangPanel);
-        splitPane.setResizeWeight(0.85); // Tăng tỷ lệ cho phần "Danh sách vé"
+        splitPane.setResizeWeight(0.85);
         return splitPane;
     }
 
@@ -245,7 +250,7 @@ public class VeView extends JPanel {
         JTable table = new JTable(model);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.getTableHeader().setReorderingAllowed(false);
-        table.setRowHeight(35); // Tăng chiều cao hàng để dễ đọc
+        table.setRowHeight(35);
         table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
         table.getTableHeader().setBackground(new Color(230, 232, 235));
@@ -349,7 +354,6 @@ public class VeView extends JPanel {
     public DatabaseConnection getDatabaseConnection() { return databaseConnection; }
     public JLabel getTxtMaVe() { return txtMaVe; }
     public JComboBox<String> getCbTrangThai() { return cbTrangThai; }
-    public JTextField getTxtGiaVe() { return txtGiaVe; }
     public JTextField getTxtSoGhe() { return txtSoGhe; }
     public JTextField getTxtNgayDat() { return txtNgayDat; }
     public JComboBox<String> getCbTenPhong() { return cbTenPhong; }
@@ -365,12 +369,34 @@ public class VeView extends JPanel {
     public JButton getBtnXoa() { return btnXoa; }
     public JButton getBtnClear() { return btnClear; }
     public JButton getBtnRefresh() { return btnRefresh; }
-    public JTextField getTxtKhuyenMai() { return txtKhuyenMai; }
+    public JComboBox<String> getCbKhuyenMai() { return cbKhuyenMai; }
     public JLabel getSoGheErrorLabel() { return soGheErrorLabel; }
-    public JLabel getGiaVeErrorLabel() { return giaVeErrorLabel; }
     public JLabel getTenPhongErrorLabel() { return tenPhongErrorLabel; }
     public JLabel getNgayGioChieuErrorLabel() { return ngayGioChieuErrorLabel; }
     public JLabel getTenPhimErrorLabel() { return tenPhimErrorLabel; }
+    public JLabel getKhuyenMaiErrorLabel() { return khuyenMaiErrorLabel; }
+    public JTextField getTxtGiaVeGoc() { return txtGiaVeGoc; }
+    public JTextField getTxtGiaVeSauGiam() { return txtGiaVeSauGiam; }
+    public JTextField getTxtTienGiam() { return txtTienGiam; }
+
+    public void clearForm() {
+        txtMaVe.setText("");
+        cbTrangThai.setSelectedIndex(0);
+        txtSoGhe.setText("");
+        txtNgayDat.setText("");
+        cbKhuyenMai.setSelectedIndex(-1);
+        txtGiaVeGoc.setText("");
+        txtGiaVeSauGiam.setText("");
+        txtTienGiam.setText("");
+        cbTenPhong.setSelectedIndex(-1);
+        cbTenPhim.setSelectedIndex(-1);
+        cbNgayGioChieu.setSelectedIndex(-1);
+        soGheErrorLabel.setText("");
+        tenPhongErrorLabel.setText("");
+        ngayGioChieuErrorLabel.setText("");
+        tenPhimErrorLabel.setText("");
+        khuyenMaiErrorLabel.setText("");
+    }
 
     private void showError(String message) {
         JOptionPane.showMessageDialog(this, message, "Lỗi", JOptionPane.ERROR_MESSAGE);

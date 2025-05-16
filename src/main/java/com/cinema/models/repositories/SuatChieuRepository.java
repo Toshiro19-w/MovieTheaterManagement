@@ -143,4 +143,19 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
         }
         return list;
     }
+
+    public boolean hasShowtimeBefore(int maPhim, java.time.LocalDate newReleaseDate) throws SQLException {
+        String sql = """
+            SELECT 1 FROM SuatChieu
+            WHERE maPhim = ? AND DATE(ngayGioChieu) < ?
+            LIMIT 1
+        """;
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maPhim);
+            stmt.setDate(2, java.sql.Date.valueOf(newReleaseDate));
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
 }
