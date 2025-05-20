@@ -1,11 +1,12 @@
 package com.cinema.models;
+
 import java.time.LocalDate;
 
 public class Phim {
     private int maPhim;
     private String tenPhim;
-    private String tenTheLoai;
     private int maTheLoai;
+    private String tenTheLoai; // Không lưu trong DB, chỉ để hiển thị
     private int thoiLuong;
     private LocalDate ngayKhoiChieu;
     private String nuocSanXuat;
@@ -15,9 +16,14 @@ public class Phim {
     private String duongDanPoster;
     private String trangThai;
 
-    public Phim(int maPhim, String tenPhim, String tenTheLoai, int thoiLuong, LocalDate ngayKhoiChieu, String nuocSanXuat, String kieuPhim, String moTa, String daoDien, String duongDanPoster, String trangThai) {
+    public Phim() {
+    }
+
+    public Phim(int maPhim, String tenPhim, int maTheLoai, String tenTheLoai, int thoiLuong, LocalDate ngayKhoiChieu,
+            String nuocSanXuat, String kieuPhim, String moTa, String daoDien, String duongDanPoster, String trangThai) {
         this.maPhim = maPhim;
         this.tenPhim = tenPhim;
+        this.maTheLoai = maTheLoai;
         this.tenTheLoai = tenTheLoai;
         this.thoiLuong = thoiLuong;
         this.ngayKhoiChieu = ngayKhoiChieu;
@@ -29,14 +35,10 @@ public class Phim {
         this.trangThai = trangThai;
     }
 
-    public Phim() {}
-
-    public Phim(int maPhim, String tenPhim, int maTheLoai,
-                String tenTheLoai, int thoiLuong, LocalDate ngayKhoiChieu,
-                String nuocSanXuat, String kieuPhim, String moTa, String daoDien, int i) {
+    public Phim(int maPhim, String tenPhim, String tenTheLoai, int thoiLuong, LocalDate ngayKhoiChieu,
+            String nuocSanXuat, String kieuPhim, String moTa, String daoDien, String duongDanPoster, String trangThai) {
         this.maPhim = maPhim;
         this.tenPhim = tenPhim;
-        this.maTheLoai = maTheLoai;
         this.tenTheLoai = tenTheLoai;
         this.thoiLuong = thoiLuong;
         this.ngayKhoiChieu = ngayKhoiChieu;
@@ -44,14 +46,8 @@ public class Phim {
         this.kieuPhim = kieuPhim;
         this.moTa = moTa;
         this.daoDien = daoDien;
-    }
-
-    public String getDuongDanPoster() {
-        return duongDanPoster;
-    }
-
-    public void setDuongDanPoster(String duongDanPoster) {
         this.duongDanPoster = duongDanPoster;
+        this.trangThai = trangThai;
     }
 
     public int getMaPhim() {
@@ -76,6 +72,14 @@ public class Phim {
 
     public void setMaTheLoai(int maTheLoai) {
         this.maTheLoai = maTheLoai;
+    }
+
+    public String getTenTheLoai() {
+        return tenTheLoai;
+    }
+
+    public void setTenTheLoai(String tenTheLoai) {
+        this.tenTheLoai = tenTheLoai;
     }
 
     public int getThoiLuong() {
@@ -126,17 +130,12 @@ public class Phim {
         this.daoDien = daoDien;
     }
 
-    public String getTenTheLoai() {
-        return tenTheLoai;
+    public String getDuongDanPoster() {
+        return duongDanPoster;
     }
 
-    public void setTenTheLoai(String tenTheLoai) {
-        this.tenTheLoai = tenTheLoai;
-    }
-
-    @Override
-    public String toString() {
-        return tenPhim;
+    public void setDuongDanPoster(String duongDanPoster) {
+        this.duongDanPoster = duongDanPoster;
     }
 
     public String getTrangThai() {
@@ -145,5 +144,13 @@ public class Phim {
 
     public void setTrangThai(String trangThai) {
         this.trangThai = trangThai;
+    }
+
+    @Override
+    public String toString() {
+        return "Phim [maPhim=" + maPhim + ", tenPhim=" + tenPhim + ", maTheLoai=" + maTheLoai + ", tenTheLoai="
+                + tenTheLoai + ", thoiLuong=" + thoiLuong + ", ngayKhoiChieu=" + ngayKhoiChieu + ", nuocSanXuat="
+                + nuocSanXuat + ", kieuPhim=" + kieuPhim + ", moTa=" + moTa + ", daoDien=" + daoDien
+                + ", duongDanPoster=" + duongDanPoster + ", trangThai=" + trangThai + "]";
     }
 }

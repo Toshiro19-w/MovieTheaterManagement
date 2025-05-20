@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 import javax.swing.JComboBox;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -24,7 +23,7 @@ import com.cinema.services.PhimService;
 import com.cinema.services.PhongChieuService;
 import com.cinema.services.SuatChieuService;
 import com.cinema.services.VeService;
-import com.cinema.utils.DatabaseConnection;
+import com.cinema.utils.FormatUtils;
 import com.cinema.utils.ValidationUtils;
 import com.cinema.views.admin.VeView;
 
@@ -85,10 +84,6 @@ public class VeController {
         view.getBtnXoa().addActionListener(_ -> xoaVe());
         view.getBtnClear().addActionListener(_ -> clearForm());
         view.getBtnRefresh().addActionListener(_ -> refreshData());
-
-        view.getCbTenPhong().addActionListener(e -> updateTicketPrices());
-        view.getCbNgayGioChieu().addActionListener(e -> updateTicketPrices());
-        view.getCbKhuyenMai().addActionListener(e -> updateTicketPrices());
     }
 
     private void addValidationListeners() {
@@ -103,7 +98,6 @@ public class VeController {
                 } else {
                     ValidationUtils.hideError(view.getSoGheErrorLabel());
                     ValidationUtils.setNormalBorder(txtSoGhe);
-                    updateTicketPrices();
                 }
             }
             @Override
@@ -148,6 +142,12 @@ public class VeController {
             } else {
                 ValidationUtils.hideError(view.getTenPhimErrorLabel());
                 ValidationUtils.setNormalBorder(view.getCbTenPhim());
+                
+                // Cập nhật thời gian chiếu khi phim thay đổi
+                String tenPhong = (String) view.getCbTenPhong().getSelectedItem();
+                if (ValidationUtils.isValidString(tenPhong)) {
+                    loadSuatChieuByPhongVaPhim(tenPhong, tenPhim);
+                }
             }
         });
 
@@ -173,41 +173,6 @@ public class VeController {
                 ValidationUtils.setNormalBorder(view.getCbKhuyenMai());
             }
         });
-    }
-
-    private void updateTicketPrices() {
-        try {
-            String soGhe = view.getTxtSoGhe().getText().trim();
-            String tenPhong = (String) view.getCbTenPhong().getSelectedItem();
-            String ngayGioChieuStr = (String) view.getCbNgayGioChieu().getSelectedItem();
-            String tenKhuyenMai = (String) view.getCbKhuyenMai().getSelectedItem();
-
-            if (ValidationUtils.isValidSeatCode(soGhe) && ValidationUtils.isValidString(tenPhong) && ValidationUtils.isValidDateTime(ngayGioChieuStr)) {
-                LocalDateTime ngayGioChieu = LocalDateTime.parse(ngayGioChieuStr, ngayGioChieuFormatter);
-                Integer maSuatChieu = service.getMaSuatChieu(ngayGioChieu, tenPhong);
-                if (maSuatChieu != null) {
-                    Ve tempVe = new Ve();
-                    tempVe.setSoGhe(soGhe);
-                    service.calculateTicketPrices(tempVe, maSuatChieu, tenKhuyenMai);
-                    view.getTxtGiaVeGoc().setText(formatCurrency(tempVe.getGiaVeGoc()));
-                    view.getTxtTienGiam().setText(formatCurrency(tempVe.getTienGiam()));
-                    view.getTxtGiaVeSauGiam().setText(formatCurrency(tempVe.getGiaVeSauGiam()));
-                } else {
-                    clearPriceFields();
-                }
-            } else {
-                clearPriceFields();
-            }
-        } catch (SQLException | DateTimeParseException e) {
-            clearPriceFields();
-            handleException("Lỗi khi tính giá vé: " + e.getMessage(), e);
-        }
-    }
-
-    private void clearPriceFields() {
-        view.getTxtGiaVeGoc().setText("");
-        view.getTxtTienGiam().setText("");
-        view.getTxtGiaVeSauGiam().setText("");
     }
 
     private void loadVeList(List<Ve> veList) {
@@ -346,6 +311,7 @@ public class VeController {
             if (result != null) {
                 showSuccess("Thêm vé thành công!");
                 loadVeList(service.getAllVeDetail());
+                displayVeInfo(ve); // Hiển thị vé vừa thêm
                 clearForm();
             }
         } catch (SQLException e) {
@@ -466,9 +432,7 @@ public class VeController {
     }
 
     private String formatCurrency(BigDecimal amount) {
-        if (amount == null) return "0 VND";
-        java.text.DecimalFormat formatter = new java.text.DecimalFormat("#,### VND");
-        return formatter.format(amount);
+        return FormatUtils.formatCurrency(amount);
     }
 
     private Ve createVeFromForm() throws DateTimeParseException {
@@ -562,11 +526,17 @@ public class VeController {
     private void loadSuatChieuByPhongVaPhim(String tenPhong, String tenPhim) {
         try {
             List<String> suatChieuList = suatChieuService.getThoiGianChieuByPhongVaPhim(tenPhong, tenPhim);
+            System.out.println("Tìm thấy " + suatChieuList.size() + " suất chiếu cho phim " + tenPhim + " tại phòng " + tenPhong);
+            
             JComboBox<String> cbNgayGioChieu = view.getCbNgayGioChieu();
             cbNgayGioChieu.removeAllItems();
+            
             for (String thoiGian : suatChieuList) {
+                System.out.println("Thêm suất chiếu: " + thoiGian);
                 cbNgayGioChieu.addItem(thoiGian);
             }
+            
+            System.out.println("Số lượng item trong combobox: " + cbNgayGioChieu.getItemCount());
         } catch (Exception ex) {
             handleException("Lỗi khi tải suất chiếu", ex);
         }

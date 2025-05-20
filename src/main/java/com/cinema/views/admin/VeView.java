@@ -10,6 +10,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.sql.SQLException;
 
 import javax.swing.BorderFactory;
@@ -33,6 +34,7 @@ import javax.swing.table.DefaultTableModel;
 import com.cinema.components.UnderlineTextField;
 import com.cinema.controllers.VeController;
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.utils.FormatUtils;
 
 public class VeView extends JPanel {
     private DatabaseConnection databaseConnection;
@@ -77,6 +79,7 @@ public class VeView extends JPanel {
         add(centerPanel, BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
     }
+
 
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new BorderLayout(5, 5));
@@ -350,6 +353,12 @@ public class VeView extends JPanel {
         panel.setBackground(new Color(250, 250, 252));
     }
 
+    public void updatePriceDisplay(BigDecimal giaVeGoc, BigDecimal tienGiam, BigDecimal giaVeSauGiam) {
+        txtGiaVeGoc.setText(FormatUtils.formatCurrency(giaVeGoc));
+        txtTienGiam.setText(FormatUtils.formatCurrency(tienGiam));
+        txtGiaVeSauGiam.setText(FormatUtils.formatCurrency(giaVeSauGiam));
+    }
+
     // Getters
     public DatabaseConnection getDatabaseConnection() { return databaseConnection; }
     public JLabel getTxtMaVe() { return txtMaVe; }
@@ -378,6 +387,9 @@ public class VeView extends JPanel {
     public JTextField getTxtGiaVeGoc() { return txtGiaVeGoc; }
     public JTextField getTxtGiaVeSauGiam() { return txtGiaVeSauGiam; }
     public JTextField getTxtTienGiam() { return txtTienGiam; }
+    public BigDecimal getGiaVeGoc() { return FormatUtils.parseCurrency(txtGiaVeGoc.getText()); }
+    public BigDecimal getTienGiam() { return FormatUtils.parseCurrency(txtTienGiam.getText()); }
+    public BigDecimal getGiaVeSauGiam() { return FormatUtils.parseCurrency(txtGiaVeSauGiam.getText()); }
 
     public void clearForm() {
         txtMaVe.setText("");
@@ -385,9 +397,9 @@ public class VeView extends JPanel {
         txtSoGhe.setText("");
         txtNgayDat.setText("");
         cbKhuyenMai.setSelectedIndex(-1);
-        txtGiaVeGoc.setText("");
-        txtGiaVeSauGiam.setText("");
-        txtTienGiam.setText("");
+        txtGiaVeGoc.setText(FormatUtils.formatCurrency(BigDecimal.ZERO));
+        txtGiaVeSauGiam.setText(FormatUtils.formatCurrency(BigDecimal.ZERO));
+        txtTienGiam.setText(FormatUtils.formatCurrency(BigDecimal.ZERO));
         cbTenPhong.setSelectedIndex(-1);
         cbTenPhim.setSelectedIndex(-1);
         cbNgayGioChieu.setSelectedIndex(-1);

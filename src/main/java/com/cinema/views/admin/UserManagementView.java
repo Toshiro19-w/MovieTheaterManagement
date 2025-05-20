@@ -24,6 +24,7 @@ public class UserManagementView extends JPanel {
         tabbedPane.setFont(new Font("Roboto", Font.PLAIN, 14));
         tabbedPane.addTab("Nhân viên", new NhanVienView());
         tabbedPane.addTab("Khách hàng", new KhachHangView());
+        tabbedPane.addTab("Phiên làm việc", new PhienLamViecView());
         add(tabbedPane, BorderLayout.CENTER);
     }
 }

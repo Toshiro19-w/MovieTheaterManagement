@@ -127,7 +127,9 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
         String sql = "SELECT sc.ngayGioChieu FROM SuatChieu sc " +
                 "JOIN Phim p ON sc.maPhim = p.maPhim " +
                 "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong " +
-                "WHERE pc.tenPhong = ? AND p.tenPhim = ? ORDER BY sc.ngayGioChieu";
+                "WHERE pc.tenPhong = ? AND p.tenPhim = ? " +
+                "AND sc.ngayGioChieu >= NOW() " +
+                "ORDER BY sc.ngayGioChieu";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, tenPhong);
             stmt.setString(2, tenPhim);
@@ -157,5 +159,11 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
                 return rs.next();
             }
         }
+    }
+
+    @Override
+    public SuatChieu findById(int id) throws SQLException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findById'");
     }
 }

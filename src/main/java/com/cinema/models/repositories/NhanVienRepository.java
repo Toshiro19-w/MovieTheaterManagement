@@ -1,15 +1,15 @@
 package com.cinema.models.repositories;
 
-import com.cinema.enums.LoaiNguoiDung;
-import com.cinema.models.NhanVien;
-import com.cinema.enums.VaiTro;
-import com.cinema.utils.DatabaseConnection;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.cinema.enums.LoaiNguoiDung;
+import com.cinema.enums.VaiTro;
+import com.cinema.models.NhanVien;
+import com.cinema.utils.DatabaseConnection;
 
 public class NhanVienRepository extends BaseRepository<NhanVien> {
     public NhanVienRepository(DatabaseConnection dbConnection) {
@@ -94,5 +94,11 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
             stmt.setInt(1, maNguoiDung);
             stmt.executeUpdate();
         }
+    }
+
+    @Override
+    public NhanVien findById(int id) throws SQLException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findById'");
     }
 }

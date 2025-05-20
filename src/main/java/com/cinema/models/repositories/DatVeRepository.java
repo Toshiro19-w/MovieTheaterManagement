@@ -95,11 +95,9 @@ public class DatVeRepository implements IDatVeRepository {
                             throw new SQLException("Không thể lấy mã hóa đơn!");
                         }
                     }
-                }
-
-                String updateVeSql = "UPDATE Ve SET trangThai = ?, maHoaDon = ? WHERE maVe = ?";
+                }                String updateVeSql = "UPDATE Ve SET trangThai = ?, maHoaDon = ? WHERE maVe = ?";
                 try (PreparedStatement updateVeStmt = conn.prepareStatement(updateVeSql)) {
-                    updateVeStmt.setString(1, TrangThaiVe.PAID.toString());
+                    updateVeStmt.setString(1, TrangThaiVe.PAID.getValue());
                     updateVeStmt.setInt(2, maHoaDonGenerated);
                     updateVeStmt.setInt(3, maVe);
                     int affectedRows = updateVeStmt.executeUpdate();
@@ -199,8 +197,7 @@ public class DatVeRepository implements IDatVeRepository {
     }
 
     @Override
-    public boolean isSeatTaken(int maSuatChieu, String soGhe, Connection conn) throws SQLException {
-        String sql = "SELECT maVe FROM Ve WHERE maSuatChieu = ? AND soGhe = ? AND trangThai != 'CANCELLED'";
+    public boolean isSeatTaken(int maSuatChieu, String soGhe, Connection conn) throws SQLException {        String sql = "SELECT maVe FROM Ve WHERE maSuatChieu = ? AND soGhe = ? AND trangThai != 'cancelled'";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, maSuatChieu);
             stmt.setString(2, soGhe);
