@@ -45,7 +45,7 @@ public class SuatChieuView extends JPanel {
         try {
             databaseConnection = new DatabaseConnection();
         } catch (IOException e) {
-            showError("Không thể kết nối cơ sở dữ liệu: " + e.getMessage());
+            showError("Không thể kết nối cơ sởFF dữ liệu: " + e.getMessage());
         }
     }
 
