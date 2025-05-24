@@ -8,7 +8,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
-import java.util.Objects;
 import java.util.ResourceBundle;
 
 import javax.swing.ImageIcon;
@@ -204,56 +203,74 @@ public class PhimController {
     }
 
     private void displayPhimInfo(int row) {
-        DefaultTableModel model = view.getTableModel();
-        String maPhim = model.getValueAt(row, 0).toString();
-        String tenPhim = model.getValueAt(row, 1).toString();
-        String theLoai = model.getValueAt(row, 2).toString();
-        String thoiLuong = model.getValueAt(row, 3).toString();
-        String ngayKhoiChieu = model.getValueAt(row, 4).toString();
-        String trangThai = model.getValueAt(row, 5).toString();
-
-        view.getTxtMaPhim().setText(maPhim);
-        view.getTxtTenPhim().setText(tenPhim);
-        view.getTxtThoiLuong().setText(thoiLuong);
-        view.getTxtNgayKhoiChieu().setText(ngayKhoiChieu);
-        view.getCbTenTheLoai().setSelectedItem(theLoai);
-        view.getCbTrangthai().setSelectedItem(trangThai);
-
         try {
-            List<Phim> phimList = service.getAllPhim();
-            Phim selectedPhim = null;
-            for (Phim phim : phimList) {
-                if (phim.getMaPhim() == Integer.parseInt(maPhim)) {
-                    selectedPhim = phim;
-                    break;
-                }
-            }
+            DefaultTableModel model = view.getTableModel();
+            String maPhim = model.getValueAt(row, 0).toString();
+            String tenPhim = model.getValueAt(row, 1).toString();
+            String theLoai = model.getValueAt(row, 2).toString();
+            String thoiLuong = model.getValueAt(row, 3).toString();
+            String ngayKhoiChieu = model.getValueAt(row, 4).toString();
+            String trangThai = model.getValueAt(row, 5).toString();
 
+            // Set basic info
+            view.getTxtMaPhim().setText(maPhim);
+            view.getTxtTenPhim().setText(tenPhim);
+            view.getTxtThoiLuong().setText(thoiLuong);
+            view.getTxtNgayKhoiChieu().setText(ngayKhoiChieu);
+            view.getCbTenTheLoai().setSelectedItem(theLoai);
+            view.getCbTrangthai().setSelectedItem(trangThai);
+
+            // Get full movie details
+            Phim selectedPhim = service.getPhimById(Integer.parseInt(maPhim));
             if (selectedPhim != null) {
-                view.getTxtNuocSanXuat().setText(selectedPhim.getNuocSanXuat());
+                view.getCbNuocSanXuat().setSelectedItem(selectedPhim.getNuocSanXuat());
                 view.getTxtMoTa().setText(selectedPhim.getMoTa());
                 view.getTxtDaoDien().setText(selectedPhim.getDaoDien());
                 view.getCbKieuPhim().setSelectedItem(selectedPhim.getKieuPhim());
 
-                if (selectedPhim.getDuongDanPoster() != null && !selectedPhim.getDuongDanPoster().isEmpty()) {
-                    try {
-                        ImageIcon posterIcon = new ImageIcon(Objects.requireNonNull(getClass().getClassLoader().getResource("images/posters/" + selectedPhim.getDuongDanPoster())));
-                        Image scaledImage = posterIcon.getImage().getScaledInstance(150, 200, Image.SCALE_SMOOTH);
-                        view.getPosterLabel().setIcon(new ImageIcon(scaledImage));
-                        view.getPosterLabel().setText("");
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        view.getPosterLabel().setIcon(null);
-                        view.getPosterLabel().setText("Không tìm thấy ảnh");
-                    }
-                } else {
-                    view.getPosterLabel().setIcon(null);
-                    view.getPosterLabel().setText("Không có ảnh");
-                }
+                // Handle poster display
+                displayPosterImage(selectedPhim.getDuongDanPoster());
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(view, "Lỗi khi tải thông tin phim: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(view,
+                "Lỗi không xác định: " + e.getMessage(),
+                "Lỗi",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void displayPosterImage(String posterPath) {
+        if (posterPath == null || posterPath.isEmpty()) {
+            view.getPosterLabel().setIcon(null);
+            view.getPosterLabel().setText("Không có ảnh");
+            return;
+        }
+
+        try {
+            String resourcePath = "images/posters/" + posterPath;
+            java.net.URL imageUrl = getClass().getClassLoader().getResource(resourcePath);
+            
+            if (imageUrl == null) {
+                view.getPosterLabel().setIcon(null);
+                view.getPosterLabel().setText("Không tìm thấy ảnh");
+                return;
+            }
+
+            ImageIcon posterIcon = new ImageIcon(imageUrl);
+            if (posterIcon.getIconWidth() <= 0) {
+                view.getPosterLabel().setIcon(null);
+                view.getPosterLabel().setText("Ảnh không hợp lệ");
+                return;
+            }
+
+            Image scaledImage = posterIcon.getImage().getScaledInstance(150, 200, Image.SCALE_SMOOTH);
+            view.getPosterLabel().setIcon(new ImageIcon(scaledImage));
+            view.getPosterLabel().setText("");
+        } catch (Exception e) {
+            e.printStackTrace();
+            view.getPosterLabel().setIcon(null);
+            view.getPosterLabel().setText("Lỗi tải ảnh");
         }
     }
 
@@ -384,7 +401,7 @@ public class PhimController {
         view.getCbTenTheLoai().setSelectedIndex(-1);
         view.getTxtThoiLuong().setText("");
         view.getTxtNgayKhoiChieu().setText("");
-        view.getTxtNuocSanXuat().setText("");
+        view.getCbNuocSanXuat().setToolTipText("");
         view.getCbKieuPhim().setSelectedIndex(-1);
         view.getTxtMoTa().setText("");
         view.getTxtDaoDien().setText("");
@@ -396,11 +413,12 @@ public class PhimController {
     }
 
     private Phim createPhimFromForm() {
+        String maPhimStr = view.getTxtMaPhim().getText().trim();
         String tenPhim = view.getTxtTenPhim().getText().trim();
         String tenTheLoai = (String) view.getCbTenTheLoai().getSelectedItem();
         String thoiLuongStr = view.getTxtThoiLuong().getText().trim();
         String ngayKhoiChieuStr = view.getTxtNgayKhoiChieu().getText().trim();
-        String nuocSanXuat = view.getTxtNuocSanXuat().getText().trim();
+        String nuocSanXuat = view.getCbNuocSanXuat().getText().trim();
         String dinhDang = (String) view.getCbKieuPhim().getSelectedItem();
         String moTa = view.getTxtMoTa().getText().trim();
         String daoDien = view.getTxtDaoDien().getText().trim();
@@ -431,6 +449,17 @@ public class PhimController {
             throw new IllegalArgumentException("Ngày khởi chiếu không đúng định dạng (dd/MM/yyyy)!");
         }
 
-        return new Phim(0, tenPhim, tenTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien, posterPath, trangThai);
+        Phim phim = new Phim(0, tenPhim, tenTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, dinhDang, moTa, daoDien, posterPath, trangThai);
+        
+        // Nếu đang sửa phim (có mã phim), set lại mã phim
+        if (!maPhimStr.isEmpty()) {
+            try {
+                phim.setMaPhim(Integer.parseInt(maPhimStr));
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Mã phim không hợp lệ!");
+            }
+        }
+        
+        return phim;
     }
 }

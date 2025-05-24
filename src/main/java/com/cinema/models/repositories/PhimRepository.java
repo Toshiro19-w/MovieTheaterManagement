@@ -52,6 +52,32 @@ public class PhimRepository extends BaseRepository<Phim> {
         return list;
     }
 
+    public Phim findById(int id) throws SQLException {
+        String sql = "SELECT * FROM Phim WHERE maPhim = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                Phim phim = new Phim();
+                phim.setMaPhim(rs.getInt("maPhim"));
+                phim.setTenPhim(rs.getString("tenPhim"));
+                phim.setMaTheLoai(rs.getInt("maTheLoai"));
+                phim.setThoiLuong(rs.getInt("thoiLuong"));
+                phim.setNgayKhoiChieu(rs.getDate("ngayKhoiChieu") != null
+                        ? rs.getDate("ngayKhoiChieu").toLocalDate()
+                        : null);
+                phim.setNuocSanXuat(rs.getString("nuocSanXuat"));
+                phim.setKieuPhim(rs.getString("kieuPhim"));
+                phim.setMoTa(rs.getString("moTa"));
+                phim.setDaoDien(rs.getString("daoDien"));
+                phim.setDuongDanPoster(rs.getString("duongDanPoster"));
+                phim.setTrangThai(rs.getString("trangThai"));
+                return phim;
+            }
+        }
+        return null;
+    }
+
     @Override
     public Phim save(Phim entity) throws SQLException {
         String sql = "INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, kieuPhim, moTa, daoDien, duongDanPoster, trangThai) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -77,7 +103,13 @@ public class PhimRepository extends BaseRepository<Phim> {
 
     @Override
     public Phim update(Phim entity) throws SQLException {
-        String sql = "UPDATE Phim SET tenPhim=?, maTheLoai=?, thoiLuong=?, ngayKhoiChieu=?, nuocSanXuat=?, kieuPhim=?, moTa=?, daoDien=?, duongDanPoster=? WHERE maPhim=?";
+        String sql = """
+            UPDATE Phim 
+            SET tenPhim=?, maTheLoai=?, thoiLuong=?, ngayKhoiChieu=?, 
+                nuocSanXuat=?, kieuPhim=?, moTa=?, daoDien=?, 
+                duongDanPoster=?, trangThai=? 
+            WHERE maPhim=?
+        """;
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, entity.getTenPhim());
             stmt.setInt(2, entity.getMaTheLoai());
@@ -89,11 +121,17 @@ public class PhimRepository extends BaseRepository<Phim> {
             stmt.setString(8, entity.getDaoDien());
             stmt.setString(9, entity.getDuongDanPoster());
             stmt.setString(10, entity.getTrangThai());
-            stmt.setInt(10, entity.getMaPhim());
-            stmt.executeUpdate();
+            stmt.setInt(11, entity.getMaPhim());
+            
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new SQLException("Không thể cập nhật phim. Không tìm thấy phim với mã: " + entity.getMaPhim());
+            }
         }
         return entity;
-    }    @Override
+    }
+    
+    @Override
     public void delete(int id) throws SQLException {
         String sql = "UPDATE Phim SET trangThai='deleted' WHERE maPhim=?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {

@@ -1,4 +1,4 @@
-﻿-- Active: 1746666659429@@127.0.0.1@3306@quanlyrcp
+-- Active: 1746666659429@@127.0.0.1@3306@quanlyrcp
 DROP DATABASE IF EXISTS quanlyrcp;
 CREATE DATABASE quanlyrcp;
 USE quanlyrcp;
@@ -24,6 +24,16 @@ CREATE TABLE IF NOT EXISTS NhanVien (
     luong DECIMAL(10,2) CHECK (luong >= 0) NOT NULL,
     vaiTro ENUM('Admin', 'QuanLyPhim', 'ThuNgan', 'BanVe') NOT NULL,
     FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS PhienLamViec (
+    maPhien INT AUTO_INCREMENT PRIMARY KEY,
+    maNhanVien INT NOT NULL,
+    thoiGianBatDau DATETIME DEFAULT NOW(),
+    thoiGianKetThuc DATETIME NULL,
+    tongDoanhThu DECIMAL(10,2) DEFAULT 0,
+    soVeDaBan INT DEFAULT 0,
+    FOREIGN KEY (maNhanVien) REFERENCES NhanVien(maNguoiDung) ON DELETE CASCADE
 );
 
 -- Tạo bảng TaiKhoan
@@ -111,7 +121,8 @@ BEGIN
     WHERE p.trangThai = 'active'
     AND p.ngayKhoiChieu <= CURDATE();
 END //
-DELIMITER;
+DELIMITER ;
+
 
 -- Tạo bảng PhongChieu
 CREATE TABLE IF NOT EXISTS PhongChieu (
@@ -139,7 +150,7 @@ BEGIN
     FROM Ghe g
     LEFT JOIN Ve v ON g.maGhe = v.maGhe 
         AND v.maSuatChieu = p_maSuatChieu
-        AND v.trangThai NOT IN ('cancelled', 'DELETED')
+        AND v.trangThai NOT IN ('cancelled', 'deleted')
     WHERE v.maVe IS NULL
     AND g.maPhong = (SELECT maPhong FROM SuatChieu WHERE maSuatChieu = p_maSuatChieu);
 END //
@@ -180,6 +191,53 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Phòng chiếu đã được sử dụng trong khoảng thời gian này.';
+    END IF;
+END //
+DELIMITER ;
+
+-- Tránh xung đột thời gian giữa các suất chiếu khi cập nhật
+DELIMITER //
+CREATE TRIGGER before_update_suatchieu
+BEFORE UPDATE ON SuatChieu
+FOR EACH ROW
+BEGIN
+    DECLARE phim_end_time DATETIME;
+
+    -- Nếu không thay đổi thời gian hoặc phòng chiếu thì không cần kiểm tra
+    IF NOT (NEW.ngayGioChieu = OLD.ngayGioChieu AND NEW.maPhong = OLD.maPhong) THEN
+
+        -- Tính thời gian kết thúc của suất chiếu mới
+        SELECT DATE_ADD(NEW.ngayGioChieu, INTERVAL p.thoiLuong MINUTE)
+        INTO phim_end_time
+        FROM Phim p
+        WHERE p.maPhim = NEW.maPhim;
+
+        -- Kiểm tra xung đột với các suất chiếu khác
+        IF EXISTS (
+            SELECT 1
+            FROM SuatChieu sc
+            JOIN Phim p ON sc.maPhim = p.maPhim
+            WHERE sc.maPhong = NEW.maPhong
+            AND sc.maSuatChieu != NEW.maSuatChieu
+            AND (
+                (NEW.ngayGioChieu BETWEEN sc.ngayGioChieu AND DATE_ADD(sc.ngayGioChieu, INTERVAL p.thoiLuong MINUTE))
+                OR (phim_end_time BETWEEN sc.ngayGioChieu AND DATE_ADD(sc.ngayGioChieu, INTERVAL p.thoiLuong MINUTE))
+                OR (NEW.ngayGioChieu < sc.ngayGioChieu AND phim_end_time > DATE_ADD(sc.ngayGioChieu, INTERVAL p.thoiLuong MINUTE))
+            )
+        ) THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Phòng chiếu đã được sử dụng trong khoảng thời gian này.';
+        END IF;
+
+        -- Kiểm tra xem suất chiếu đã có vé bán chưa
+        IF EXISTS (
+            SELECT 1 FROM Ve 
+            WHERE maSuatChieu = NEW.maSuatChieu 
+            AND trangThai = 'paid'
+        ) THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Không thể thay đổi thời gian của suất chiếu đã có vé bán.';
+        END IF;
     END IF;
 END //
 DELIMITER ;
@@ -248,6 +306,46 @@ CREATE TABLE IF NOT EXISTS Ve (
     CONSTRAINT UQ_SuatChieu_MaGhe UNIQUE (maSuatChieu, maGhe),
     CONSTRAINT check_paid_hoadon CHECK (trangThai != 'paid' OR maHoaDon IS NOT NULL)
 );
+
+CREATE TABLE IF NOT EXISTS LichSuGiaVe (
+    maLichSu INT AUTO_INCREMENT PRIMARY KEY,
+    loaiGhe ENUM('Thuong', 'VIP') NOT NULL,
+    giaVeCu DECIMAL(10,2) NOT NULL,
+    giaVeMoi DECIMAL(10,2) NOT NULL,
+    ngayThayDoi DATETIME DEFAULT NOW(),
+    nguoiThayDoi INT,
+    FOREIGN KEY (nguoiThayDoi) REFERENCES NhanVien(maNguoiDung) ON DELETE SET NULL
+);
+
+-- Trigger để lưu lịch sử khi giá vé thay đổi
+DELIMITER //
+CREATE TRIGGER after_giave_update
+AFTER UPDATE ON GiaVe
+FOR EACH ROW
+BEGIN
+    INSERT INTO LichSuGiaVe (loaiGhe, giaVeCu, giaVeMoi, ngayThayDoi)
+    VALUES (NEW.loaiGhe, OLD.giaVe, NEW.giaVe, NOW());
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER before_ve_insert
+BEFORE INSERT ON Ve
+FOR EACH ROW
+BEGIN
+    DECLARE phim_ngayKhoiChieu DATE;
+    
+    SELECT p.ngayKhoiChieu INTO phim_ngayKhoiChieu
+    FROM Phim p
+    JOIN SuatChieu sc ON p.maPhim = sc.maPhim
+    WHERE sc.maSuatChieu = NEW.maSuatChieu;
+    
+    IF DATE(NEW.ngayDat) < phim_ngayKhoiChieu THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Không thể đặt vé trước ngày khởi chiếu phim.';
+    END IF;
+END //
+DELIMITER ;
 
 -- View lịch chiếu phim
 CREATE VIEW LichChieuPhim AS
@@ -367,7 +465,17 @@ SELECT
     p.maPhim,
     p.tenPhim,
     COUNT(DISTINCT CASE WHEN v.trangThai = 'paid' THEN v.maVe END) as SoVeDaBan,
-    COALESCE(SUM(CASE WHEN v.trangThai = 'paid' THEN gv.giaVe END), 0) as DoanhThu,
+    COALESCE(SUM(CASE WHEN v.trangThai = 'paid' THEN gv.giaVe END), 0) as DoanhThuGoc,
+    COALESCE(SUM(CASE 
+        WHEN v.trangThai = 'paid' AND v.maKhuyenMai IS NOT NULL THEN
+            CASE 
+                WHEN km.loaiGiamGia = 'PhanTram' THEN gv.giaVe * (1 - km.giaTriGiam/100)
+                WHEN km.loaiGiamGia = 'CoDinh' THEN GREATEST(gv.giaVe - km.giaTriGiam, 0)
+                ELSE gv.giaVe
+            END
+        WHEN v.trangThai = 'paid' THEN gv.giaVe
+        ELSE 0
+    END), 0) as DoanhThuThucTe,
     COALESCE((
         SELECT AVG(dg.diemDanhGia)
         FROM DanhGia dg
@@ -377,7 +485,9 @@ FROM Phim p
 LEFT JOIN SuatChieu sc ON p.maPhim = sc.maPhim
 LEFT JOIN Ve v ON sc.maSuatChieu = v.maSuatChieu
 LEFT JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
+LEFT JOIN KhuyenMai km ON v.maKhuyenMai = km.maKhuyenMai
 GROUP BY p.maPhim, p.tenPhim;
+
 
 SELECT * FROM thongkedoanhthuphim;
 
@@ -386,6 +496,12 @@ CREATE INDEX idx_phim_maTheLoai ON Phim(maTheLoai);
 CREATE INDEX idx_ve_maSuatChieu ON Ve(maSuatChieu);
 CREATE INDEX idx_ve_maGhe ON Ve(maGhe);
 CREATE INDEX idx_hoadon_maKhachHang ON HoaDon(maKhachHang);
+
+-- Chỉ mục cho các trường thường xuyên tìm kiếm
+CREATE INDEX idx_suatchieu_ngaygiochieu ON SuatChieu(ngayGioChieu);
+CREATE INDEX idx_ve_trangthai ON Ve(trangThai);
+CREATE INDEX idx_phim_trangthai_ngaykhoichieu ON Phim(trangThai, ngayKhoiChieu);
+CREATE INDEX idx_danhgia_maphim ON DanhGia(maPhim);
 
 INSERT INTO NguoiDung (hoTen, soDienThoai, email, loaiNguoiDung) VALUES
 ('Lê Trần Minh Khôi', '0565321247', 'letranminhkhoi2506@gmail.com', 'KhachHang'),
@@ -606,3 +722,62 @@ INSERT INTO DanhGia (maPhim, maNguoiDung, maVe, diemDanhGia, nhanXet, ngayDanhGi
 (2, 5, 9, 3, 'Phim dài hơi', '2025-05-23 22:15:00'), -- Liên kết với vé 9 (khách hàng 5, phim 2)
 (3, 2, 13, 4, 'Phim siêu anh hùng đúng chất', '2025-10-03 20:00:00'), -- Liên kết với vé 13 (khách hàng 2, phim 3)
 (3, 5, 14, 5, 'Hiệu ứng đặc biệt tuyệt vời', '2025-10-03 21:30:00'); -- Liên kết với vé 14 (khách hàng 5, phim 3)
+
+-- Dữ liệu mẫu cho bảng PhienLamViec
+INSERT INTO PhienLamViec (maNhanVien, thoiGianBatDau, thoiGianKetThuc, tongDoanhThu, soVeDaBan) VALUES
+(3, '2025-01-15 08:00:00', '2025-01-15 16:00:00', 1500000.00, 5),
+(4, '2025-01-15 09:00:00', '2025-01-15 17:00:00', 2200000.00, 8),
+(6, '2025-01-15 12:00:00', '2025-01-15 20:00:00', 1800000.00, 6),
+(10, '2025-01-15 16:00:00', '2025-01-15 23:59:00', 3000000.00, 12),
+(8, '2025-01-16 08:00:00', '2025-01-16 16:00:00', 2500000.00, 10);
+
+select * from VeView;
+
+CREATE OR REPLACE VIEW VeView AS
+SELECT 
+    v.maVe AS MaVe,
+    v.trangThai AS TrangThai,
+    g.soGhe AS SoGhe,
+    gv.giaVe AS GiaVeGoc,
+    CASE 
+        WHEN v.maKhuyenMai IS NOT NULL THEN
+            CASE 
+                WHEN km.loaiGiamGia = 'PhanTram' THEN gv.giaVe * (km.giaTriGiam / 100)
+                WHEN km.loaiGiamGia = 'CoDinh' THEN km.giaTriGiam
+                ELSE 0
+            END
+        ELSE 0
+    END AS TienGiam,
+    CASE 
+        WHEN v.maKhuyenMai IS NOT NULL THEN
+            CASE 
+                WHEN km.loaiGiamGia = 'PhanTram' THEN gv.giaVe * (1 - km.giaTriGiam / 100)
+                WHEN km.loaiGiamGia = 'CoDinh' THEN GREATEST(gv.giaVe - km.giaTriGiam, 0)
+                ELSE gv.giaVe
+            END
+        ELSE gv.giaVe
+    END AS GiaVeSauGiam,
+    v.ngayDat AS NgayDat,
+    pc.tenPhong AS TenPhong,
+    sc.ngayGioChieu AS NgayGioChieu,
+    p.tenPhim AS TenPhim,
+    COALESCE(km.tenKhuyenMai, 'Không có') AS TenKhuyenMai
+FROM 
+    Ve v
+    INNER JOIN Ghe g ON v.maGhe = g.maGhe
+    INNER JOIN PhongChieu pc ON g.maPhong = pc.maPhong
+    INNER JOIN SuatChieu sc ON v.maSuatChieu = sc.maSuatChieu
+    INNER JOIN Phim p ON sc.maPhim = p.maPhim
+    INNER JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
+    LEFT JOIN KhuyenMai km ON v.maKhuyenMai = km.maKhuyenMai
+WHERE 
+    p.trangThai = 'active'
+ORDER BY 
+    v.maVe;
+
+SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, sc.maPhong, pc.tenPhong, 
+sc.ngayGioChieu, p.thoiLuong, p.kieuPhim
+FROM SuatChieu sc
+JOIN Phim p ON sc.maPhim = p.maPhim
+JOIN PhongChieu pc ON sc.maPhong = pc.maPhong
+WHERE sc.maPhim = 2

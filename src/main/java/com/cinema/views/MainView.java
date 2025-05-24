@@ -185,6 +185,8 @@ public class MainView extends JFrame {
             mainContentPanel.setLayout(cardLayout);
             AdminViewManager adminViewManager = new AdminViewManager(loaiTaiKhoan, mainContentPanel, cardLayout, username);
             adminViewManager.initializeAdminPanels();
+            // Hiển thị panel Quản lý phim mặc định
+            cardLayout.show(mainContentPanel, "Phim");
             // Thêm panel Quản lý người dùng
             UserManagementView userManagementView = new UserManagementView();
             mainContentPanel.add(userManagementView, "Người dùng");

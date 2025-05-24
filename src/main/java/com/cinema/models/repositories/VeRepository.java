@@ -14,191 +14,128 @@ import java.util.List;
 import com.cinema.enums.TrangThaiVe;
 import com.cinema.models.Ve;
 import com.cinema.models.repositories.Interface.IVeRepository;
-import com.cinema.utils.DatabaseConnection;
+import com.cinema.utils.DatabaseConnection; 
 
 public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
 
-    public VeRepository(DatabaseConnection databaseConnection) {
-        super(databaseConnection);
+    public VeRepository(DatabaseConnection dbConnection) {
+        super(dbConnection);
     }
 
     @Override
     public List<Ve> findAll() throws SQLException {
-        String sql = """
-                SELECT 
-                    v.maVe,
-                    v.maSuatChieu,
-                    v.maGhe,
-                    v.maHoaDon,
-                    v.maGiaVe,
-                    v.maKhuyenMai,
-                    v.trangThai,
-                    v.ngayDat,
-                    g.soGhe,
-                    gv.giaVe,
-                    pc.tenPhong,
-                    sc.ngayGioChieu,
-                    p.tenPhim
-                FROM Ve v
-                JOIN Ghe g ON v.maGhe = g.maGhe
-                JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
-                JOIN SuatChieu sc ON v.maSuatChieu = sc.maSuatChieu
-                JOIN PhongChieu pc ON sc.maPhong = pc.maPhong
-                JOIN Phim p ON sc.maPhim = p.maPhim
-                WHERE v.trangThai != 'DELETED'
-                ORDER BY v.ngayDat DESC, v.maVe""";
-                
-        List<Ve> result = new ArrayList<>();
+        List<Ve> veList = new ArrayList<>();
+        String sql = "SELECT * FROM VeView";
+        
         try (PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
-
+            
             while (rs.next()) {
                 Ve ve = new Ve();
-                ve.setMaVe(rs.getInt("maVe"));
-                ve.setMaSuatChieu(rs.getInt("maSuatChieu"));
-                ve.setSoGhe(rs.getString("soGhe"));
-                ve.setGiaVe(rs.getBigDecimal("giaVe"));
-                ve.setTrangThai(TrangThaiVe.valueOf(rs.getString("trangThai").toUpperCase()));
+                ve.setMaVe(rs.getInt("MaVe"));
+                ve.setTrangThai(TrangThaiVe.fromString(rs.getString("TrangThai")));
+                ve.setSoGhe(rs.getString("SoGhe"));
+                ve.setGiaVeGoc(rs.getBigDecimal("GiaVeGoc"));
+                ve.setTienGiam(rs.getBigDecimal("TienGiam"));
+                ve.setGiaVeSauGiam(rs.getBigDecimal("GiaVeSauGiam"));
                 
-                Timestamp ngayDatTs = rs.getTimestamp("ngayDat");
-                if (ngayDatTs != null) {
-                    ve.setNgayDat(ngayDatTs.toLocalDateTime());
+                Timestamp ngayDat = rs.getTimestamp("NgayDat");
+                if (ngayDat != null) {
+                    ve.setNgayDat(ngayDat.toLocalDateTime());
                 }
                 
-                ve.setMaHoaDon(rs.getInt("maHoaDon"));
-                ve.setTenPhong(rs.getString("tenPhong"));
+                ve.setTenPhong(rs.getString("TenPhong"));
                 
-                Timestamp ngayGioChieuTs = rs.getTimestamp("ngayGioChieu");
-                if (ngayGioChieuTs != null) {
-                    ve.setNgayGioChieu(ngayGioChieuTs.toLocalDateTime());
+                Timestamp ngayGioChieu = rs.getTimestamp("NgayGioChieu");
+                if (ngayGioChieu != null) {
+                    ve.setNgayGioChieu(ngayGioChieu.toLocalDateTime());
                 }
                 
-                ve.setTenPhim(rs.getString("tenPhim"));
-                result.add(ve);
+                ve.setTenPhim(rs.getString("TenPhim"));
+                ve.setTenKhuyenMai(rs.getString("TenKhuyenMai"));
+                
+                veList.add(ve);
             }
         }
-        return result;
+        
+        return veList;
+    }
+
+    @Override
+    public Ve findById(int id) throws SQLException {
+        return findVeByMaVe(id);
     }
 
     @Override
     public List<Ve> findAllDetail() throws SQLException {
-        String sql = """
-                SELECT
-                v.maVe,
-                v.maSuatChieu,
-                v.maGhe,
-                v.trangThai,
-                v.ngayDat,
-                v.maHoaDon,
-                g.soGhe,
-                gv.giaVe,
-                pc.tenPhong,
-                pc.loaiPhong,
-                sc.ngayGioChieu,
-                p.tenPhim,
-                p.thoiLuong,
-                COALESCE(nd.hoTen, 'Chưa xác định') as tenKhachHang,
-                COALESCE(nd.soDienThoai, '') as soDienThoai,
-                COALESCE(nd.email, '') as email,
-                km.tenKhuyenMai,
-                CASE 
-                    WHEN v.trangThai = 'CANCELLED' THEN 'Đã hủy'
-                    WHEN v.trangThai = 'PAID' THEN 'Đã thanh toán'
-                    WHEN v.trangThai = 'BOOKED' THEN 'Đã đặt'
-                    WHEN v.trangThai = 'PENDING' THEN 'Đang chờ'
-                    ELSE 'Không xác định'
-                END as trangThaiHienThi
-            FROM Ve v
-            JOIN Ghe g ON v.maGhe = g.maGhe
-            JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
-            JOIN SuatChieu sc ON v.maSuatChieu = sc.maSuatChieu
-            JOIN PhongChieu pc ON sc.maPhong = pc.maPhong
-            JOIN Phim p ON sc.maPhim = p.maPhim
-            LEFT JOIN HoaDon hd ON v.maHoaDon = hd.maHoaDon
-            LEFT JOIN NguoiDung nd ON hd.maKhachHang = nd.maNguoiDung
-            LEFT JOIN KhuyenMai km ON v.maKhuyenMai = km.maKhuyenMai
-            WHERE v.trangThai != 'DELETED'
-            ORDER BY v.ngayDat DESC, v.maVe""";
-                
-        List<Ve> result = new ArrayList<>();
-        try (PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-
+        List<Ve> veList = new ArrayList<>();
+        String sql = "SELECT * FROM VeView";
+        
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 Ve ve = new Ve();
-                ve.setMaVe(rs.getInt("maVe"));
-                ve.setTrangThai(TrangThaiVe.valueOf(rs.getString("trangThai").toUpperCase()));
-                ve.setGiaVe(rs.getBigDecimal("giaVe"));
-                ve.setSoGhe(rs.getString("soGhe"));
+                ve.setMaVe(rs.getInt("MaVe"));
+                ve.setTrangThai(TrangThaiVe.fromString(rs.getString("TrangThai")));
+                ve.setSoGhe(rs.getString("SoGhe"));
+                ve.setGiaVeGoc(rs.getBigDecimal("GiaVeGoc"));
+                ve.setTienGiam(rs.getBigDecimal("TienGiam"));
+                ve.setGiaVeSauGiam(rs.getBigDecimal("GiaVeSauGiam"));
                 
-                Timestamp ngayDatTs = rs.getTimestamp("ngayDat");
-                if (ngayDatTs != null) {
-                    ve.setNgayDat(ngayDatTs.toLocalDateTime());
+                Timestamp ngayDat = rs.getTimestamp("NgayDat");
+                if (ngayDat != null) {
+                    ve.setNgayDat(ngayDat.toLocalDateTime());
                 }
                 
-                ve.setTenPhong(rs.getString("tenPhong"));
+                ve.setTenPhong(rs.getString("TenPhong"));
                 
-                Timestamp ngayGioChieuTs = rs.getTimestamp("ngayGioChieu");
-                if (ngayGioChieuTs != null) {
-                    ve.setNgayGioChieu(ngayGioChieuTs.toLocalDateTime());
+                Timestamp ngayGioChieu = rs.getTimestamp("NgayGioChieu");
+                if (ngayGioChieu != null) {
+                    ve.setNgayGioChieu(ngayGioChieu.toLocalDateTime());
                 }
                 
-                ve.setTenPhim(rs.getString("tenPhim"));
-                ve.setTenKhachHang(rs.getString("tenKhachHang"));
-                ve.setSoDienThoai(rs.getString("soDienThoai"));
-                ve.setEmail(rs.getString("email"));
-                result.add(ve);
+                ve.setTenPhim(rs.getString("TenPhim"));
+                ve.setTenKhuyenMai(rs.getString("TenKhuyenMai"));
+                
+                veList.add(ve);
             }
         }
-        return result;
+        return veList;
     }
 
     @Override
     public List<Ve> findBySoGhe(String soGhe) throws SQLException {
         List<Ve> veList = new ArrayList<>();
-        String sql = """
-                SELECT
-                    v.maVe,
-                    v.trangThai,
-                    v.ngayDat,
-                    g.soGhe,
-                    gv.giaVe,
-                    pc.tenPhong,
-                    sc.ngayGioChieu,
-                    p.tenPhim,
-                    km.tenKhuyenMai
-                FROM Ve v
-                JOIN Ghe g ON v.maGhe = g.maGhe
-                JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
-                JOIN SuatChieu sc ON v.maSuatChieu = sc.maSuatChieu
-                JOIN PhongChieu pc ON sc.maPhong = pc.maPhong
-                JOIN Phim p ON sc.maPhim = p.maPhim
-                LEFT JOIN KhuyenMai km ON v.maKhuyenMai = km.maKhuyenMai
-                WHERE g.soGhe = ? AND v.trangThai != 'DELETED'
-                ORDER BY v.ngayDat DESC, v.maVe""";
-                
+        String sql = "SELECT * FROM VeView WHERE SoGhe = ?";
+        
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, soGhe);
             ResultSet rs = stmt.executeQuery();
+            
             while (rs.next()) {
-                LocalDateTime ngayDat = null, ngayGioChieu = null;
-                if (rs.getTimestamp("ngayDat") != null) {
-                    ngayDat = rs.getTimestamp("ngayDat").toLocalDateTime();
+                Ve ve = new Ve();
+                ve.setMaVe(rs.getInt("MaVe"));
+                ve.setTrangThai(TrangThaiVe.fromString(rs.getString("TrangThai")));
+                ve.setSoGhe(rs.getString("SoGhe"));
+                ve.setGiaVeGoc(rs.getBigDecimal("GiaVeGoc"));
+                ve.setTienGiam(rs.getBigDecimal("TienGiam"));
+                ve.setGiaVeSauGiam(rs.getBigDecimal("GiaVeSauGiam"));
+                
+                Timestamp ngayDat = rs.getTimestamp("NgayDat");
+                if (ngayDat != null) {
+                    ve.setNgayDat(ngayDat.toLocalDateTime());
                 }
-                if (rs.getTimestamp("ngayGioChieu") != null) {
-                    ngayGioChieu = rs.getTimestamp("ngayGioChieu").toLocalDateTime();
+                
+                ve.setTenPhong(rs.getString("TenPhong"));
+                
+                Timestamp ngayGioChieu = rs.getTimestamp("NgayGioChieu");
+                if (ngayGioChieu != null) {
+                    ve.setNgayGioChieu(ngayGioChieu.toLocalDateTime());
                 }
-
-                Ve ve = new Ve(
-                        rs.getInt("maVe"),
-                        TrangThaiVe.fromString(rs.getString("trangThai")),
-                        rs.getBigDecimal("giaVe"),
-                        rs.getString("soGhe"),
-                        ngayDat,
-                        rs.getString("tenPhong"),
-                        ngayGioChieu,
-                        rs.getString("tenPhim")
-                );
+                
+                ve.setTenPhim(rs.getString("TenPhim"));
+                ve.setTenKhuyenMai(rs.getString("TenKhuyenMai"));
+                
                 veList.add(ve);
             }
         }
@@ -207,46 +144,26 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
 
     @Override
     public Ve findVeByMaVe(int maVe) throws SQLException {
-        String sql = """
-                SELECT
-                    v.maVe,
-                    v.trangThai,
-                    v.ngayDat,
-                    g.soGhe,
-                    gv.giaVe,
-                    pc.tenPhong,
-                    sc.ngayGioChieu,
-                    p.tenPhim
-                FROM Ve v
-                JOIN Ghe g ON v.maGhe = g.maGhe
-                JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
-                JOIN SuatChieu sc ON v.maSuatChieu = sc.maSuatChieu
-                JOIN PhongChieu pc ON sc.maPhong = pc.maPhong
-                JOIN Phim p ON sc.maPhim = p.maPhim
-                WHERE v.maVe = ? AND v.trangThai != 'DELETED'""";
+        String sql = "SELECT * FROM VeView WHERE maVe = ?";
                 
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, maVe);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                LocalDateTime ngayDat = null, ngayGioChieu = null;
-                if (rs.getTimestamp("ngayDat") != null) {
-                    ngayDat = rs.getTimestamp("ngayDat").toLocalDateTime();
-                }
-                if (rs.getTimestamp("ngayGioChieu") != null) {
-                    ngayGioChieu = rs.getTimestamp("ngayGioChieu").toLocalDateTime();
-                }
-
-                return new Ve(
-                        rs.getInt("maVe"),
-                        TrangThaiVe.fromString(rs.getString("trangThai")),
-                        rs.getBigDecimal("giaVe"),
-                        rs.getString("soGhe"),
-                        ngayDat,
-                        rs.getString("tenPhong"),
-                        ngayGioChieu,
-                        rs.getString("tenPhim")
-                );
+                Ve ve = new Ve();
+                ve.setMaVe(rs.getInt("maVe"));
+                ve.setTrangThai(TrangThaiVe.fromString(rs.getString("trangThai")));
+                ve.setSoGhe(rs.getString("soGhe"));
+                ve.setNgayDat(rs.getTimestamp("ngayDat") != null ? 
+                    rs.getTimestamp("ngayDat").toLocalDateTime() : null);
+                ve.setTenPhong(rs.getString("tenPhong"));
+                ve.setNgayGioChieu(rs.getTimestamp("ngayGioChieu").toLocalDateTime());
+                ve.setTenPhim(rs.getString("tenPhim"));
+                ve.setTenKhuyenMai(rs.getString("tenKhuyenMai"));
+                ve.setGiaVeGoc(rs.getBigDecimal("giaVeGoc"));
+                ve.setTienGiam(rs.getBigDecimal("tienGiam"));
+                ve.setGiaVeSauGiam(rs.getBigDecimal("giaVeSauGiam"));
+                return ve;
             }
         }
         return null;
@@ -254,58 +171,45 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
 
     @Override
     public Ve save(Ve ve) throws SQLException {
-        // Kiểm tra suất chiếu và phòng tồn tại
+        // Kiểm tra xem suất chiếu có tồn tại không
         if (!isSuatChieuExists(ve.getMaSuatChieu())) {
             throw new SQLException("Suất chiếu với mã " + ve.getMaSuatChieu() + " không tồn tại");
         }
 
-        // Kiểm tra xem suất chiếu đã bắt đầu chưa
-        String checkTimeSQL = "SELECT ngayGioChieu FROM SuatChieu WHERE maSuatChieu = ? AND ngayGioChieu > NOW()";
-        try (PreparedStatement checkStmt = conn.prepareStatement(checkTimeSQL)) {
-            checkStmt.setInt(1, ve.getMaSuatChieu());
-            ResultSet rs = checkStmt.executeQuery();
-            if (!rs.next()) {
-                throw new SQLException("Suất chiếu này đã bắt đầu hoặc kết thúc");
-            }
-        }
-
-        // Kiểm tra ghế đã được đặt chưa
+        // Kiểm tra xem ghế đã được đặt chưa
         if (isSeatTaken(ve.getMaSuatChieu(), ve.getSoGhe())) {
             throw new SQLException("Ghế " + ve.getSoGhe() + " đã được đặt cho suất chiếu " + ve.getMaSuatChieu());
         }
 
-        String sql = """
-                INSERT INTO Ve (maSuatChieu, maGhe, maHoaDon, maGiaVe, maKhuyenMai, trangThai, ngayDat) 
-                VALUES (?, 
-                        (SELECT maGhe FROM Ghe WHERE soGhe = ? AND maPhong = (SELECT maPhong FROM SuatChieu WHERE maSuatChieu = ?)), 
-                        ?, 
-                        (SELECT maGiaVe FROM GiaVe WHERE loaiGhe = (SELECT loaiGhe FROM Ghe WHERE soGhe = ? AND maPhong = (SELECT maPhong FROM SuatChieu WHERE maSuatChieu = ?)) AND ngayApDung <= NOW() ORDER BY ngayApDung DESC LIMIT 1), 
-                        (SELECT maKhuyenMai FROM KhuyenMai WHERE maKhuyenMai = ? AND trangThai = 'HoatDong' AND NOW() BETWEEN ngayBatDau AND ngayKetThuc), 
-                        ?, 
-                        COALESCE(?, NOW()))""";
+        // Lấy mã ghế từ số ghế và mã phòng
+        int maGhe = getMaGheFromSoGhe(ve.getSoGhe(), ve.getMaSuatChieu());
+        if (maGhe <= 0) {
+            throw new SQLException("Không tìm thấy ghế " + ve.getSoGhe() + " trong phòng chiếu");
+        }
+        
+        // Lấy mã giá vé từ loại ghế
+        int maGiaVe = getMaGiaVeFromMaGhe(maGhe);
+        if (maGiaVe <= 0) {
+            throw new SQLException("Không tìm thấy giá vé cho ghế " + ve.getSoGhe());
+        }
+
+        String sql = "INSERT INTO Ve (maSuatChieu, maGhe, maGiaVe, maKhuyenMai, maHoaDon, trangThai, ngayDat) VALUES (?, ?, ?, ?, ?, ?, ?)";
                 
         try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setInt(1, ve.getMaSuatChieu());
-            stmt.setString(2, ve.getSoGhe());
-            stmt.setInt(3, ve.getMaSuatChieu());
+            stmt.setInt(2, maGhe);
+            stmt.setInt(3, maGiaVe);
             
-            if (ve.getMaHoaDon() != 0) {
-                stmt.setInt(4, ve.getMaHoaDon());
+            if (ve.getMaKhuyenMai() > 0) {
+                stmt.setInt(4, ve.getMaKhuyenMai());
             } else {
                 stmt.setNull(4, Types.INTEGER);
             }
             
-            // Lấy mã giá vé dựa trên loại ghế
-            String getGiaVeSQL = "SELECT maGiaVe FROM GiaVe WHERE loaiGhe = (SELECT loaiGhe FROM Ghe WHERE soGhe = ? AND maPhong = (SELECT maPhong FROM SuatChieu WHERE maSuatChieu = ?)) AND ngayApDung <= NOW() ORDER BY ngayApDung DESC LIMIT 1";
-            try (PreparedStatement giaVeStmt = conn.prepareStatement(getGiaVeSQL)) {
-                giaVeStmt.setString(1, ve.getSoGhe());
-                giaVeStmt.setInt(2, ve.getMaSuatChieu());
-                ResultSet rs = giaVeStmt.executeQuery();
-                if (rs.next()) {
-                    stmt.setInt(5, rs.getInt("maGiaVe"));
-                } else {
-                    throw new SQLException("Không tìm thấy giá vé cho loại ghế này");
-                }
+            if (ve.getMaHoaDon() > 0) {
+                stmt.setInt(5, ve.getMaHoaDon());
+            } else {
+                stmt.setNull(5, Types.INTEGER);
             }
             
             stmt.setString(6, ve.getTrangThai().toString());
@@ -313,34 +217,87 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
             if (ve.getNgayDat() != null) {
                 stmt.setTimestamp(7, Timestamp.valueOf(ve.getNgayDat()));
             } else {
-                stmt.setNull(7, Types.TIMESTAMP);
+                stmt.setTimestamp(7, Timestamp.valueOf(LocalDateTime.now()));
             }
 
             int affectedRows = stmt.executeUpdate();
+            
             if (affectedRows == 0) {
                 throw new SQLException("Tạo vé thất bại, không có dòng nào được thêm vào.");
             }
-
+            
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     ve.setMaVe(generatedKeys.getInt(1));
-                    return ve;
+                    ve.setMaGhe(maGhe);
+                    ve.setMaGiaVe(maGiaVe);
                 } else {
-                    throw new SQLException("Tạo vé thất bại, không lấy được mã vé.");
+                    throw new SQLException("Tạo vé thất bại, không lấy được ID.");
                 }
             }
         }
+
+        updateTicketPricesFromView(ve);
+        
+        return ve;
+    }
+    
+    /**
+     * Lấy mã ghế từ số ghế và mã suất chiếu
+     */
+    public int getMaGheFromSoGhe(String soGhe, int maSuatChieu) throws SQLException {
+        String sql = """
+                SELECT g.maGhe 
+                FROM Ghe g
+                JOIN SuatChieu sc ON g.maPhong = sc.maPhong
+                WHERE g.soGhe = ? AND sc.maSuatChieu = ?""";
+                
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, soGhe);
+            stmt.setInt(2, maSuatChieu);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("maGhe");
+                }
+            }
+        }
+        return 0;
+    }
+    
+    /**
+     * Lấy mã giá vé từ mã ghế
+     */
+    public int getMaGiaVeFromMaGhe(int maGhe) throws SQLException {
+        String sql = """
+                SELECT gv.maGiaVe 
+                FROM GiaVe gv
+                JOIN Ghe g ON gv.loaiGhe = g.loaiGhe
+                WHERE g.maGhe = ? 
+                AND gv.ngayApDung <= NOW() 
+                ORDER BY gv.ngayApDung DESC 
+                LIMIT 1""";
+                
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maGhe);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("maGiaVe");
+                }
+            }
+        }
+        return 0;
     }
 
     @Override
     public Ve update(Ve ve) throws SQLException {
+        // Kiểm tra xem ghế đã được đặt bởi vé khác chưa
         String checkSql = """
                 SELECT v.maVe 
                 FROM Ve v
                 JOIN Ghe g ON v.maGhe = g.maGhe
                 WHERE v.maSuatChieu = ? 
                 AND g.soGhe = ? 
-                AND v.trangThai != 'CANCELLED' 
+                AND v.trangThai NOT IN ('cancelled', 'deleted') 
                 AND v.maVe != ?""";
                 
         try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
@@ -353,31 +310,44 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
             }
         }
 
+        // Kiểm tra xem suất chiếu có tồn tại không
         if (!isSuatChieuExists(ve.getMaSuatChieu())) {
             throw new SQLException("Suất chiếu với mã " + ve.getMaSuatChieu() + " không tồn tại");
         }
 
-        String sql = """
-                UPDATE Ve 
-                SET maSuatChieu = ?, 
-                    maGhe = (SELECT maGhe FROM Ghe WHERE soGhe = ? AND maPhong = (SELECT maPhong FROM SuatChieu WHERE maSuatChieu = ?)),
-                    maGiaVe = (SELECT maGiaVe FROM GiaVe WHERE loaiGhe = (SELECT loaiGhe FROM Ghe WHERE soGhe = ? AND maPhong = (SELECT maPhong FROM SuatChieu WHERE maSuatChieu = ?)) AND ngayApDung <= NOW() ORDER BY ngayApDung DESC LIMIT 1),
-                    trangThai = ?, 
-                    ngayDat = ? 
-                WHERE maVe = ?""";
+        // Lấy mã ghế từ số ghế và mã phòng
+        int maGhe = getMaGheFromSoGhe(ve.getSoGhe(), ve.getMaSuatChieu());
+        if (maGhe <= 0) {
+            throw new SQLException("Không tìm thấy ghế " + ve.getSoGhe() + " trong phòng chiếu");
+        }
+        
+        // Lấy mã giá vé từ loại ghế
+        int maGiaVe = getMaGiaVeFromMaGhe(maGhe);
+        if (maGiaVe <= 0) {
+            throw new SQLException("Không tìm thấy giá vé cho ghế " + ve.getSoGhe());
+        }
+
+        String sql = "UPDATE Ve SET maSuatChieu = ?, maGhe = ?, maGiaVe = ?, trangThai = ?, ngayDat = ? WHERE maVe = ?";
                 
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, ve.getMaSuatChieu());
-            stmt.setString(2, ve.getSoGhe());
-            stmt.setInt(3, ve.getMaSuatChieu());
-            stmt.setString(4, ve.getSoGhe());
-            stmt.setInt(5, ve.getMaSuatChieu());
-            stmt.setString(6, ve.getTrangThai().toString());
-            stmt.setObject(7, ve.getNgayDat() != null ? Timestamp.valueOf(ve.getNgayDat()) : null, Types.TIMESTAMP);
-            stmt.setInt(8, ve.getMaVe());
+            stmt.setInt(2, maGhe);
+            stmt.setInt(3, maGiaVe);
+            stmt.setString(4, ve.getTrangThai().toString());
+            
+            if (ve.getNgayDat() != null) {
+                stmt.setTimestamp(5, Timestamp.valueOf(ve.getNgayDat()));
+            } else {
+                stmt.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
+            }
+            
+            stmt.setInt(6, ve.getMaVe());
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows > 0) {
+                ve.setMaGhe(maGhe);
+                ve.setMaGiaVe(maGiaVe);
+                updateTicketPricesFromView(ve);
                 return ve;
             }
             return null;
@@ -386,7 +356,6 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
 
     @Override
     public void delete(int id) throws SQLException {
-        // Kiểm tra trạng thái vé trước khi xóa
         String checkSQL = """
                 SELECT v.trangThai, sc.ngayGioChieu 
                 FROM Ve v
@@ -404,7 +373,7 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
             String trangThai = rs.getString("trangThai");
             Timestamp ngayGioChieu = rs.getTimestamp("ngayGioChieu");
             
-            if ("PAID".equals(trangThai)) {
+            if ("paid".equals(trangThai)) {
                 throw new SQLException("Không thể xóa vé đã thanh toán");
             }
             
@@ -413,8 +382,7 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
             }
         }
 
-        // Thực hiện xóa vé
-        String sql = "UPDATE Ve SET trangThai = 'DELETED' WHERE maVe = ?";
+        String sql = "UPDATE Ve SET trangThai = 'deleted' WHERE maVe = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);
             int affectedRows = stmt.executeUpdate();
@@ -423,26 +391,74 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
             }
         }
     }
+    
+    /**
+     * Lấy thông tin khuyến mãi từ mã khuyến mãi
+     * @param maKhuyenMai Mã khuyến mãi
+     * @return Mảng chứa [phần trăm giảm, giá giảm tối đa]
+     */
+    public BigDecimal[] getKhuyenMaiInfo(int maKhuyenMai) throws SQLException {
+        if (maKhuyenMai <= 0) {
+            return new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO };
+        }
+        
+        String sql = "SELECT phanTramGiam, giaGiamToiDa FROM KhuyenMai WHERE maKhuyenMai = ? AND trangThai = 'ACTIVE' AND ngayBatDau <= NOW() AND ngayKetThuc >= NOW()";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maKhuyenMai);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    BigDecimal phanTramGiam = rs.getBigDecimal("phanTramGiam");
+                    BigDecimal giaGiamToiDa = rs.getBigDecimal("giaGiamToiDa");
+                    if (giaGiamToiDa == null) {
+                        giaGiamToiDa = BigDecimal.valueOf(Long.MAX_VALUE);
+                    }
+                    return new BigDecimal[] { phanTramGiam, giaGiamToiDa };
+                }
+            }
+        }
+        return new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO };
+    }
+    
+    /**
+     * Kiểm tra xem khuyến mãi có hợp lệ không
+     * @param maKhuyenMai Mã khuyến mãi
+     * @return true nếu khuyến mãi hợp lệ, false nếu không
+     */
+    public boolean isKhuyenMaiValid(int maKhuyenMai) throws SQLException {
+        if (maKhuyenMai <= 0) {
+            return false;
+        }
+        
+        String sql = "SELECT 1 FROM KhuyenMai WHERE maKhuyenMai = ? AND trangThai = 'HoatDong' AND ngayBatDau <= NOW() AND ngayKetThuc >= NOW()";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maKhuyenMai);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
 
     @Override
     public BigDecimal findTicketPriceBySuatChieu(int maSuatChieu) throws SQLException {
         String sql = """
                 SELECT gv.giaVe 
-                FROM Ve v
-                JOIN Ghe g ON v.maGhe = g.maGhe
-                JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
-                WHERE v.maSuatChieu = ? 
+                FROM SuatChieu sc
+                JOIN PhongChieu pc ON sc.maPhong = pc.maPhong
+                JOIN Ghe g ON g.maPhong = pc.maPhong
+                JOIN GiaVe gv ON g.loaiGhe = gv.loaiGhe
+                WHERE sc.maSuatChieu = ?
+                AND gv.ngayApDung <= NOW()
+                ORDER BY gv.ngayApDung DESC
                 LIMIT 1""";
-                
+        
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, maSuatChieu);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getBigDecimal("giaVe");
-                }
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getBigDecimal("giaVe");
             }
+            return null;
         }
-        return null;
     }
 
     @Override
@@ -464,13 +480,63 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
                 JOIN Ghe g ON v.maGhe = g.maGhe
                 WHERE v.maSuatChieu = ? 
                 AND g.soGhe = ? 
-                AND v.trangThai != 'CANCELLED'""";
+                AND v.trangThai != 'cancelled'""";
                 
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, maSuatChieu);
             stmt.setString(2, soGhe);
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next();
+            }
+        }
+    }
+
+    public boolean hasPaidTicketsByPhim(int maPhim) throws SQLException {
+        String sql = """
+            SELECT 1 FROM Ve v
+            JOIN SuatChieu sc ON v.maSuatChieu = sc.maSuatChieu
+            WHERE sc.maPhim = ? AND v.trangThai = 'paid'
+            LIMIT 1
+        """;
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maPhim);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+    
+    /**
+     * Cập nhật giá vé từ VeView
+     */
+    public void updateTicketPricesFromView(Ve ve) throws SQLException {
+        String sql = """
+            SELECT GiaVeGoc, TienGiam, GiaVeSauGiam 
+            FROM VeView 
+            WHERE MaSuatChieu = ? 
+            AND SoGhe = ? 
+            AND (MaKhuyenMai = ? OR (? IS NULL AND MaKhuyenMai IS NULL))""";
+            
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, ve.getMaSuatChieu());
+            stmt.setString(2, ve.getSoGhe());
+            
+            if (ve.getMaKhuyenMai() > 0) {
+                stmt.setInt(3, ve.getMaKhuyenMai());
+                stmt.setInt(4, ve.getMaKhuyenMai());
+            } else {
+                stmt.setNull(3, Types.INTEGER);
+                stmt.setNull(4, Types.INTEGER);
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    ve.setGiaVeGoc(rs.getBigDecimal("GiaVeGoc"));
+                    ve.setTienGiam(rs.getBigDecimal("TienGiam"));
+                    ve.setGiaVeSauGiam(rs.getBigDecimal("GiaVeSauGiam"));
+                } else {
+                    throw new SQLException("Không thể tính giá vé cho mã suất chiếu " + ve.getMaSuatChieu() + " và ghế " + ve.getSoGhe());
+                }
             }
         }
     }

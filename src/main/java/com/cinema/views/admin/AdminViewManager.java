@@ -30,7 +30,7 @@ public class AdminViewManager {
             mainContentPanel.add(new SuatChieuView(), "Suất chiếu");
         }
         if (permissionManager.hasPermission("Vé")) {
-            mainContentPanel.add(new VeView(), "Vé");
+            mainContentPanel.add(new GiaVeManagementView(), "Vé");
         }
         if (permissionManager.hasPermission("Nhân viên")) {
             mainContentPanel.add(new NhanVienView(), "Nhân viên");

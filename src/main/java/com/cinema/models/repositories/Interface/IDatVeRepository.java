@@ -15,7 +15,5 @@ public interface IDatVeRepository {
 
     BigDecimal getGiaVeFromVe(int maVe, Connection conn) throws SQLException;
 
-    int getMaSuatChieuFromVe(int maVe, Connection conn) throws SQLException;
-
     boolean isSeatTaken(int maSuatChieu, String soGhe, Connection conn) throws SQLException;
 }

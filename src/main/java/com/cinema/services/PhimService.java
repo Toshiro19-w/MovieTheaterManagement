@@ -30,6 +30,10 @@ public class PhimService {
         return phimRepo.findAll();
     }
 
+    public Phim getPhimById(int maPhim) throws SQLException {
+        return phimRepo.findById(maPhim);
+    }
+
     public Phim addPhim(Phim phim) throws SQLException {
         int maTheLoai = phimRepo.getMaTheLoaiByTen(phim.getTenTheLoai());
         phim.setMaTheLoai(maTheLoai);
@@ -37,6 +41,17 @@ public class PhimService {
     }
 
     public Phim updatePhim(Phim phim) throws SQLException {
+        // Kiểm tra xem phim có tồn tại không
+        Phim existingPhim = phimRepo.findById(phim.getMaPhim());
+        if (existingPhim == null) {
+            throw new SQLException("Không tìm thấy phim với mã: " + phim.getMaPhim());
+        }
+
+        // Kiểm tra tên phim có bị trùng không (trừ phim hiện tại)
+        if (phimRepo.isMovieTitleExists(phim.getTenPhim(), phim.getMaPhim())) {
+            throw new SQLException("Tên phim đã tồn tại!");
+        }
+
         int maTheLoai = phimRepo.getMaTheLoaiByTen(phim.getTenTheLoai());
         phim.setMaTheLoai(maTheLoai);
         return phimRepo.update(phim);
