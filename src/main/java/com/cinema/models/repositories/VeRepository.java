@@ -245,7 +245,7 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
     /**
      * Lấy mã ghế từ số ghế và mã suất chiếu
      */
-    private int getMaGheFromSoGhe(String soGhe, int maSuatChieu) throws SQLException {
+    public int getMaGheFromSoGhe(String soGhe, int maSuatChieu) throws SQLException {
         String sql = """
                 SELECT g.maGhe 
                 FROM Ghe g
@@ -267,7 +267,7 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
     /**
      * Lấy mã giá vé từ mã ghế
      */
-    private int getMaGiaVeFromMaGhe(int maGhe) throws SQLException {
+    public int getMaGiaVeFromMaGhe(int maGhe) throws SQLException {
         String sql = """
                 SELECT gv.maGiaVe 
                 FROM GiaVe gv

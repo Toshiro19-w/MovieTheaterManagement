@@ -148,9 +148,6 @@ public class Phim {
 
     @Override
     public String toString() {
-        return "Phim [maPhim=" + maPhim + ", tenPhim=" + tenPhim + ", maTheLoai=" + maTheLoai + ", tenTheLoai="
-                + tenTheLoai + ", thoiLuong=" + thoiLuong + ", ngayKhoiChieu=" + ngayKhoiChieu + ", nuocSanXuat="
-                + nuocSanXuat + ", kieuPhim=" + kieuPhim + ", moTa=" + moTa + ", daoDien=" + daoDien
-                + ", duongDanPoster=" + duongDanPoster + ", trangThai=" + trangThai + "]";
+        return tenPhim;
     }
 }

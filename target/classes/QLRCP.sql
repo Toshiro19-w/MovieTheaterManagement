@@ -774,3 +774,10 @@ WHERE
     p.trangThai = 'active'
 ORDER BY 
     v.maVe;
+
+SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, sc.maPhong, pc.tenPhong, 
+sc.ngayGioChieu, p.thoiLuong, p.kieuPhim
+FROM SuatChieu sc
+JOIN Phim p ON sc.maPhim = p.maPhim
+JOIN PhongChieu pc ON sc.maPhong = pc.maPhong
+WHERE sc.maPhim = 2
