@@ -1,4 +1,4 @@
-﻿-- Active: 1746521847255@@127.0.0.1@3306@quanlyrcp
+-- Active: 1746666659429@@127.0.0.1@3306@quanlyrcp
 DROP DATABASE IF EXISTS quanlyrcp;
 CREATE DATABASE quanlyrcp;
 USE quanlyrcp;

@@ -1,4 +1,5 @@
 {
     "java.configuration.updateBuildConfiguration": "interactive",
     "terminal.integrated.fontFamily": "Consolas, \"Courier New\", \"Fira Code\", \"DejaVu Sans Mono\""
+    "java.configuration.updateBuildConfiguration": "interactive"
 }
