@@ -31,7 +31,7 @@ public class BaoCaoRepository implements IBaoCaoRepository {
     @Override
     public List<BaoCao> getBaoCaoDoanhThuTheoPhim(LocalDateTime tuNgay, LocalDateTime denNgay) throws SQLException {
         List<BaoCao> list = new ArrayList<>();
-        String sql = "SELECT tenPhim, SoVeDaBan AS soVeBanRa, DoanhThu AS tongDoanhThu, DiemDanhGiaTrungBinh " +
+        String sql = "SELECT tenPhim, SoVeDaBan AS soVeBanRa, DoanhThuThucTe AS tongDoanhThu, DiemDanhGiaTrungBinh " +
                      "FROM ThongKeDoanhThuPhim " +
                      "WHERE EXISTS (" +
                      "    SELECT 1 FROM Ve v " +
@@ -40,7 +40,7 @@ public class BaoCaoRepository implements IBaoCaoRepository {
                      "    AND v.trangThai = 'paid' " +
                      "    AND v.ngayDat BETWEEN ? AND ? " +
                      ") " +
-                     "ORDER BY DoanhThu DESC";
+                     "ORDER BY DoanhThuThucTe DESC";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setTimestamp(1, java.sql.Timestamp.valueOf(tuNgay));
             stmt.setTimestamp(2, java.sql.Timestamp.valueOf(denNgay));

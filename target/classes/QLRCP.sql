@@ -1,4 +1,4 @@
--- Active: 1746666659429@@127.0.0.1@3306@quanlyrcp
+﻿-- Active: 1746521847255@@127.0.0.1@3306@quanlyrcp
 DROP DATABASE IF EXISTS quanlyrcp;
 CREATE DATABASE quanlyrcp;
 USE quanlyrcp;
@@ -774,10 +774,3 @@ WHERE
     p.trangThai = 'active'
 ORDER BY 
     v.maVe;
-
-SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, sc.maPhong, pc.tenPhong, 
-sc.ngayGioChieu, p.thoiLuong, p.kieuPhim
-FROM SuatChieu sc
-JOIN Phim p ON sc.maPhim = p.maPhim
-JOIN PhongChieu pc ON sc.maPhong = pc.maPhong
-WHERE sc.maPhim = 2
