@@ -8,7 +8,6 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -35,9 +34,7 @@ import javax.swing.JSeparator;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.MatteBorder;
 
 import com.cinema.controllers.DatVeController;
 import com.cinema.controllers.PaymentController;
@@ -114,20 +111,27 @@ public class MainView extends JFrame {
         setLocationRelativeTo(null);
         setBackground(BACKGROUND_COLOR);
         
+        // Đặt biểu tượng cho cửa sổ ứng dụng
+        com.cinema.utils.AppIconUtils.setAppIcon(this);
+        
         loadMenuIcons();
         initUI();
     }
     
     private void loadMenuIcons() {
         // Tải các biểu tượng cho menu
-        loadIcon("Dashboard", "/icons/dashboard.png", "📊");
-        loadIcon("Phim", "/icons/movie.png", "🎬");
-        loadIcon("Suất chiếu", "/icons/schedule.png", "⏰");
-        loadIcon("Báo cáo", "/icons/report.png", "📈");
-        loadIcon("Vé", "/icons/ticket.png", "🎟️");
-        loadIcon("Người dùng", "/icons/user.png", "👥");
-        loadIcon("Thông tin cá nhân", "/icons/profile.png", "👤");
-        loadIcon("Đăng xuất", "/icons/logout.png", "🚪");
+        loadIcon("Dashboard", "/images/Icon/dashboard.png", "📊");
+        loadIcon("Phim", "/images/Icon/movie.png", "🎬");
+        loadIcon("Suất chiếu", "/images/Icon/schedule.png", "⏰");
+        loadIcon("Bán vé", "/images/Icon/sell_ticket.png", "🎫");
+        loadIcon("Vé", "/images/Icon/ticket.png", "🎟️");
+        loadIcon("Hoá đơn", "/images/Icon/invoice.png", "📝");
+        loadIcon("Báo cáo", "/images/Icon/report.png", "📈");
+        loadIcon("Nhân viên", "/images/Icon/staff.png", "👨‍💼");
+        loadIcon("Người dùng", "/images/Icon/user.png", "👥");
+        loadIcon("Đặt vé", "/images/Icon/booking.png", "🎟️");
+        loadIcon("Thông tin cá nhân", "/images/Icon/profile.png", "👤");
+        loadIcon("Đăng xuất", "/images/Icon/logout.png", "🚪");
     }
     
     private void loadIcon(String key, String path, String fallback) {
@@ -163,42 +167,9 @@ public class MainView extends JFrame {
         return new ImageIcon(image);
     }
 
-    // Static method to get the logo component (reusable across the app)
+    // Phương thức để lấy logo từ lớp tiện ích
     public static JLabel getAppLogo() {
-        ImageIcon logoIcon = new ImageIcon(MainView.class.getResource("/images/Icon/LogoApp.png"));
-        if (logoIcon.getImage() == null) {
-            JLabel logoLabel = new JLabel("🎬");
-            logoLabel.setFont(new Font("Segoe UI", Font.PLAIN, 28));
-            logoLabel.setForeground(new Color(79, 70, 229));
-            return logoLabel;
-        }
-
-        Image originalImage = logoIcon.getImage();
-        int targetWidth = 32;
-        int targetHeight = 32;
-
-        int originalWidth = logoIcon.getIconWidth();
-        int originalHeight = logoIcon.getIconHeight();
-        double aspectRatio = (double) originalWidth / originalHeight;
-        if (originalWidth > originalHeight) {
-            targetHeight = (int) (targetWidth / aspectRatio);
-        } else {
-            targetWidth = (int) (targetHeight * aspectRatio);
-        }
-
-        BufferedImage scaledImage = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2d = scaledImage.createGraphics();
-
-        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        g2d.drawImage(originalImage, 0, 0, targetWidth, targetHeight, null);
-        g2d.dispose();
-
-        ImageIcon scaledIcon = new ImageIcon(scaledImage);
-        JLabel logoLabel = new JLabel(scaledIcon);
-        return logoLabel;
+        return com.cinema.utils.AppIconUtils.getAppLogo();
     }
 
     private void initUI() throws IOException, SQLException {
@@ -223,20 +194,33 @@ public class MainView extends JFrame {
         sidebarPanel.setPreferredSize(new Dimension(240, 0));
         sidebarPanel.setBorder(new EmptyBorder(15, 10, 10, 10));
 
-        // Logo và tiêu đề ứng dụng trong sidebar
-        JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        // Logo và tiêu đề ứng dụng trong sidebar với thiết kế nổi bật hơn
+        JPanel logoPanel = new JPanel();
+        logoPanel.setLayout(new BoxLayout(logoPanel, BoxLayout.Y_AXIS));
         logoPanel.setOpaque(false);
+        logoPanel.setBorder(new EmptyBorder(5, 5, 15, 5));
+        
+        // Panel chứa logo và tên ứng dụng
+        JPanel logoTitlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        logoTitlePanel.setOpaque(false);
+        logoTitlePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel logoLabel = getAppLogo();
-        logoPanel.add(logoLabel);
+        logoTitlePanel.add(logoLabel);
         
         JLabel appTitle = new JLabel("CinemaHub");
         appTitle.setFont(TITLE_FONT);
         appTitle.setForeground(SELECTED_COLOR);
-        logoPanel.add(appTitle);
+        logoTitlePanel.add(appTitle);
         
-        // Thêm khoảng cách sau logo
-        logoPanel.add(Box.createVerticalStrut(20));
+        logoPanel.add(logoTitlePanel);
+        
+        // Thêm đường kẻ phân cách dưới logo
+        JSeparator logoSeparator = new JSeparator();
+        logoSeparator.setForeground(new Color(226, 232, 240));
+        logoSeparator.setAlignmentX(Component.LEFT_ALIGNMENT);
+        logoPanel.add(Box.createVerticalStrut(10));
+        logoPanel.add(logoSeparator);
         
         sidebarPanel.add(logoPanel, BorderLayout.NORTH);
 
@@ -246,34 +230,67 @@ public class MainView extends JFrame {
         menuPanel.setBackground(SIDEBAR_COLOR);
         menuPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
 
+        // Thêm Dashboard cho tất cả nhân viên
         if (permissionManager.isAdmin() || permissionManager.isQuanLyPhim() || permissionManager.isThuNgan() || permissionManager.isBanVe()) {
             menuPanel.add(createSidebarButton("Dashboard", "Dashboard"));
             menuPanel.add(Box.createVerticalStrut(5));
             
-            if (permissionManager.isAdmin() || permissionManager.isQuanLyPhim()) {
+            // Quản lý phim và suất chiếu
+            if (permissionManager.hasPermission("Phim")) {
                 menuPanel.add(createSidebarButton("Quản lý Phim", "Phim"));
                 menuPanel.add(Box.createVerticalStrut(5));
+            }
+            
+            if (permissionManager.hasPermission("Suất chiếu")) {
                 menuPanel.add(createSidebarButton("Quản lý Suất chiếu", "Suất chiếu"));
                 menuPanel.add(Box.createVerticalStrut(5));
             }
             
-            if (permissionManager.isAdmin() || permissionManager.isThuNgan()) {
-                menuPanel.add(createSidebarButton("Báo cáo & Thống kê", "Báo cáo"));
+            // Bán vé
+            if (permissionManager.hasPermission("Bán vé")) {
+                menuPanel.add(createSidebarButton("Bán vé", "Bán vé"));
                 menuPanel.add(Box.createVerticalStrut(5));
             }
             
-            if (permissionManager.isAdmin() || permissionManager.isBanVe()) {
+            // Quản lý vé
+            if (permissionManager.hasPermission("Vé")) {
                 menuPanel.add(createSidebarButton("Quản lý Vé", "Vé"));
                 menuPanel.add(Box.createVerticalStrut(5));
             }
             
+            // Hóa đơn
+            if (permissionManager.hasPermission("Hoá đơn")) {
+                menuPanel.add(createSidebarButton("Quản lý Hóa đơn", "Hoá đơn"));
+                menuPanel.add(Box.createVerticalStrut(5));
+            }
+            
+            // Báo cáo & Thống kê
+            if (permissionManager.hasPermission("Báo cáo")) {
+                menuPanel.add(createSidebarButton("Báo cáo & Thống kê", "Báo cáo"));
+                menuPanel.add(Box.createVerticalStrut(5));
+            }
+            
+            // Quản lý nhân viên
+            if (permissionManager.hasPermission("Nhân viên")) {
+                menuPanel.add(createSidebarButton("Quản lý Nhân viên", "Nhân viên"));
+                menuPanel.add(Box.createVerticalStrut(5));
+            }
+            
+            // Quản lý người dùng (khách hàng)
             if (permissionManager.isAdmin()) {
                 menuPanel.add(createSidebarButton("Quản lý Người dùng", "Người dùng"));
                 menuPanel.add(Box.createVerticalStrut(5));
             }
-        } else {
+        } else if (permissionManager.isUser()) {
+            // Menu cho khách hàng
             menuPanel.add(createSidebarButton("Phim đang chiếu", "Phim"));
             menuPanel.add(Box.createVerticalStrut(5));
+            
+            if (permissionManager.hasPermission("Đặt vé")) {
+                menuPanel.add(createSidebarButton("Đặt vé", "Đặt vé"));
+                menuPanel.add(Box.createVerticalStrut(5));
+            }
+            
             menuPanel.add(createSidebarButton("Thông tin cá nhân", "Thông tin cá nhân"));
             menuPanel.add(Box.createVerticalStrut(5));
         }
@@ -525,7 +542,15 @@ public class MainView extends JFrame {
 
         if (permissionManager.isAdmin() || permissionManager.isQuanLyPhim() || permissionManager.isThuNgan() || permissionManager.isBanVe()) {
             try {
-                cardLayout.show(mainContentPanel, feature);
+                // Kiểm tra xem người dùng có quyền truy cập tính năng này không
+                if (permissionManager.hasPermission(feature) || feature.equals("Dashboard")) {
+                    cardLayout.show(mainContentPanel, feature);
+                } else {
+                    JOptionPane.showMessageDialog(this, 
+                        "Bạn không có quyền truy cập tính năng này!", 
+                        "Cảnh báo", 
+                        JOptionPane.WARNING_MESSAGE);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 JOptionPane.showMessageDialog(this, 

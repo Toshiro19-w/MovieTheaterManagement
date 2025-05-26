@@ -4,16 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.Insets;
-import java.awt.RenderingHints;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
@@ -25,7 +17,6 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
@@ -62,14 +53,11 @@ import ca.odell.glazedlists.BasicEventList;
 import ca.odell.glazedlists.EventList;
 import ca.odell.glazedlists.swing.AutoCompleteSupport;
 
+// Import ModernUIComponents
+import static com.cinema.views.admin.ModernUIComponents.*;
+
 public class SellTicketView extends JPanel {
     // Constants
-    private static final Color CINESTAR_BLUE = new Color(0, 51, 102);
-    private static final Color CINESTAR_YELLOW = new Color(255, 204, 0);
-    private static final Color BACKGROUND_COLOR = new Color(245, 245, 245);
-    private static final Color SHADOW_COLOR = new Color(0, 0, 0, 50);
-    private static final Font LABEL_FONT = new Font("Roboto", Font.PLAIN, 14);
-    private static final Font HEADER_FONT = new Font("Roboto", Font.BOLD, 16);
     private static final int SEARCH_DELAY = 300; // milliseconds
 
     // Controllers
@@ -152,28 +140,13 @@ public class SellTicketView extends JPanel {
     }
 
     private JPanel createCustomerPanel() {
-        JPanel panel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(Color.WHITE);
-                g2d.fillRoundRect(5, 5, getWidth() - 10, getHeight() - 10, 20, 20);
-                g2d.setColor(SHADOW_COLOR);
-                g2d.drawRoundRect(5, 5, getWidth() - 10, getHeight() - 10, 20, 20);
-            }
-        };
+        // Sử dụng panel với hiệu ứng đổ bóng từ ModernUIComponents
+        JPanel panel = createRoundedPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(BACKGROUND_COLOR);
-        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         panel.setPreferredSize(new Dimension(350, 0));
-        panel.setOpaque(false);
 
-        // Title
-        JLabel titleLabel = new JLabel("Thông tin khách hàng");
-        titleLabel.setFont(HEADER_FONT);
-        titleLabel.setForeground(CINESTAR_BLUE);
+        // Title - Sử dụng header label từ ModernUIComponents
+        JLabel titleLabel = createHeaderLabel("Thông tin khách hàng");
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(titleLabel);
         panel.add(Box.createVerticalStrut(10));
@@ -199,16 +172,7 @@ public class SellTicketView extends JPanel {
     }
 
     private JPanel createSearchPanel() {
-        JPanel panel = new JPanel(new BorderLayout(5, 0)) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(Color.WHITE);
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
-            }
-        };
+        JPanel panel = new JPanel(new BorderLayout(5, 0));
         panel.setOpaque(false);
         panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         panel.setMaximumSize(new Dimension(1000, 40));
@@ -216,17 +180,17 @@ public class SellTicketView extends JPanel {
         // ComboBox
         comboBoxModel = new DefaultComboBoxModel<>();
         customerComboBox = new JComboBox<>(comboBoxModel);
-        customerComboBox.setFont(LABEL_FONT);
+        customerComboBox.setFont(BODY_FONT);
         customerComboBox.setEditable(true);
         customerComboBox.setBackground(Color.WHITE);
         customerComboBox.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createEmptyBorder(5, 5, 5, 5),
-            new CustomSearchBorder(getScaledIcon("/icons/search.png", 20, 20))
+            new ShadowBorder()
         ));
 
-        // Sử dụng PlaceholderTextField làm editor
+        // Sử dụng PlaceholderTextField từ ModernUIComponents
         PlaceholderTextField placeholderField = new PlaceholderTextField("Nhập tên, số điện thoại hoặc email...");
-        placeholderField.setFont(LABEL_FONT);
+        placeholderField.setFont(BODY_FONT);
         placeholderField.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         customerComboBox.setEditor(new BasicComboBoxEditor() {
             @Override
@@ -248,7 +212,7 @@ public class SellTicketView extends JPanel {
         });
 
         // Loading indicator
-        loadingLabel = new JLabel(getScaledIcon("/icons/loading.gif", 20, 20));
+        loadingLabel = new JLabel(getIcon("/images/Icon/loading.gif", 20, 20));
         loadingLabel.setVisible(false);
         panel.add(loadingLabel, BorderLayout.EAST);
         panel.add(customerComboBox, BorderLayout.CENTER);
@@ -257,26 +221,19 @@ public class SellTicketView extends JPanel {
     }
 
     private JPanel createCustomerInfoPanel() {
-        JPanel panel = new JPanel();
+        JPanel panel = createRoundedPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setOpaque(false);
         panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(CINESTAR_BLUE), 
-            "Chi tiết khách hàng", 0, 0, HEADER_FONT, CINESTAR_BLUE
+            BorderFactory.createLineBorder(PRIMARY_COLOR), 
+            "Chi tiết khách hàng", 0, 0, TITLE_FONT, PRIMARY_COLOR
         ));
         panel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Customer info labels
-        customerIdLabel = new JLabel("🆔 " + messages.getString("usernameLabel"));
-        customerNameLabel = new JLabel("👤 " + messages.getString("fullNameLabel"));
-        customerPhoneLabel = new JLabel("📞 " + messages.getString("phoneLabel"));
-        customerEmailLabel = new JLabel("✉️ " + messages.getString("emailLabel"));
-
-        // Set fonts
-        customerIdLabel.setFont(LABEL_FONT);
-        customerNameLabel.setFont(LABEL_FONT);
-        customerPhoneLabel.setFont(LABEL_FONT);
-        customerEmailLabel.setFont(LABEL_FONT);
+        // Customer info labels - Sử dụng infoLabel từ ModernUIComponents
+        customerIdLabel = createInfoLabel("🆔 " + messages.getString("usernameLabel"));
+        customerNameLabel = createInfoLabel("👤 " + messages.getString("fullNameLabel"));
+        customerPhoneLabel = createInfoLabel("📞 " + messages.getString("phoneLabel"));
+        customerEmailLabel = createInfoLabel("✉️ " + messages.getString("emailLabel"));
 
         // Add labels with spacing
         panel.add(customerIdLabel);
@@ -311,7 +268,7 @@ public class SellTicketView extends JPanel {
                 String currentText = editor.getText().trim();
                 if (currentText.isEmpty()) {
                     ValidationUtils.hideError(searchErrorLabel);
-                    editor.setForeground(Color.BLACK);
+                    editor.setForeground(TEXT_COLOR);
                     loadCustomers();
                     customerComboBox.setSelectedItem(null);
                     clearCustomerInfo();
@@ -361,7 +318,7 @@ public class SellTicketView extends JPanel {
 
         if (searchText.isEmpty()) {
             ValidationUtils.hideError(searchErrorLabel);
-            editor.setForeground(Color.BLACK);
+            editor.setForeground(TEXT_COLOR);
             loadCustomers();
             customerComboBox.setSelectedItem(null);
             clearCustomerInfo();
@@ -584,23 +541,13 @@ public class SellTicketView extends JPanel {
 
     private void showSnackbar(String message, boolean success) {
         if (snackbarPanel == null) {
-            snackbarPanel = new JPanel() {
-                @Override
-                protected void paintComponent(Graphics g) {
-                    super.paintComponent(g);
-                    Graphics2D g2d = (Graphics2D) g;
-                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2d.setColor(getBackground());
-                    g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
-                }
-            };
-            snackbarPanel.setOpaque(false);
+            snackbarPanel = createRoundedPanel();
             snackbarPanel.setLayout(new BorderLayout());
             snackbarPanel.setBounds(50, 30, 300, 40);
-            snackbarPanel.setBackground(success ? new Color(46, 204, 113, 200) : new Color(231, 76, 60, 200));
+            snackbarPanel.setBackground(success ? SUCCESS_COLOR : ERROR_COLOR);
 
             JLabel messageLabel = new JLabel(message, JLabel.CENTER);
-            messageLabel.setFont(new Font("Roboto", Font.BOLD, 14));
+            messageLabel.setFont(BODY_FONT);
             messageLabel.setForeground(Color.WHITE);
             snackbarPanel.add(messageLabel, BorderLayout.CENTER);
 
@@ -609,7 +556,7 @@ public class SellTicketView extends JPanel {
         } else {
             JLabel messageLabel = (JLabel) snackbarPanel.getComponent(0);
             messageLabel.setText(message);
-            snackbarPanel.setBackground(success ? new Color(46, 204, 113, 200) : new Color(231, 76, 60, 200));
+            snackbarPanel.setBackground(success ? SUCCESS_COLOR : ERROR_COLOR);
         }
 
         snackbarPanel.setVisible(true);
@@ -620,69 +567,13 @@ public class SellTicketView extends JPanel {
         timer.start();
     }
 
-    private ImageIcon getScaledIcon(String path, int width, int height) {
-        try {
-            ImageIcon icon = new ImageIcon(getClass().getResource(path));
-            Image img = icon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
-            return new ImageIcon(img);
-        } catch (Exception e) {
-            return new ImageIcon();
-        }
-    }
-
-    // Custom border for search box
-    private static class CustomSearchBorder extends javax.swing.border.AbstractBorder {
-        private final ImageIcon icon;
-
-        public CustomSearchBorder(ImageIcon icon) {
-            this.icon = icon;
-        }
-
-        @Override
-        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-            super.paintBorder(c, g, x, y, width, height);
-            Graphics2D g2d = (Graphics2D) g;
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            int iconX = x + 5;
-            int iconY = y + (height - icon.getIconHeight()) / 2;
-            icon.paintIcon(c, g, iconX, iconY);
-        }
-
-        @Override
-        public Insets getBorderInsets(Component c) {
-            return new Insets(5, 30, 5, 5);
-        }
-
-        @Override
-        public Insets getBorderInsets(Component c, Insets insets) {
-            insets.left = 30;
-            insets.top = 5;
-            insets.right = 5;
-            insets.bottom = 5;
-            return insets;
-        }
-    }
-
     private JPanel createMoviePanel() {
-        JPanel panel = new JPanel(new BorderLayout(0, 20)) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(Color.WHITE);
-                g2d.fillRoundRect(5, 5, getWidth() - 10, getHeight() - 10, 20, 20);
-                g2d.setColor(SHADOW_COLOR);
-                g2d.drawRoundRect(5, 5, getWidth() - 10, getHeight() - 10, 20, 20);
-            }
-        };
-        panel.setOpaque(false);
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        // Sử dụng panel với hiệu ứng đổ bóng từ ModernUIComponents
+        JPanel panel = createRoundedPanel();
+        panel.setLayout(new BorderLayout(0, 20));
 
         // Title
-        JLabel movieTitle = new JLabel("Danh sách phim đang chiếu");
-        movieTitle.setFont(HEADER_FONT);
-        movieTitle.setForeground(CINESTAR_BLUE);
+        JLabel movieTitle = createHeaderLabel("Danh sách phim đang chiếu");
         panel.add(movieTitle, BorderLayout.NORTH);
 
         // Movie table
@@ -695,11 +586,11 @@ public class SellTicketView extends JPanel {
         };
 
         movieTable = new JTable(tableModel);
-        movieTable.setFont(LABEL_FONT);
+        movieTable.setFont(BODY_FONT);
         movieTable.setRowHeight(35);
         movieTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        movieTable.getTableHeader().setFont(HEADER_FONT);
-        movieTable.getTableHeader().setBackground(CINESTAR_BLUE);
+        movieTable.getTableHeader().setFont(TITLE_FONT);
+        movieTable.getTableHeader().setBackground(PRIMARY_COLOR);
         movieTable.getTableHeader().setForeground(Color.WHITE);
         movieTable.setGridColor(new Color(200, 200, 200));
         movieTable.setShowGrid(true);
@@ -715,66 +606,15 @@ public class SellTicketView extends JPanel {
         scrollPane.getViewport().setBackground(Color.WHITE);
         panel.add(scrollPane, BorderLayout.CENTER);
 
-        // Book ticket button
+        // Book ticket button - Sử dụng button từ ModernUIComponents
         JPanel buttonPanel = new JPanel(new BorderLayout());
         buttonPanel.setOpaque(false);
-        JButton bookButton = new JButton("Đặt vé");
-        bookButton.setFont(HEADER_FONT);
-        bookButton.setBackground(CINESTAR_YELLOW);
-        bookButton.setForeground(CINESTAR_BLUE);
-        bookButton.setFocusPainted(false);
-        bookButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        bookButton.setIcon(getScaledIcon("/icons/ticket.png", 20, 20));
+        JButton bookButton = createIconButton("Đặt vé", "/images/Icon/ticket.png", SECONDARY_COLOR, PRIMARY_COLOR);
         bookButton.setToolTipText("Đặt vé cho khách hàng đã chọn");
-        bookButton.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                bookButton.setBackground(CINESTAR_YELLOW.brighter());
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                bookButton.setBackground(CINESTAR_YELLOW);
-            }
-        });
         bookButton.addActionListener(_ -> bookTicket());
         buttonPanel.add(bookButton, BorderLayout.EAST);
         panel.add(buttonPanel, BorderLayout.SOUTH);
 
         return panel;
-    }
-
-    // Custom JTextField with placeholder support
-    class PlaceholderTextField extends JTextField {
-        private String placeholder;
-        private Color placeholderColor = new Color(150, 150, 150);
-
-        public PlaceholderTextField(String placeholder) {
-            this.placeholder = placeholder;
-        }
-
-        public void setPlaceholder(String placeholder) {
-            this.placeholder = placeholder;
-            repaint();
-        }
-
-        public void setPlaceholderColor(Color color) {
-            this.placeholderColor = color;
-            repaint();
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            if (getText().isEmpty() && placeholder != null) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setFont(getFont());
-                g2.setColor(placeholderColor);
-                Insets insets = getInsets();
-                int padding = 2;
-                g2.drawString(placeholder, insets.left + padding, getHeight() / 2 + getFont().getSize() / 2 - 2);
-                g2.dispose();
-            }
-        }
     }
 }
