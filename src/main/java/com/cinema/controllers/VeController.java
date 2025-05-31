@@ -1,5 +1,8 @@
 package com.cinema.controllers;
 
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -8,8 +11,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import javax.swing.JComboBox;
-import javax.swing.JOptionPane;
+import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
@@ -74,7 +76,7 @@ public class VeController {
                 if (selectedRow >= 0) {
                     displayVeInfo(selectedRow);
                 } else {
-                    clearCustomerInfo();
+                    clearForm();
                 }
             }
         });        
@@ -229,7 +231,7 @@ public class VeController {
                 view.getCbKhuyenMai().setSelectedItem(tenKhuyenMai);
             }
 
-            updateCustomerInfo(Integer.parseInt(maVe));
+            loadKhachHangInfo(Integer.parseInt(maVe));
         } catch (SQLException e) {
             handleException("Lỗi khi kiểm tra trạng thái khuyến mãi", e);
         } catch (NumberFormatException e) {
@@ -271,30 +273,58 @@ public class VeController {
         }
 
         if (ve.getMaHoaDon() != 0) {
-            updateCustomerInfo(ve.getMaVe());
+            loadKhachHangInfo(ve.getMaVe());
         } else {
-            clearCustomerInfo();
+            view.getTxtTenKhachHang().setText("");
+            view.getTxtSoDienThoai().setText("");
+            view.getTxtEmail().setText("");
+            view.getTxtDiemTichLuy().setText("");
         }
     }
 
-    private void updateCustomerInfo(int maVe) {
+    private void loadKhachHangInfo(int maVe) {
         try {
             KhachHang khachHang = service.getKhachHangByMaVe(maVe);
-            DefaultTableModel model = view.getTableKhachHangModel();
-            model.setRowCount(0);
             if (khachHang != null) {
-                model.addRow(new Object[]{
-                    khachHang.getHoTen(),
-                    khachHang.getSoDienThoai(),
-                    khachHang.getEmail(),
-                    khachHang.getDiemTichLuy()
-                });
+                updateCustomerUIFields(khachHang);
+                disableCustomerFields();
+                view.showMessage("Đã tìm thấy thông tin khách hàng", true);
+            } else {
+                view.showMessage("Không tìm thấy thông tin khách hàng", false);
+                clearCustomerFields();
             }
         } catch (SQLException e) {
-            handleException("Lỗi khi tải thông tin khách hàng", e);
+            view.showMessage("Lỗi khi tải thông tin khách hàng" + e.getMessage(), false);
+            handleException("",e);
         }
-    }    
-    
+    }
+
+    // Phương thức cập nhật UI
+    private void updateCustomerUIFields(KhachHang khachHang) {
+        view.getTxtTenKhachHang().setText(khachHang.getHoTen());
+        view.getTxtSoDienThoai().setText(khachHang.getSoDienThoai());
+        view.getTxtEmail().setText(khachHang.getEmail());
+        view.getTxtDiemTichLuy().setText(String.valueOf(khachHang.getDiemTichLuy()));
+    }
+
+    // Phương thức vô hiệu hóa các trường
+    private void disableCustomerFields() {
+        view.getTxtTenKhachHang().setEnabled(false);
+        view.getTxtSoDienThoai().setEnabled(false);
+        view.getTxtEmail().setEnabled(false);
+        view.getTxtDiemTichLuy().setEnabled(false);
+    }
+
+    // Thêm phương thức mới để clear các trường
+    private void clearCustomerFields() {
+        view.getTxtTenKhachHang().setText("");
+        view.getTxtSoDienThoai().setText("");
+        view.getTxtEmail().setText("");
+        view.getTxtDiemTichLuy().setText("");
+        // Vẫn giữ trạng thái disable các trường
+        disableCustomerFields();
+    }
+
     private void themVe() {
         try {
             if (!validateForm()) {
@@ -424,11 +454,6 @@ public class VeController {
         view.clearForm();
         view.getCbKhuyenMai().setEnabled(true);
         loadKhuyenMaiList();
-    }
-
-    private void clearCustomerInfo() {
-        DefaultTableModel model = view.getTableKhachHangModel();
-        model.setRowCount(0);
     }
 
     private String formatCurrency(BigDecimal amount) {

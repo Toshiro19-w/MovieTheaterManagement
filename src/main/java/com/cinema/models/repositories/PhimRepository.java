@@ -10,6 +10,7 @@ import java.util.List;
 
 import com.cinema.models.Phim;
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.utils.PaginationResult;
 
 public class PhimRepository extends BaseRepository<Phim> {
     public PhimRepository(DatabaseConnection databaseConnection) {
@@ -18,7 +19,26 @@ public class PhimRepository extends BaseRepository<Phim> {
 
     @Override
     public List<Phim> findAll() throws SQLException {
+        return findAllPaginated(1, Integer.MAX_VALUE).getData();
+    }
+    
+    public PaginationResult<Phim> findAllPaginated(int page, int pageSize) throws SQLException {
         List<Phim> list = new ArrayList<>();
+        int offset = (page - 1) * pageSize;
+        
+        // Đếm tổng số phim
+        String countSql = "SELECT COUNT(*) FROM Phim p JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai";
+        int totalItems = 0;
+        try (Statement countStmt = conn.createStatement(); 
+             ResultSet countRs = countStmt.executeQuery(countSql)) {
+            if (countRs.next()) {
+                totalItems = countRs.getInt(1);
+            }
+        }
+        
+        int totalPages = (int) Math.ceil((double) totalItems / pageSize);
+        
+        // Lấy dữ liệu phim theo trang
         String sql = """
                      SELECT p.maPhim, p.tenPhim, p.maTheLoai, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu, 
                      p.nuocSanXuat, p.kieuPhim, p.moTa, p.daoDien, p.duongDanPoster, p.trangThai
@@ -26,9 +46,15 @@ public class PhimRepository extends BaseRepository<Phim> {
                      JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai
                      LEFT JOIN SuatChieu sc ON p.maPhim = sc.maPhim
                      GROUP BY p.maPhim, p.tenPhim, p.maTheLoai, tl.tenTheLoai, p.thoiLuong, p.ngayKhoiChieu,
-                     p.nuocSanXuat, p.kieuPhim, p.moTa, p.daoDien 
-                     ORDER BY p.ngayKhoiChieu DESC, p.tenPhim""";
-        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+                     p.nuocSanXuat, p.kieuPhim, p.moTa, p.daoDien, p.duongDanPoster, p.trangThai
+                     ORDER BY p.ngayKhoiChieu DESC, p.tenPhim
+                     LIMIT ? OFFSET ?""";
+                     
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, pageSize);
+            stmt.setInt(2, offset);
+            ResultSet rs = stmt.executeQuery();
+            
             while (rs.next()) {
                 Phim phim = new Phim();
                 phim.setMaPhim(rs.getInt("maPhim"));
@@ -49,9 +75,11 @@ public class PhimRepository extends BaseRepository<Phim> {
                 list.add(phim);
             }
         }
-        return list;
+        
+        return new PaginationResult<>(list, page, totalPages, pageSize, totalItems);
     }
 
+    
     public Phim findById(int id) throws SQLException {
         String sql = "SELECT * FROM Phim WHERE maPhim = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -179,14 +207,6 @@ public class PhimRepository extends BaseRepository<Phim> {
         return theLoaiList;
     }
 
-    // Lấy danh sách trạng thái duy nhất
-    public List<String> getAllTrangThai() throws SQLException {
-        List<String> list = new ArrayList<>();
-        list.add("active");
-        list.add("deleted");
-        return list;
-    }
-
     // Lấy danh sách định dạng duy nhất
     public List<String> getAllDinhDang() throws SQLException {
         List<String> dinhDangList = new ArrayList<>();
@@ -215,21 +235,22 @@ public class PhimRepository extends BaseRepository<Phim> {
         """;
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, tenPhong);
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                Phim phim = new Phim();
-                phim.setMaPhim(rs.getInt("maPhim"));
-                phim.setTenPhim(rs.getString("tenPhim"));
-                phim.setMaTheLoai(rs.getInt("maTheLoai"));
-                phim.setThoiLuong(rs.getInt("thoiLuong"));
-                phim.setNgayKhoiChieu(rs.getDate("ngayKhoiChieu") != null ? rs.getDate("ngayKhoiChieu").toLocalDate() : null);
-                phim.setNuocSanXuat(rs.getString("nuocSanXuat"));
-                phim.setKieuPhim(rs.getString("kieuPhim"));
-                phim.setMoTa(rs.getString("moTa"));
-                phim.setDaoDien(rs.getString("daoDien"));
-                phim.setDuongDanPoster(rs.getString("duongDanPoster"));
-                phim.setTrangThai(rs.getString("trangThai"));
-                list.add(phim);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Phim phim = new Phim();
+                    phim.setMaPhim(rs.getInt("maPhim"));
+                    phim.setTenPhim(rs.getString("tenPhim"));
+                    phim.setMaTheLoai(rs.getInt("maTheLoai"));
+                    phim.setThoiLuong(rs.getInt("thoiLuong"));
+                    phim.setNgayKhoiChieu(rs.getDate("ngayKhoiChieu") != null ? rs.getDate("ngayKhoiChieu").toLocalDate() : null);
+                    phim.setNuocSanXuat(rs.getString("nuocSanXuat"));
+                    phim.setKieuPhim(rs.getString("kieuPhim"));
+                    phim.setMoTa(rs.getString("moTa"));
+                    phim.setDaoDien(rs.getString("daoDien"));
+                    phim.setDuongDanPoster(rs.getString("duongDanPoster"));
+                    phim.setTrangThai(rs.getString("trangThai"));
+                    list.add(phim);
+                }
             }
         }
         return list;

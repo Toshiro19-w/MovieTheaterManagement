@@ -1,9 +1,8 @@
-package com.cinema.views.admin;
+package com.cinema.components;
 
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -19,31 +18,11 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.AbstractBorder;
-import javax.swing.border.EmptyBorder;
-
-import com.cinema.utils.AppIconUtils;
 
 /**
  * Lớp cung cấp các thành phần UI hiện đại cho ứng dụng
  */
 public class ModernUIComponents {
-    
-    // Màu sắc
-    public static final Color PRIMARY_COLOR = new Color(79, 70, 229); // Indigo
-    public static final Color SECONDARY_COLOR = new Color(255, 204, 0); // Yellow
-    public static final Color BACKGROUND_COLOR = new Color(245, 245, 245);
-    public static final Color CARD_BACKGROUND = Color.WHITE;
-    public static final Color TEXT_COLOR = new Color(31, 41, 55);
-    public static final Color LIGHT_TEXT_COLOR = new Color(107, 114, 128);
-    public static final Color SUCCESS_COLOR = new Color(46, 204, 113);
-    public static final Color ERROR_COLOR = new Color(231, 76, 60);
-    public static final Color SHADOW_COLOR = new Color(0, 0, 0, 30);
-    
-    // Font
-    public static final Font HEADER_FONT = new Font("Segoe UI", Font.BOLD, 18);
-    public static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 16);
-    public static final Font BODY_FONT = new Font("Segoe UI", Font.PLAIN, 14);
-    public static final Font SMALL_FONT = new Font("Segoe UI", Font.PLAIN, 12);
     
     // Cache cho icons
     private static final java.util.Map<String, ImageIcon> iconCache = new java.util.concurrent.ConcurrentHashMap<>();
@@ -58,14 +37,15 @@ public class ModernUIComponents {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(CARD_BACKGROUND);
-                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20);
+                g2d.setColor(getBackground());
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, UIConstants.BORDER_RADIUS, UIConstants.BORDER_RADIUS);
             }
         };
         panel.setOpaque(false);
         panel.setBorder(BorderFactory.createCompoundBorder(
             new ShadowBorder(), 
-            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+            BorderFactory.createEmptyBorder(UIConstants.PADDING_SMALL, UIConstants.PADDING_SMALL, 
+                                           UIConstants.PADDING_SMALL, UIConstants.PADDING_SMALL)
         ));
         return panel;
     }
@@ -75,12 +55,13 @@ public class ModernUIComponents {
      */
     public static JButton createButton(String text, Color bgColor, Color textColor) {
         JButton button = new JButton(text);
-        button.setFont(BODY_FONT);
+        button.setFont(UIConstants.BODY_FONT);
         button.setBackground(bgColor);
         button.setForeground(textColor);
         button.setFocusPainted(false);
         button.setBorderPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        button.setBorder(BorderFactory.createEmptyBorder(UIConstants.PADDING_MEDIUM, UIConstants.PADDING_LARGE, 
+                                                        UIConstants.PADDING_MEDIUM, UIConstants.PADDING_LARGE));
         button.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         
         // Hiệu ứng hover
@@ -155,10 +136,11 @@ public class ModernUIComponents {
      */
     public static JTextField createTextField(String placeholder) {
         PlaceholderTextField textField = new PlaceholderTextField(placeholder);
-        textField.setFont(BODY_FONT);
+        textField.setFont(UIConstants.BODY_FONT);
         textField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(209, 213, 219)),
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+            BorderFactory.createEmptyBorder(UIConstants.PADDING_MEDIUM, UIConstants.PADDING_MEDIUM, 
+                                           UIConstants.PADDING_MEDIUM, UIConstants.PADDING_MEDIUM)
         ));
         textField.setPreferredSize(new Dimension(200, 40));
         return textField;
@@ -169,8 +151,8 @@ public class ModernUIComponents {
      */
     public static JLabel createHeaderLabel(String text) {
         JLabel label = new JLabel(text);
-        label.setFont(HEADER_FONT);
-        label.setForeground(PRIMARY_COLOR);
+        label.setFont(UIConstants.HEADER_FONT);
+        label.setForeground(UIConstants.PRIMARY_COLOR);
         return label;
     }
     
@@ -179,8 +161,8 @@ public class ModernUIComponents {
      */
     public static JLabel createInfoLabel(String text) {
         JLabel label = new JLabel(text);
-        label.setFont(BODY_FONT);
-        label.setForeground(TEXT_COLOR);
+        label.setFont(UIConstants.BODY_FONT);
+        label.setForeground(UIConstants.TEXT_COLOR);
         return label;
     }
     
@@ -204,20 +186,20 @@ public class ModernUIComponents {
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             
             // Vẽ đổ bóng
-            g2d.setColor(SHADOW_COLOR);
-            g2d.drawRoundRect(x + 2, y + 2, width - 4, height - 4, 20, 20);
+            g2d.setColor(UIConstants.SHADOW_COLOR);
+            g2d.drawRoundRect(x + 1, y + 1, width - 2, height - 2, UIConstants.BORDER_RADIUS, UIConstants.BORDER_RADIUS);
             g2d.dispose();
         }
         
         @Override
         public Insets getBorderInsets(Component c) {
-            return new Insets(4, 4, 6, 6);
+            return new Insets(1, 1, 2, 2);
         }
         
         @Override
         public Insets getBorderInsets(Component c, Insets insets) {
-            insets.left = insets.top = 4;
-            insets.right = insets.bottom = 6;
+            insets.left = insets.top = 1;
+            insets.right = insets.bottom = 2;
             return insets;
         }
     }
@@ -227,7 +209,7 @@ public class ModernUIComponents {
      */
     public static class PlaceholderTextField extends JTextField {
         private String placeholder;
-        private Color placeholderColor = LIGHT_TEXT_COLOR;
+        private Color placeholderColor = UIConstants.LIGHT_TEXT_COLOR;
         
         public PlaceholderTextField(String placeholder) {
             this.placeholder = placeholder;
