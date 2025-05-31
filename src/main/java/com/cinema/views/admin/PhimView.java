@@ -3,7 +3,6 @@ package com.cinema.views.admin;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -20,16 +19,18 @@ import java.sql.SQLException;
 import java.util.ResourceBundle;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.RowFilter;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -38,39 +39,39 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableRowSorter;
 
 import com.cinema.components.CountryComboBox;
+import com.cinema.components.ModernUIApplier;
+import com.cinema.components.UIConstants;
 import com.cinema.components.UnderlineTextField;
 import com.cinema.controllers.PhimController;
+import com.cinema.models.dto.CustomPaginationPanel;
 import com.cinema.models.repositories.SuatChieuRepository;
 import com.cinema.models.repositories.VeRepository;
 import com.cinema.services.PhimService;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.SimpleDocumentListener;
+import com.cinema.utils.TimeFormatter;
 import com.cinema.utils.ValidationUtils;
 
 public class PhimView extends JPanel {
-    private UnderlineTextField txtMaPhim, txtTenPhim, txtThoiLuong, txtNgayKhoiChieu, txtMoTa, txtDaoDien, txtSearch;
+    private UnderlineTextField txtMaPhim, txtTenPhim, txtThoiLuong, txtNgayKhoiChieu, txtMoTa, txtDaoDien, txtSearch, txtTrangThai;
     private CountryComboBox cbNuocSanXuat;
-    private JComboBox<String> cbTenTheLoai, cbTrangThai, cbKieuPhim;
+    private JComboBox<String> cbTenTheLoai, cbKieuPhim;
     private JLabel lblPoster, lblTenPhimError, lblThoiLuongError, lblNgayKhoiChieuError, lblNuocSanXuatError;
     private JButton btnThem, btnSua, btnXoa, btnClear, btnChonAnh;
     private DefaultTableModel tableModel;
     private JTable table;
+    private TableRowSorter<DefaultTableModel> tableSorter;
     private DatabaseConnection dbConnection;
     private String selectedPosterPath;
     private ResourceBundle messages;
     private PhimService phimService;
     private PhimController controller;
 
-    private static final Color PRIMARY_COLOR = new Color(59, 130, 246);
-    private static final Color CINESTAR_BLUE = new Color(0, 51, 102);
-    private static final Color CINESTAR_YELLOW = new Color(255, 204, 0);
-    private static final Color BACKGROUND_COLOR = new Color(245, 245, 245);
+    // Sử dụng màu sắc từ ModernUIComponents
     private static final Color ROW_ALTERNATE_COLOR = new Color(240, 240, 240);
-    private static final Font LABEL_FONT = new Font("Inter", Font.PLAIN, 14);
-    private static final Font TITLE_FONT = new Font("Inter", Font.BOLD, 24);
-    private static final Font BUTTON_FONT = new Font("Inter", Font.BOLD, 14);
 
     public PhimView() throws IOException {
         dbConnection = new DatabaseConnection();
@@ -99,48 +100,82 @@ public class PhimView extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout());
+        setBackground(UIConstants.BACKGROUND_COLOR);
+        setPreferredSize(new Dimension(1024, 900));
 
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(BACKGROUND_COLOR);
-        add(mainPanel);
+        // Tạo JScrollPane để cho phép cuộn khi nội dung quá dài
+        JScrollPane mainScrollPane = new JScrollPane();
+        mainScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        mainScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        mainScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        
+        // Content Panel chính với hiệu ứng đổ bóng
+        JPanel contentPanel = ModernUIApplier.createModernPanel();
+        contentPanel.setBackground(UIConstants.CARD_BACKGROUND);
+        contentPanel.setBorder(new EmptyBorder(5, 10, 5, 10));
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        
+        // Tiêu đề với icon phim
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        titlePanel.setOpaque(false);
+        
+        JLabel titleLabel = ModernUIApplier.createModernHeaderLabel("QUẢN LÝ PHIM");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titleLabel.setForeground(UIConstants.PRIMARY_COLOR);
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        titlePanel.add(titleLabel);
+        
+        contentPanel.add(titlePanel);
+        contentPanel.add(Box.createVerticalStrut(1));
 
-        // Content Panel with shadow effect
-        JPanel contentPanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(new Color(0, 0, 0, 20));
-                g2d.fillRoundRect(5, 5, getWidth() - 6, getHeight() - 6, 20, 20);
-                g2d.setColor(Color.WHITE);
-                g2d.fillRoundRect(0, 0, getWidth() - 5, getHeight() - 5, 20, 20);
+        // Khởi tạo các thành phần
+        initializeComponents();
+
+        // Panel form nhập liệu
+        JPanel formWrapper = createFormPanel();
+        formWrapper.setAlignmentX(Component.CENTER_ALIGNMENT);
+        contentPanel.add(formWrapper);
+        contentPanel.add(Box.createVerticalStrut(1));
+        
+        // Panel chứa các nút chức năng
+        JPanel buttonPanel = createButtonPanel();
+        buttonPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        contentPanel.add(buttonPanel);
+        contentPanel.add(Box.createVerticalStrut(1));
+
+        // Panel hiển thị bảng dữ liệu
+        JPanel tablePanel = createTablePanel();
+        tablePanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        contentPanel.add(tablePanel);
+
+        // Thêm contentPanel vào ScrollPane
+        mainScrollPane.setViewportView(contentPanel);
+        add(mainScrollPane, BorderLayout.CENTER);
+
+        // Thêm các listener
+        addValidationListeners();
+        setupButtonActions();
+        
+        // Thêm listener cho bảng để hiển thị chi tiết khi click
+        table.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting() && table.getSelectedRow() != -1) {
+                try {
+                    controller.hienThiChiTietPhim(table.getSelectedRow());
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this,
+                            "Lỗi khi hiển thị chi tiết phim: " + ex.getMessage(),
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
             }
-        };
-        contentPanel.setOpaque(false);
-        contentPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
-        contentPanel.setLayout(new BorderLayout());
-        mainPanel.add(contentPanel, BorderLayout.CENTER);
+        });
+    }
 
-        // Title Panel
-        JLabel titleLabel = new JLabel("Quản lý phim", SwingConstants.CENTER);
-        titleLabel.setFont(TITLE_FONT);
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
-        contentPanel.add(titleLabel, BorderLayout.NORTH);
-
-        // Form Panel
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setOpaque(false);
-        formPanel.setPreferredSize(new Dimension(0, 250));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 15, 5, 15);
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        // Initialize components
+    private void initializeComponents() {
+        // Text fields với thiết kế hiện đại
         txtMaPhim = createStyledUnderlineTextField();
         txtMaPhim.setEditable(false);
         txtMaPhim.setPlaceholder("Mã phim tự động");
+        txtMaPhim.setBackground(new Color(245, 245, 245));
         
         txtTenPhim = createStyledUnderlineTextField();
         txtTenPhim.setPlaceholder("Nhập tên phim");
@@ -154,9 +189,10 @@ public class PhimView extends JPanel {
         txtNgayKhoiChieu.setPlaceholder("dd/MM/yyyy");
         txtNgayKhoiChieu.setToolTipText("Nhập ngày khởi chiếu (dd/MM/yyyy, từ hôm nay trở đi)");
         
+        // ComboBox quốc gia với thiết kế hiện đại
         cbNuocSanXuat = new CountryComboBox();
-        cbNuocSanXuat.setFont(LABEL_FONT);
-        cbNuocSanXuat.setPreferredSize(new Dimension(250, 30));
+        cbNuocSanXuat.setFont(UIConstants.BODY_FONT);
+        cbNuocSanXuat.setPreferredSize(new Dimension(250, 35));
         
         txtMoTa = createStyledUnderlineTextField();
         txtMoTa.setPlaceholder("Nhập mô tả phim");
@@ -164,26 +200,49 @@ public class PhimView extends JPanel {
         txtDaoDien = createStyledUnderlineTextField();
         txtDaoDien.setPlaceholder("Nhập tên đạo diễn");
         
+        // Trường tìm kiếm với icon
         txtSearch = createStyledUnderlineTextField();
         txtSearch.setPlaceholder("Tìm kiếm phim...");
         txtSearch.setToolTipText("Tìm kiếm theo tên phim");
+        txtSearch.setPreferredSize(new Dimension(250, 35));
 
+        // Combo boxes với thiết kế hiện đại
         cbTenTheLoai = new JComboBox<>();
-        cbTrangThai = new JComboBox<>();
         cbKieuPhim = new JComboBox<>();
         styleComboBox(cbTenTheLoai);
-        styleComboBox(cbTrangThai);
         styleComboBox(cbKieuPhim);
+        
+        // Trạng thái TextField
+        txtTrangThai = createStyledUnderlineTextField();
+        txtTrangThai.setEditable(false);
+        txtTrangThai.setPlaceholder("Trạng thái phim");
+        txtTrangThai.setBackground(new Color(245, 245, 245));
 
-        // Initialize poster label and button
-        lblPoster = new JLabel("Không có ảnh");
-        lblPoster.setPreferredSize(new Dimension(150, 200));
-        lblPoster.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-        btnChonAnh = createStyledButton("Chọn ảnh", PRIMARY_COLOR);
-        btnChonAnh.setPreferredSize(new Dimension(150, 30));
+        // Poster label với thiết kế hiện đại
+        lblPoster = new JLabel("Không có ảnh", SwingConstants.CENTER) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Vẽ nền với góc bo tròn
+                g2d.setColor(new Color(245, 245, 245));
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+                
+                super.paintComponent(g2d);
+                g2d.dispose();
+            }
+        };
+        lblPoster.setPreferredSize(new Dimension(70, 100));
+        lblPoster.setBorder(BorderFactory.createEmptyBorder());
+        lblPoster.setOpaque(false);
+        
+        // Nút chọn ảnh với thiết kế hiện đại
+        btnChonAnh = ModernUIApplier.createModernButton("Chọn ảnh", UIConstants.PRIMARY_COLOR, Color.WHITE);
+        btnChonAnh.setPreferredSize(new Dimension(150, 35));
         btnChonAnh.addActionListener(_ -> chonAnh());
 
-        // Initialize error labels
+        // Error labels
         lblTenPhimError = ValidationUtils.createErrorLabel();
         lblTenPhimError.setName("lblTenPhimError");
         lblThoiLuongError = ValidationUtils.createErrorLabel();
@@ -193,82 +252,176 @@ public class PhimView extends JPanel {
         lblNuocSanXuatError = ValidationUtils.createErrorLabel();
         lblNuocSanXuatError.setName("lblNuocSanXuatError");
 
-        // Left column: Mã phim, Tên phim, Thể loại, Đạo diễn
+        // Action buttons với thiết kế hiện đại
+        btnThem = ModernUIApplier.createModernButton("Thêm", UIConstants.PRIMARY_COLOR, Color.WHITE);
+        btnSua = ModernUIApplier.createModernButton("Sửa", UIConstants.PRIMARY_COLOR, Color.WHITE);
+        btnXoa = ModernUIApplier.createModernButton("Xóa", UIConstants.ERROR_COLOR, Color.WHITE);
+        btnClear = ModernUIApplier.createModernButton("Làm mới", UIConstants.SECONDARY_COLOR, Color.WHITE);
+    }
+
+    private JPanel createFormPanel() {
+        // Tạo panel chính với hiệu ứng đổ bóng
+        JPanel formPanel = ModernUIApplier.createModernPanel();
+        formPanel.setBackground(UIConstants.CARD_BACKGROUND);
+        formPanel.setLayout(new GridBagLayout());
+        
+        // Tạo panel wrapper để giới hạn chiều rộng của form
+        JPanel wrapperPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        wrapperPanel.setOpaque(false);
+        wrapperPanel.add(formPanel);
+
+        // Thêm tiêu đề cho form
+        JLabel formTitle = new JLabel("Thông tin phim");
+        formTitle.setFont(UIConstants.SUBHEADER_FONT);
+        formTitle.setForeground(UIConstants.PRIMARY_COLOR);
+        formTitle.setHorizontalAlignment(SwingConstants.CENTER);
+        formTitle.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        
+        // Giới hạn kích thước tối đa của form
+        formPanel.setMaximumSize(new Dimension(850, Integer.MAX_VALUE));
+        formPanel.setPreferredSize(null);
+        formPanel.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
+        
+        // Sử dụng GridBagLayout
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(1, 1, 1, 1);
+        
+        // Thêm tiêu đề form
         gbc.gridx = 0;
         gbc.gridy = 0;
-        addFormField(formPanel, "Mã phim:", txtMaPhim, null, gbc);
-
-        gbc.gridy++;
-        addFormField(formPanel, "Tên phim:", txtTenPhim, lblTenPhimError, gbc);
-
-        gbc.gridy++;
-        addFormField(formPanel, "Thể loại:", cbTenTheLoai, null, gbc);
-
-        gbc.gridy++;
-        addFormField(formPanel, "Đạo diễn:", txtDaoDien, null, gbc);
-
-        // Middle column: Thời lượng, Ngày khởi chiếu, Trạng thái, Kiểu phim
-        gbc.gridx = 2;
-        gbc.gridy = 0;
-        addFormField(formPanel, "Thời lượng (phút):", txtThoiLuong, lblThoiLuongError, gbc);
-
-        gbc.gridy++;
-        addFormField(formPanel, "Ngày khởi chiếu:", txtNgayKhoiChieu, lblNgayKhoiChieuError, gbc);
-
-        gbc.gridy++;
-        addFormField(formPanel, "Trạng thái:", cbTrangThai, null, gbc);
-
-        gbc.gridy++;
-        addFormField(formPanel, "Kiểu phim:", cbKieuPhim, null, gbc);
-
-        // Right column: Nước sản xuất, Mô tả, Poster
+        gbc.gridwidth = 6;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.CENTER;
+        formPanel.add(formTitle, gbc);
+        
+        // Cột 1: Mã phim, Tên phim, Thể loại, Đạo diễn
+        addFormField(formPanel, "Mã phim:", txtMaPhim, null, 0, 1);
+        addFormField(formPanel, "Tên phim:", txtTenPhim, lblTenPhimError, 0, 2);
+        addFormField(formPanel, "Thể loại:", cbTenTheLoai, null, 0, 3);
+        addFormField(formPanel, "Đạo diễn:", txtDaoDien, null, 0, 4);
+        
+        // Cột 2: Thời lượng, Ngày khởi chiếu, Trạng thái, Kiểu phim
+        addFormField(formPanel, "Thời lượng (phút):", txtThoiLuong, lblThoiLuongError, 2, 1);
+        addFormField(formPanel, "Ngày khởi chiếu:", txtNgayKhoiChieu, lblNgayKhoiChieuError, 2, 2);
+        addFormField(formPanel, "Trạng thái:", txtTrangThai, null, 2, 3);
+        addFormField(formPanel, "Kiểu phim:", cbKieuPhim, null, 2, 4);
+        
+        // Cột 3: Nước sản xuất, Mô tả, Poster
+        addFormField(formPanel, "Nước sản xuất:", cbNuocSanXuat, lblNuocSanXuatError, 4, 1);
+        addFormField(formPanel, "Mô tả:", txtMoTa, null, 4, 2);
+        
+        // Poster
         gbc.gridx = 4;
-        gbc.gridy = 0;
-        addFormField(formPanel, "Nước sản xuất:", cbNuocSanXuat, lblNuocSanXuatError, gbc);
-
-        gbc.gridy++;
-        addFormField(formPanel, "Mô tả:", txtMoTa, null, gbc);
-
-        gbc.gridy++;
-        gbc.gridheight = 2;
-        JLabel lblPosterTitle = new JLabel("Poster:", SwingConstants.RIGHT);
-        lblPosterTitle.setFont(LABEL_FONT);
-        gbc.gridwidth = 1;
+        gbc.gridy = 3;
+        gbc.anchor = GridBagConstraints.EAST;
+        JLabel lblPosterTitle = new JLabel("Poster:");
+        lblPosterTitle.setFont(UIConstants.LABEL_FONT);
         formPanel.add(lblPosterTitle, gbc);
-
-        gbc.gridx++;
-        JPanel posterPanel = new JPanel(new BorderLayout(0, 5));
-        posterPanel.setOpaque(false);
+        
+        gbc.gridx = 5;
+        gbc.gridy = 3;
+        gbc.gridheight = 2;
+        gbc.anchor = GridBagConstraints.WEST;
+        JPanel posterPanel = ModernUIApplier.createModernPanel();
+        posterPanel.setBackground(UIConstants.CARD_BACKGROUND);
+        posterPanel.setLayout(new BorderLayout(0, 5));
         posterPanel.add(lblPoster, BorderLayout.CENTER);
         posterPanel.add(btnChonAnh, BorderLayout.SOUTH);
         formPanel.add(posterPanel, gbc);
-        gbc.gridheight = 1;
+        
+        return wrapperPanel;
+    }
 
-        contentPanel.add(formPanel, BorderLayout.NORTH);
+    // Helper method to add form fields
+    private void addFormField(JPanel panel, String labelText, Component field, Component errorLabel, int x, int y) {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 10, 8, 10);
+        
+        // Add label
+        gbc.gridx = x;
+        gbc.gridy = y;
+        gbc.anchor = GridBagConstraints.EAST;
+        JLabel label = new JLabel(labelText);
+        label.setFont(UIConstants.LABEL_FONT);
+        panel.add(label, gbc);
+        
+        // Add field (with error label if provided)
+        gbc.gridx = x + 1;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL; // Cho phép thành phần mở rộng theo chiều ngang
+        
+        if (errorLabel != null) {
+            JPanel fieldPanel = new JPanel(new BorderLayout());
+            fieldPanel.setOpaque(false);
+            fieldPanel.add(field, BorderLayout.CENTER);
+            fieldPanel.add(errorLabel, BorderLayout.SOUTH);
+            panel.add(fieldPanel, gbc);
+        } else {
+            panel.add(field, gbc);
+        }
+    }
 
-        // Table Panel
-        JPanel tablePanel = new JPanel(new BorderLayout());
-        tablePanel.setOpaque(false);
-        tablePanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-
-        // Search Panel
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+    private JPanel createTablePanel() {
+        JPanel tablePanel = ModernUIApplier.createModernPanel();
+        tablePanel.setBackground(UIConstants.BACKGROUND_COLOR);
+        tablePanel.setLayout(new BorderLayout(0, 2)); // Giảm khoảng cách dọc xuống 5px
+        tablePanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // Giảm padding
+        tablePanel.setMaximumSize(new Dimension(1250, 2000));
+        
+        // Panel tiêu đề và tìm kiếm
+        JPanel headerPanel = new JPanel(new BorderLayout(10, 0));
+        headerPanel.setOpaque(false);
+        
+        // Tiêu đề bảng
+        JLabel tableTitle = new JLabel("Danh sách phim");
+        tableTitle.setFont(UIConstants.SUBHEADER_FONT);
+        tableTitle.setForeground(UIConstants.PRIMARY_COLOR);
+        headerPanel.add(tableTitle, BorderLayout.WEST);
+        
+        // Panel tìm kiếm với thiết kế hiện đại
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         searchPanel.setOpaque(false);
+        
         JLabel lblSearch = new JLabel("Tìm kiếm:");
-        lblSearch.setFont(LABEL_FONT);
+        lblSearch.setFont(UIConstants.BODY_FONT);
         searchPanel.add(lblSearch);
-        txtSearch.setPreferredSize(new Dimension(250, 30));
-        searchPanel.add(txtSearch);
-        tablePanel.add(searchPanel, BorderLayout.NORTH);
+        
+        // Tạo panel chứa txtSearch với icon tìm kiếm
+        JPanel searchFieldPanel = new JPanel(new BorderLayout());
+        searchFieldPanel.setOpaque(false);
+        searchFieldPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
+        searchFieldPanel.add(txtSearch, BorderLayout.CENTER);
+        
+        // Thêm listener cho tìm kiếm sử dụng TableRowSorter
+        txtSearch.getDocument().addDocumentListener(new SimpleDocumentListener(() -> {
+            String text = txtSearch.getText().trim();
+            if (text.isEmpty()) {
+                tableSorter.setRowFilter(null);
+            } else {
+                // Tìm kiếm không phân biệt chữ hoa/thường trong cột tên phim (cột 1)
+                tableSorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
+            }
+        }));
+        
+        searchPanel.add(searchFieldPanel);
+        headerPanel.add(searchPanel, BorderLayout.EAST);
+        
+        tablePanel.add(headerPanel, BorderLayout.NORTH);
 
-        // Table
+        // Tạo bảng với thiết kế hiện đại
         tableModel = new DefaultTableModel(
-                new Object[]{"Mã phim", "Tên phim", "Thể loại", "Thời lượng", "Ngày KC", "Trạng thái"},
+                new Object[]{"Poster", "Tên phim", "Thể loại", "Thời lượng", "Ngày khởi chiếu", "Trạng thái"},
                 0
         ) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
+            }
+            
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                if (columnIndex == 0) return ImageIcon.class;
+                return super.getColumnClass(columnIndex);
             }
         };
 
@@ -276,125 +429,239 @@ public class PhimView extends JPanel {
             @Override
             public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
                 Component c = super.prepareRenderer(renderer, row, column);
+                
+                // Hiệu ứng hover và chọn dòng
                 if (isRowSelected(row)) {
-                    c.setBackground(new Color(255, 204, 0, 100));
+                    c.setBackground(new Color(UIConstants.PRIMARY_COLOR.getRed(), 
+                                             UIConstants.PRIMARY_COLOR.getGreen(), 
+                                             UIConstants.PRIMARY_COLOR.getBlue(), 40));
+                    c.setForeground(UIConstants.PRIMARY_COLOR);
                 } else if (row % 2 == 0) {
-                    c.setBackground(Color.WHITE);
+                    c.setBackground(UIConstants.CARD_BACKGROUND);
+                    c.setForeground(UIConstants.TEXT_COLOR);
                 } else {
                     c.setBackground(ROW_ALTERNATE_COLOR);
+                    c.setForeground(UIConstants.TEXT_COLOR);
                 }
+                
+                // Thêm padding cho các ô
+                if (c instanceof JLabel) {
+                    ((JLabel) c).setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+                }
+                
                 return c;
             }
         };
-        table.setFont(LABEL_FONT);
-        table.getTableHeader().setBackground(CINESTAR_BLUE);
-        table.getTableHeader().setForeground(Color.WHITE);
-        table.getTableHeader().setFont(BUTTON_FONT);
-        table.setRowHeight(30);
-        table.setGridColor(Color.LIGHT_GRAY);
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-        table.setMinimumSize(new Dimension(800, 400));
-
-        // Thêm renderer cho cột trạng thái
+        
+        // Áp dụng style hiện đại cho bảng
+        ModernUIApplier.applyModernTableStyle(table);
+        table.setRowHeight(120); // Giảm chiều cao dòng để hiển thị nhiều phim hơn
+        table.setIntercellSpacing(new Dimension(10, 5)); // Khoảng cách giữa các ô
+        table.setShowGrid(false); // Ẩn lưới để giao diện sạch hơn
+        table.setFillsViewportHeight(true);
+        
+        // Thiết lập TableRowSorter cho bảng
+        tableSorter = new TableRowSorter<>(tableModel);
+        table.setRowSorter(tableSorter);
+        
+        // Thiết lập kích thước các cột
+        table.getColumnModel().getColumn(0).setPreferredWidth(80);
+        table.getColumnModel().getColumn(0).setMaxWidth(80);
+        table.getColumnModel().getColumn(1).setPreferredWidth(200);
+        table.getColumnModel().getColumn(2).setPreferredWidth(120);
+        table.getColumnModel().getColumn(3).setPreferredWidth(100);
+        table.getColumnModel().getColumn(4).setPreferredWidth(100);
+        table.getColumnModel().getColumn(5).setPreferredWidth(100);
+        
+        // Renderer cho cột trạng thái với thiết kế badge hiện đại
         table.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                if ("Đang chiếu".equals(value)) {
-                    label.setIcon(new ImageIcon(getClass().getResource("/images/check.png")));
-                    label.setText(" Đang chiếu");
-                } else if ("Kết thúc".equals(value)) {
-                    label.setIcon(new ImageIcon(getClass().getResource("/images/x.png")));
-                    label.setText(" Kết thúc");
+                JLabel label = new JLabel() {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        Graphics2D g2d = (Graphics2D) g.create();
+                        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        
+                        // Vẽ nền với góc bo tròn
+                        g2d.setColor(getBackground());
+                        g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+                        
+                        super.paintComponent(g2d);
+                        g2d.dispose();
+                    }
+                };
+                
+                label.setHorizontalAlignment(JLabel.CENTER);
+                label.setFont(UIConstants.SMALL_FONT.deriveFont(Font.BOLD));
+                label.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+                
+                if ("active".equals(value)) {
+                    label.setText("ĐANG CHIẾU");
+                    label.setBackground(new Color(46, 204, 113, 40)); // Màu xanh lá
+                    label.setForeground(new Color(46, 204, 113));
+                } else if ("deleted".equals(value)) {
+                    label.setText("KẾT THÚC");
+                    label.setBackground(new Color(231, 76, 60, 40)); // Màu đỏ đậm hơn
+                    label.setForeground(new Color(231, 76, 60));
+                } else if ("upcoming".equals(value)) {
+                    label.setText("SẮP CHIẾU");
+                    label.setBackground(new Color(52, 152, 219, 40)); // Màu xanh dương
+                    label.setForeground(new Color(52, 152, 219));
                 } else {
-                    label.setIcon(null);
                     label.setText(value != null ? value.toString() : "");
                 }
-                label.setIconTextGap(5);
+                
+                if (isSelected) {
+                    label.setBackground(new Color(UIConstants.PRIMARY_COLOR.getRed(), 
+                                                UIConstants.PRIMARY_COLOR.getGreen(), 
+                                                UIConstants.PRIMARY_COLOR.getBlue(), 40));
+                }
+                
+                // Đặt opaque thành true để hiển thị màu nền
+                label.setOpaque(true);
                 return label;
             }
         });
 
+        // Thêm renderer cho cột thời lượng
+        table.getColumnModel().getColumn(3).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (value instanceof Integer) {
+                    label.setText(TimeFormatter.formatMinutesToHoursAndMinutes((Integer) value));
+                }
+                return label;
+            }
+        });
+        
+        // Renderer cho cột trạng thái với thiết kế badge hiện đại
+        table.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel label = new JLabel() {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        Graphics2D g2d = (Graphics2D) g.create();
+                        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        
+                        // Vẽ nền với góc bo tròn
+                        g2d.setColor(getBackground());
+                        g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+                        
+                        super.paintComponent(g2d);
+                        g2d.dispose();
+                    }
+                };
+                
+                label.setHorizontalAlignment(JLabel.CENTER);
+                label.setFont(UIConstants.SMALL_FONT.deriveFont(Font.BOLD));
+                label.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+                
+                if ("active".equals(value)) {
+                    label.setText("ĐANG CHIẾU");
+                    label.setBackground(new Color(46, 204, 113, 40)); // Màu xanh lá
+                    label.setForeground(new Color(46, 204, 113));
+                } else if ("deleted".equals(value)) {
+                    label.setText("KẾT THÚC");
+                    label.setBackground(new Color(231, 76, 60, 40)); // Màu đỏ đậm hơn
+                    label.setForeground(new Color(231, 76, 60));
+                } else if ("upcoming".equals(value)) {
+                    label.setText("SẮP CHIẾU");
+                    label.setBackground(new Color(52, 152, 219, 40)); // Màu xanh dương
+                    label.setForeground(new Color(52, 152, 219));
+                } else {
+                    label.setText(value != null ? value.toString() : "");
+                }
+                
+                if (isSelected) {
+                    label.setBackground(new Color(UIConstants.PRIMARY_COLOR.getRed(), 
+                                                UIConstants.PRIMARY_COLOR.getGreen(), 
+                                                UIConstants.PRIMARY_COLOR.getBlue(), 40));
+                }
+                
+                label.setOpaque(true);
+                return label;
+            }
+        });
+
+        // Tạo container cho bảng với hiệu ứng đổ bóng
+        JPanel tableContainer = ModernUIApplier.createModernPanel();
+        tableContainer.setLayout(new BorderLayout());
+        tableContainer.setBackground(UIConstants.CARD_BACKGROUND);
+        
+        // Sử dụng JScrollPane với thanh cuộn hiện đại
         JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(UIConstants.CARD_BACKGROUND);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        tablePanel.add(scrollPane, BorderLayout.CENTER);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        
+        // Thiết lập kích thước cho scrollPane
+        scrollPane.setPreferredSize(new Dimension(1000, 450));
+        
+        tableContainer.add(scrollPane, BorderLayout.CENTER);
+        tablePanel.add(tableContainer, BorderLayout.CENTER);
+        
+        // Thêm phân trang với thiết kế hiện đại
+        CustomPaginationPanel paginationPanel = new CustomPaginationPanel();
+        paginationPanel.setBackground(UIConstants.CARD_BACKGROUND);
+        paginationPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        paginationPanel.setPageChangeListener(page -> {
+            try {
+                controller.loadPhimPaginated(page, 10);
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(this,
+                        "Lỗi khi tải dữ liệu phim: " + e.getMessage(),
+                        "Lỗi",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        
+        tablePanel.add(paginationPanel, BorderLayout.SOUTH);
 
-        contentPanel.add(tablePanel, BorderLayout.CENTER);
+        return tablePanel;
+    }
 
-        // Button Panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
-        buttonPanel.setOpaque(false);
-        btnThem = createStyledButton("Thêm", PRIMARY_COLOR);
-        btnSua = createStyledButton("Sửa", PRIMARY_COLOR);
-        btnXoa = createStyledButton("Xóa", PRIMARY_COLOR);
-        btnClear = createStyledButton("Làm mới", PRIMARY_COLOR);
+    private JPanel createButtonPanel() {
+        // Tạo panel với hiệu ứng đổ bóng
+        JPanel buttonPanel = ModernUIApplier.createModernPanel();
+        buttonPanel.setBackground(UIConstants.CARD_BACKGROUND);
+        
+        // Đặt kích thước cố định
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 2));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2)); // Giảm padding
+        
+        // Tùy chỉnh các nút
+        btnThem.setPreferredSize(new Dimension(120, 40));
+        btnSua.setPreferredSize(new Dimension(120, 40));
+        btnXoa.setPreferredSize(new Dimension(120, 40));
+        btnClear.setPreferredSize(new Dimension(120, 40));
+        
+        // Thêm các nút trực tiếp vào panel
         buttonPanel.add(btnThem);
         buttonPanel.add(btnSua);
         buttonPanel.add(btnXoa);
         buttonPanel.add(btnClear);
-        contentPanel.add(buttonPanel, BorderLayout.SOUTH);
-
-        // Add listeners
-        addValidationListeners();
-        setupButtonActions();
-
-        // Log trạng thái của tableModel sau khi khởi tạo
-        System.out.println("TableModel khởi tạo với " + tableModel.getRowCount() + " hàng và " + tableModel.getColumnCount() + " cột.");
-    }
-
-    private void addFormField(JPanel panel, String labelText, JComponent field, JLabel errorLabel, GridBagConstraints gbc) {
-        JLabel label = new JLabel(labelText, SwingConstants.RIGHT);
-        label.setFont(LABEL_FONT);
-        gbc.gridwidth = 1;
-        panel.add(label, gbc);
-
-        JPanel fieldPanel = new JPanel(new BorderLayout(0, 2));
-        fieldPanel.setOpaque(false);
-        field.setPreferredSize(new Dimension(250, 30));
-        fieldPanel.add(field, BorderLayout.NORTH);
-
-        if (errorLabel != null) {
-            errorLabel.setForeground(new Color(220, 53, 69));
-            errorLabel.setFont(new Font(LABEL_FONT.getFamily(), Font.PLAIN, 12));
-            errorLabel.setBorder(BorderFactory.createEmptyBorder(2, 5, 0, 0));
-            errorLabel.setPreferredSize(new Dimension(250, 20));
-            errorLabel.setVisible(false);
-            fieldPanel.add(errorLabel, BorderLayout.CENTER);
-            fieldPanel.revalidate();
-            fieldPanel.repaint();
-        }
-
-        fieldPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
-        gbc.gridx++;
-        gbc.gridwidth = 1;
-        panel.add(fieldPanel, gbc);
-        gbc.gridx--;
+        
+        // Đặt border nhỏ hơn để giảm khoảng cách
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        
+        return buttonPanel;
     }
 
     private void styleComboBox(JComboBox<String> comboBox) {
-        comboBox.setFont(LABEL_FONT);
-        comboBox.setPreferredSize(new Dimension(250, 30));
-        comboBox.setBackground(Color.WHITE);
-    }
-
-    private JButton createStyledButton(String text, Color backgroundColor) {
-        JButton button = new JButton(text);
-        button.setFont(BUTTON_FONT);
-        button.setBackground(backgroundColor);
-        button.setForeground(Color.WHITE);
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        return button;
+        ModernUIApplier.applyModernComboBoxStyle(comboBox);
+        comboBox.setPreferredSize(new Dimension(150, 30));
     }
 
     private UnderlineTextField createStyledUnderlineTextField() {
         UnderlineTextField field = new UnderlineTextField(20);
-        field.setFont(LABEL_FONT);
+        field.setFont(UIConstants.LABEL_FONT);
         field.setUnderlineColor(new Color(200, 200, 200));
-        field.setFocusColor(PRIMARY_COLOR);
-        field.setErrorColor(new Color(220, 53, 69));
+        field.setFocusColor(UIConstants.PRIMARY_COLOR);
+        field.setErrorColor(UIConstants.ERROR_COLOR);
         field.setReadonlyColor(new Color(180, 180, 180));
         return field;
     }
@@ -530,7 +797,7 @@ public class PhimView extends JPanel {
         txtMoTa.setText("");
         txtDaoDien.setText("");
         cbTenTheLoai.setSelectedIndex(-1);
-        cbTrangThai.setSelectedIndex(-1);
+        txtTrangThai.setText("");
         cbKieuPhim.setSelectedIndex(-1);
         lblPoster.setIcon(null);
         lblPoster.setText("Không có ảnh");
@@ -559,7 +826,7 @@ public class PhimView extends JPanel {
     public UnderlineTextField getSearchField() { return txtSearch; }
     public String getSearchText() { return txtSearch.getText().trim(); }
     public JComboBox<String> getCbTenTheLoai() { return cbTenTheLoai; }
-    public JComboBox<String> getCbTrangthai() { return cbTrangThai; }
+    public UnderlineTextField getTxtTrangThai() { return txtTrangThai; }
     public JComboBox<String> getCbKieuPhim() { return cbKieuPhim; }
     public JLabel getPosterLabel() { return lblPoster; }
     public JButton getBtnThem() { return btnThem; }

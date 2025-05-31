@@ -36,6 +36,7 @@ import javax.swing.border.EmptyBorder;
 import org.mindrot.jbcrypt.BCrypt;
 
 import com.cinema.enums.LoaiTaiKhoan;
+import com.cinema.utils.AppIconUtils;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.PasswordHasher;
 import com.cinema.utils.SimpleDocumentListener;
@@ -73,11 +74,15 @@ public class LoginView extends JFrame {
             JOptionPane.showMessageDialog(this, "Lỗi khi lấy kết nối cơ sở dữ liệu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             throw new RuntimeException(e);
         }
+        
+        // Đặt biểu tượng cho cửa sổ ứng dụng
+        AppIconUtils.setAppIcon(this);
+        
         initUI();
     }
 
     private void initUI() {
-        setTitle("KSL-CINEMA");
+        setTitle("CinemaHub");
         setSize(700, 800);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -127,18 +132,25 @@ public class LoginView extends JFrame {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Title
-        JLabel titleLabel = new JLabel("Đăng nhập", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Inter", Font.BOLD, 32));
-        titleLabel.setForeground(new Color(51, 51, 51));
+        // Logo
         gbc.gridwidth = 2;
         gbc.gridx = 0;
         gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.CENTER;
+        JLabel logoLabel = AppIconUtils.getAppLogo(60, 60);
+        contentPanel.add(logoLabel, gbc);
+
+        // Title
+        gbc.gridy++;
+        JLabel titleLabel = new JLabel("Đăng nhập", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Inter", Font.BOLD, 32));
+        titleLabel.setForeground(new Color(51, 51, 51));
         contentPanel.add(titleLabel, gbc);
 
         // Username
         gbc.gridwidth = 1;
         gbc.gridy++;
+        gbc.anchor = GridBagConstraints.WEST;
         JLabel usernameLabel = new JLabel("Tài khoản:");
         usernameLabel.setFont(new Font("Inter", Font.PLAIN, 14));
         contentPanel.add(usernameLabel, gbc);

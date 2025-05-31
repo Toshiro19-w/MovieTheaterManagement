@@ -13,6 +13,8 @@ public class BaoCao {
         this.diemDanhGiaTrungBinh = diemDanhGiaTrungBinh;
     }
 
+    public BaoCao() {}
+
     public String getTenPhim() {
         return tenPhim;
     }

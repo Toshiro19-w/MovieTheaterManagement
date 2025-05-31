@@ -1,4 +1,4 @@
--- Active: 1746521847255@@127.0.0.1@3306@quanlyrcp
+﻿-- Active: 1746521847255@@127.0.0.1@3306@quanlyrcp
 DROP DATABASE IF EXISTS quanlyrcp;
 CREATE DATABASE quanlyrcp;
 USE quanlyrcp;
@@ -88,6 +88,41 @@ BEGIN
 END //
 DELIMITER ;
 
+-- Tạo trigger kiểm tra ngày khởi chiếu phim
+DELIMITER //
+CREATE TRIGGER update_movie_status
+BEFORE INSERT ON Phim
+FOR EACH ROW
+BEGIN
+    IF NEW.ngayKhoiChieu > CURDATE() THEN
+        SET NEW.trangThai = 'upcoming';
+    ELSE
+        SET NEW.trangThai = 'active';
+    END IF;
+END //
+DELIMITER ;
+
+-- Tạo event để tự động cập nhật trạng thái phim hàng ngày
+DELIMITER //
+CREATE EVENT IF NOT EXISTS update_movie_status_daily
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_DATE
+DO
+BEGIN
+    -- Cập nhật phim từ upcoming sang active khi đến ngày khởi chiếu
+    UPDATE Phim
+    SET trangThai = 'active'
+    WHERE trangThai = 'upcoming'
+    AND ngayKhoiChieu <= CURDATE();
+    
+    -- Cập nhật phim từ active sang deleted khi quá 10 ngày sau ngày khởi chiếu
+    UPDATE Phim
+    SET trangThai = 'deleted'
+    WHERE trangThai = 'active'
+    AND ngayKhoiChieu < DATE_SUB(CURDATE(), INTERVAL 10 DAY);
+END //
+DELIMITER ;
+
 -- trigger kiểm tra trước khi xoá phim
 DELIMITER //
 CREATE TRIGGER before_delete_phim
@@ -109,20 +144,31 @@ BEGIN
         SET MESSAGE_TEXT = 'Không thể xóa phim đã có vé bán. Hãy sử dụng soft delete.';
     END IF;
 END //
-DELIMITER ;
+DELIMITER;
 
--- Procedure lấy danh sách phim đang chiếu
+-- Cập nhật procedure GetActiveMovies để bao gồm cả phim sắp chiếu
 DELIMITER //
 CREATE PROCEDURE GetActiveMovies()
 BEGIN
     SELECT p.*, tl.tenTheLoai 
     FROM Phim p
     JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai
-    WHERE p.trangThai = 'active'
-    AND p.ngayKhoiChieu <= CURDATE();
+    WHERE p.trangThai IN ('active', 'upcoming')
+    ORDER BY p.ngayKhoiChieu;
+END //
+DELIMITER;
+
+-- Tạo procedure mới để lấy danh sách phim sắp chiếu
+DELIMITER //
+CREATE PROCEDURE GetUpcomingMovies()
+BEGIN
+    SELECT p.*, tl.tenTheLoai 
+    FROM Phim p
+    JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai
+    WHERE p.trangThai = 'upcoming'
+    ORDER BY p.ngayKhoiChieu;
 END //
 DELIMITER ;
-
 
 -- Tạo bảng PhongChieu
 CREATE TABLE IF NOT EXISTS PhongChieu (
@@ -575,6 +621,8 @@ INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, kie
 ('The Matrix 5', 5, 160, '2025-08-22', 'Mỹ', 'IMAX', 'Phần tiếp theo của The Matrix', 'Lana Wachowski', 'Matrix5.jpg'),
 ('Black Panther 3', 1, 150, '2025-11-07', 'Mỹ', 'IMAX', 'Phần tiếp theo của Black Panther', 'Ryan Coogler', 'BP3.jpg');
 
+select * from phim;
+
 -- Dữ liệu cho bảng PhongChieu
 INSERT INTO PhongChieu (tenPhong, soLuongGhe, loaiPhong) VALUES
 ('Phòng 1', 100, 'Thường'),
@@ -775,9 +823,8 @@ WHERE
 ORDER BY 
     v.maVe;
 
-SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, sc.maPhong, pc.tenPhong, 
-sc.ngayGioChieu, p.thoiLuong, p.kieuPhim
-FROM SuatChieu sc
-JOIN Phim p ON sc.maPhim = p.maPhim
-JOIN PhongChieu pc ON sc.maPhong = pc.maPhong
-WHERE sc.maPhim = 2
+SELECT DATE(v.ngayDat) as ngay, COUNT(*) as soVe, SUM(v.giaVeSauGiam) as doanhThu 
+FROM Ve v
+WHERE v.trangThai = 'PAID' AND DATE(v.ngayDat) BETWEEN 01/01/2025 AND 12/31/2025 
+GROUP BY DATE(v.ngayDat)
+ORDER BY ngay

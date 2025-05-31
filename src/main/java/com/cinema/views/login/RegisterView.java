@@ -30,6 +30,7 @@ import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.EmptyBorder;
 
 import com.cinema.models.repositories.TaiKhoanRepository;
+import com.cinema.utils.AppIconUtils;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.SimpleDocumentListener;
 import com.cinema.utils.ValidationUtils;
@@ -56,6 +57,10 @@ public class RegisterView extends JFrame {
             System.err.println("Failed to initialize FlatLaf");
         }
         messages = ResourceBundle.getBundle("Messages");
+        
+        // Đặt biểu tượng cho cửa sổ ứng dụng
+        AppIconUtils.setAppIcon(this);
+        
         initRepository();
         initUI();
     }
@@ -71,7 +76,7 @@ public class RegisterView extends JFrame {
     }
 
     private void initUI() {
-        setTitle(messages.getString("appTitle"));
+        setTitle("CinemaHub - Đăng ký");
         setSize(700, 800);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -110,11 +115,16 @@ public class RegisterView extends JFrame {
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.anchor = GridBagConstraints.WEST;
 
-        // Tiêu đề
+        // Logo
         gbc.gridwidth = 2;
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.CENTER;
+        JLabel logoLabel = AppIconUtils.getAppLogo(60, 60);
+        contentPanel.add(logoLabel, gbc);
+
+        // Tiêu đề
+        gbc.gridy++;
         JLabel titleLabel = new JLabel(messages.getString("registerTitle"), SwingConstants.CENTER);
         titleLabel.setFont(TITLE_FONT);
         contentPanel.add(titleLabel, gbc);

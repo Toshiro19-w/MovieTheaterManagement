@@ -9,23 +9,13 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingConstants;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -35,17 +25,24 @@ import com.cinema.components.UnderlineTextField;
 import com.cinema.controllers.VeController;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.FormatUtils;
+import com.cinema.models.dto.CustomPaginationPanel;
+import com.cinema.utils.SnackbarUtil;
 
 public class VeView extends JPanel {
     private DatabaseConnection databaseConnection;
     private JLabel txtMaVe;
     private JTextField txtSoGhe, txtNgayDat, txtGiaVeGoc, txtGiaVeSauGiam, txtTienGiam;
+    private JTextField txtTenKhachHang, txtSoDienThoai, txtEmail, txtDiemTichLuy;
     private JComboBox<String> cbTrangThai, cbTenPhong, cbNgayGioChieu, cbTenPhim, cbKhuyenMai;
-    private JTable tableVe, tableKhachHang;
-    private DefaultTableModel tableVeModel, tableKhachHangModel;
-    private JButton btnThem, btnSua, btnXoa, btnClear, btnRefresh;
+    private JTable tableVe;
+    private DefaultTableModel tableVeModel;
+    private JButton btnThem, btnSua, btnXoa, btnClear, btnRefresh, btnSuaGiaVe;
+    private JCheckBox chkApDungTatCa;
     private JTextField searchField;
-    private JLabel soGheErrorLabel, tenPhongErrorLabel, ngayGioChieuErrorLabel, tenPhimErrorLabel, khuyenMaiErrorLabel;
+    private JLabel soGheErrorLabel, tenPhongErrorLabel,
+            ngayGioChieuErrorLabel, tenPhimErrorLabel,
+            khuyenMaiErrorLabel, lblMessage;
+    private CustomPaginationPanel paginationPanel;
 
     public VeView() throws SQLException {
         initializeDatabase();
@@ -67,8 +64,7 @@ public class VeView extends JPanel {
         setBackground(new Color(245, 247, 250));
 
         JPanel topPanel = createTopPanel();
-        JSplitPane centerPanel = createCenterPanel();
-        JPanel buttonPanel = createButtonPanel();
+        JPanel centerPanel = createCenterPanel();
 
         topPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createEmptyBorder(0, 0, 5, 0),
@@ -77,9 +73,7 @@ public class VeView extends JPanel {
 
         add(topPanel, BorderLayout.NORTH);
         add(centerPanel, BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
     }
-
 
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new BorderLayout(5, 5));
@@ -163,6 +157,20 @@ public class VeView extends JPanel {
         txtTienGiam = new UnderlineTextField(10);
         txtTienGiam.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         txtTienGiam.setEditable(false);
+        
+        // Khách hàng fields
+        txtTenKhachHang = new UnderlineTextField(15);
+        txtTenKhachHang.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtTenKhachHang.setEditable(false);
+        txtSoDienThoai = new UnderlineTextField(15);
+        txtSoDienThoai.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtSoDienThoai.setEditable(false);
+        txtEmail = new UnderlineTextField(15);
+        txtEmail.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtEmail.setEditable(false);
+        txtDiemTichLuy = new UnderlineTextField(15);
+        txtDiemTichLuy.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtDiemTichLuy.setEditable(false);
 
         // Ticket Details Panel
         JPanel ticketDetailsPanel = new JPanel(new GridBagLayout());
@@ -207,11 +215,25 @@ public class VeView extends JPanel {
         addField(promotionPanel, gbc, 0, 0, "Khuyến mãi:", cbKhuyenMai);
         gbc.gridx = 1; gbc.gridy = 1; promotionPanel.add(khuyenMaiErrorLabel, gbc);
 
+        // Customer Info Panel
+        JPanel customerInfoPanel = new JPanel(new GridBagLayout());
+        stylePanel(customerInfoPanel, "Thông tin khách hàng");
+        gbc = new GridBagConstraints();
+        gbc.insets = new Insets(3, 5, 3, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        addField(customerInfoPanel, gbc, 0, 0, "Tên khách hàng:", txtTenKhachHang);
+        addField(customerInfoPanel, gbc, 0, 1, "Số điện thoại:", txtSoDienThoai);
+        addField(customerInfoPanel, gbc, 2, 0, "Email:", txtEmail);
+        addField(customerInfoPanel, gbc, 2, 1, "Điểm tích lũy:", txtDiemTichLuy);
+
         // Right Panel
         JPanel rightPanel = new JPanel(new BorderLayout(5, 5));
         rightPanel.setBackground(new Color(245, 247, 250));
-        rightPanel.add(movieDetailsPanel, BorderLayout.CENTER);
-        rightPanel.add(promotionPanel, BorderLayout.SOUTH);
+        rightPanel.add(movieDetailsPanel, BorderLayout.NORTH);
+        rightPanel.add(promotionPanel, BorderLayout.CENTER);
+        rightPanel.add(customerInfoPanel, BorderLayout.SOUTH);
 
         infoPanel.add(ticketDetailsPanel, BorderLayout.CENTER);
         infoPanel.add(rightPanel, BorderLayout.EAST);
@@ -222,24 +244,32 @@ public class VeView extends JPanel {
         return topPanel;
     }
 
-    private JSplitPane createCenterPanel() {
-        JPanel vePanel = createTablePanel(
+    private JPanel createCenterPanel() {
+        JPanel mainPanel = new JPanel(new BorderLayout(5, 5));
+        mainPanel.setBackground(new Color(245, 247, 250));
+        
+        // Button Panel
+        JPanel buttonPanel = createButtonPanel();
+        
+        // Table Panel
+        JPanel tablePanel = createTablePanel(
             new String[]{"Mã vé", "Trạng thái", "Số ghế", "Giá gốc", "Tiền giảm", "Giá sau giảm", "Ngày đặt", "Phòng chiếu", "Thời gian chiếu", "Tên phim", "Khuyến mãi"},
             "DANH SÁCH VÉ"
         );
-        tableVe = (JTable) ((JScrollPane) vePanel.getComponent(0)).getViewport().getView();
+        tableVe = (JTable) ((JScrollPane) tablePanel.getComponent(0)).getViewport().getView();
         tableVeModel = (DefaultTableModel) tableVe.getModel();
-
-        JPanel khachHangPanel = createTablePanel(
-            new String[]{"Tên khách hàng", "Số điện thoại", "Email", "Điểm tích lũy"},
-            "THÔNG TIN KHÁCH HÀNG"
-        );
-        tableKhachHang = (JTable) ((JScrollPane) khachHangPanel.getComponent(0)).getViewport().getView();
-        tableKhachHangModel = (DefaultTableModel) tableKhachHang.getModel();
-
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, vePanel, khachHangPanel);
-        splitPane.setResizeWeight(0.85);
-        return splitPane;
+        
+        // Pagination Panel
+        paginationPanel = new CustomPaginationPanel();
+        JPanel paginationContainer = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        paginationContainer.setBackground(new Color(245, 247, 250));
+        paginationContainer.add(paginationPanel);
+        
+        mainPanel.add(buttonPanel, BorderLayout.NORTH);
+        mainPanel.add(tablePanel, BorderLayout.CENTER);
+        mainPanel.add(paginationContainer, BorderLayout.SOUTH);
+        
+        return mainPanel;
     }
 
     private JPanel createTablePanel(String[] columns, String title) {
@@ -291,20 +321,37 @@ public class VeView extends JPanel {
     }
 
     private JPanel createButtonPanel() {
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        JPanel buttonPanel = new JPanel(new BorderLayout(5, 5));
         buttonPanel.setBackground(new Color(245, 247, 250));
+        
+        JPanel leftButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        leftButtonPanel.setBackground(new Color(245, 247, 250));
+        
+        JPanel rightButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
+        rightButtonPanel.setBackground(new Color(245, 247, 250));
         
         btnThem = createButton("THÊM", new Color(40, 167, 69));
         btnSua = createButton("SỬA", new Color(0, 123, 255));
         btnXoa = createButton("XÓA", new Color(220, 53, 69));
         btnClear = createButton("LÀM MỚI", new Color(108, 117, 125));
         btnRefresh = createButton("CẬP NHẬT", new Color(255, 193, 7));
+        btnSuaGiaVe = createButton("SỬA GIÁ VÉ", new Color(0, 123, 255));
+        
+        chkApDungTatCa = new JCheckBox("Áp dụng cho tất cả vé liên quan");
+        chkApDungTatCa.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        chkApDungTatCa.setBackground(new Color(245, 247, 250));
 
-        buttonPanel.add(btnThem);
-        buttonPanel.add(btnSua);
-        buttonPanel.add(btnXoa);
-        buttonPanel.add(btnClear);
-        buttonPanel.add(btnRefresh);
+        leftButtonPanel.add(btnThem);
+        leftButtonPanel.add(btnSua);
+        leftButtonPanel.add(btnXoa);
+        leftButtonPanel.add(btnClear);
+        leftButtonPanel.add(btnRefresh);
+        
+        rightButtonPanel.add(chkApDungTatCa);
+        rightButtonPanel.add(btnSuaGiaVe);
+
+        buttonPanel.add(leftButtonPanel, BorderLayout.WEST);
+        buttonPanel.add(rightButtonPanel, BorderLayout.EAST);
 
         return buttonPanel;
     }
@@ -353,12 +400,6 @@ public class VeView extends JPanel {
         panel.setBackground(new Color(250, 250, 252));
     }
 
-    public void updatePriceDisplay(BigDecimal giaVeGoc, BigDecimal tienGiam, BigDecimal giaVeSauGiam) {
-        txtGiaVeGoc.setText(FormatUtils.formatCurrency(giaVeGoc));
-        txtTienGiam.setText(FormatUtils.formatCurrency(tienGiam));
-        txtGiaVeSauGiam.setText(FormatUtils.formatCurrency(giaVeSauGiam));
-    }
-
     // Getters
     public DatabaseConnection getDatabaseConnection() { return databaseConnection; }
     public JLabel getTxtMaVe() { return txtMaVe; }
@@ -371,13 +412,13 @@ public class VeView extends JPanel {
     public JTextField getSearchField() { return searchField; }
     public JTable getTable() { return tableVe; }
     public DefaultTableModel getTableModel() { return tableVeModel; }
-    public JTable getTableKhachHang() { return tableKhachHang; }
-    public DefaultTableModel getTableKhachHangModel() { return tableKhachHangModel; }
     public JButton getBtnThem() { return btnThem; }
     public JButton getBtnSua() { return btnSua; }
     public JButton getBtnXoa() { return btnXoa; }
     public JButton getBtnClear() { return btnClear; }
     public JButton getBtnRefresh() { return btnRefresh; }
+    public JButton getBtnSuaGiaVe() { return btnSuaGiaVe; }
+    public JCheckBox getChkApDungTatCa() { return chkApDungTatCa; }
     public JComboBox<String> getCbKhuyenMai() { return cbKhuyenMai; }
     public JLabel getSoGheErrorLabel() { return soGheErrorLabel; }
     public JLabel getTenPhongErrorLabel() { return tenPhongErrorLabel; }
@@ -387,9 +428,17 @@ public class VeView extends JPanel {
     public JTextField getTxtGiaVeGoc() { return txtGiaVeGoc; }
     public JTextField getTxtGiaVeSauGiam() { return txtGiaVeSauGiam; }
     public JTextField getTxtTienGiam() { return txtTienGiam; }
+    public JTextField getTxtTenKhachHang() { return txtTenKhachHang; }
+    public JTextField getTxtSoDienThoai() { return txtSoDienThoai; }
+    public JTextField getTxtEmail() { return txtEmail; }
+    public JTextField getTxtDiemTichLuy() { return txtDiemTichLuy; }
     public BigDecimal getGiaVeGoc() { return FormatUtils.parseCurrency(txtGiaVeGoc.getText()); }
     public BigDecimal getTienGiam() { return FormatUtils.parseCurrency(txtTienGiam.getText()); }
     public BigDecimal getGiaVeSauGiam() { return FormatUtils.parseCurrency(txtGiaVeSauGiam.getText()); }
+    public CustomPaginationPanel getPaginationPanel() { return paginationPanel; }
+    public JLabel getLblMessage() {
+        return lblMessage;
+    }
 
     public void clearForm() {
         txtMaVe.setText("");
@@ -408,9 +457,18 @@ public class VeView extends JPanel {
         ngayGioChieuErrorLabel.setText("");
         tenPhimErrorLabel.setText("");
         khuyenMaiErrorLabel.setText("");
+        txtTenKhachHang.setText("");
+        txtSoDienThoai.setText("");
+        txtEmail.setText("");
+        txtDiemTichLuy.setText("");
+        chkApDungTatCa.setSelected(false);
     }
 
     private void showError(String message) {
         JOptionPane.showMessageDialog(this, message, "Lỗi", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public void showMessage(String message, boolean isSuccess) {
+        SnackbarUtil.showSnackbar(this, message, isSuccess);
     }
 }
