@@ -103,7 +103,7 @@ public class ValidationUtils {
 
             return null; // hợp lệ
         } catch (DateTimeParseException | SQLException e) {
-            return messages.getString("startDateInvalid");
+            return messages.getString("invalidDateFormat");
         }
     }
 

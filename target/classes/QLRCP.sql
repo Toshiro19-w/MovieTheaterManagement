@@ -51,6 +51,15 @@ CREATE TABLE IF NOT EXISTS TheLoaiPhim (
     tenTheLoai NVARCHAR(50) UNIQUE NOT NULL
 );
 
+-- Tạo bảng PhimTheLoai để quản lý quan hệ nhiều-nhiều giữa Phim và TheLoaiPhim
+CREATE TABLE IF NOT EXISTS PhimTheLoai (
+    maPhim INT NOT NULL,
+    maTheLoai INT NOT NULL,
+    PRIMARY KEY (maPhim, maTheLoai),
+    FOREIGN KEY (maPhim) REFERENCES Phim(maPhim) ON DELETE CASCADE,
+    FOREIGN KEY (maTheLoai) REFERENCES TheLoaiPhim(maTheLoai) ON DELETE CASCADE
+);
+
 -- Tạo bảng Phim
 CREATE TABLE IF NOT EXISTS Phim (
     maPhim INT AUTO_INCREMENT PRIMARY KEY,
@@ -147,25 +156,31 @@ END //
 DELIMITER;
 
 -- Cập nhật procedure GetActiveMovies để bao gồm cả phim sắp chiếu
+DROP PROCEDURE IF EXISTS GetActiveMovies;
 DELIMITER //
 CREATE PROCEDURE GetActiveMovies()
 BEGIN
-    SELECT p.*, tl.tenTheLoai 
+    SELECT p.*, GROUP_CONCAT(tl.tenTheLoai SEPARATOR ', ') as tenTheLoai
     FROM Phim p
-    JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai
+    LEFT JOIN PhimTheLoai pt ON p.maPhim = pt.maPhim
+    LEFT JOIN TheLoaiPhim tl ON pt.maTheLoai = tl.maTheLoai
     WHERE p.trangThai IN ('active', 'upcoming')
+    GROUP BY p.maPhim
     ORDER BY p.ngayKhoiChieu;
 END //
-DELIMITER;
+DELIMITER ;
 
 -- Tạo procedure mới để lấy danh sách phim sắp chiếu
+DROP PROCEDURE IF EXISTS GetUpcomingMovies;
 DELIMITER //
 CREATE PROCEDURE GetUpcomingMovies()
 BEGIN
-    SELECT p.*, tl.tenTheLoai 
+    SELECT p.*, GROUP_CONCAT(tl.tenTheLoai SEPARATOR ', ') as tenTheLoai
     FROM Phim p
-    JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai
+    LEFT JOIN PhimTheLoai pt ON p.maPhim = pt.maPhim
+    LEFT JOIN TheLoaiPhim tl ON pt.maTheLoai = tl.maTheLoai
     WHERE p.trangThai = 'upcoming'
+    GROUP BY p.maPhim
     ORDER BY p.ngayKhoiChieu;
 END //
 DELIMITER ;
@@ -394,6 +409,8 @@ END //
 DELIMITER ;
 
 -- View lịch chiếu phim
+-- Cập nhật view LichChieuPhim
+DROP VIEW IF EXISTS LichChieuPhim;
 CREATE VIEW LichChieuPhim AS
 SELECT 
     p.maPhim,
@@ -403,11 +420,14 @@ SELECT
     pc.tenPhong,
     pc.loaiPhong,
     COUNT(v.maVe) as SoVeDaBan,
-    pc.soLuongGhe - COUNT(v.maVe) as SoGheConLai
+    pc.soLuongGhe - COUNT(v.maVe) as SoGheConLai,
+    GROUP_CONCAT(tl.tenTheLoai SEPARATOR ', ') as tenTheLoai
 FROM Phim p
 JOIN SuatChieu sc ON p.maPhim = sc.maPhim
 JOIN PhongChieu pc ON sc.maPhong = pc.maPhong
 LEFT JOIN Ve v ON sc.maSuatChieu = v.maSuatChieu
+LEFT JOIN PhimTheLoai pt ON p.maPhim = pt.maPhim
+LEFT JOIN TheLoaiPhim tl ON pt.maTheLoai = tl.maTheLoai
 WHERE p.trangThai = 'active'
 GROUP BY p.maPhim, p.tenPhim, sc.maSuatChieu, sc.ngayGioChieu, pc.tenPhong;
 
@@ -506,10 +526,12 @@ END //
 DELIMITER ;
 
 -- View thống kê doanh thu theo phim
-CREATE OR REPLACE VIEW ThongKeDoanhThuPhim AS
+DROP VIEW IF EXISTS ThongKeDoanhThuPhim;
+CREATE VIEW ThongKeDoanhThuPhim AS
 SELECT 
     p.maPhim,
     p.tenPhim,
+    GROUP_CONCAT(DISTINCT tl.tenTheLoai SEPARATOR ', ') as tenTheLoai,
     COUNT(DISTINCT CASE WHEN v.trangThai = 'paid' THEN v.maVe END) as SoVeDaBan,
     COALESCE(SUM(CASE WHEN v.trangThai = 'paid' THEN gv.giaVe END), 0) as DoanhThuGoc,
     COALESCE(SUM(CASE 
@@ -528,14 +550,63 @@ SELECT
         WHERE dg.maPhim = p.maPhim
     ), 0) as DiemDanhGiaTrungBinh
 FROM Phim p
+LEFT JOIN PhimTheLoai pt ON p.maPhim = pt.maPhim
+LEFT JOIN TheLoaiPhim tl ON pt.maTheLoai = tl.maTheLoai
 LEFT JOIN SuatChieu sc ON p.maPhim = sc.maPhim
 LEFT JOIN Ve v ON sc.maSuatChieu = v.maSuatChieu
 LEFT JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
 LEFT JOIN KhuyenMai km ON v.maKhuyenMai = km.maKhuyenMai
 GROUP BY p.maPhim, p.tenPhim;
 
+select * from VeView;
 
-SELECT * FROM thongkedoanhthuphim;
+CREATE OR REPLACE VIEW VeView AS
+SELECT 
+    v.maVe AS MaVe,
+    v.trangThai AS TrangThai,
+    g.soGhe AS SoGhe,
+    gv.giaVe AS GiaVeGoc,
+    CASE 
+        WHEN v.maKhuyenMai IS NOT NULL THEN
+            CASE 
+                WHEN km.loaiGiamGia = 'PhanTram' THEN gv.giaVe * (km.giaTriGiam / 100)
+                WHEN km.loaiGiamGia = 'CoDinh' THEN km.giaTriGiam
+                ELSE 0
+            END
+        ELSE 0
+    END AS TienGiam,
+    CASE 
+        WHEN v.maKhuyenMai IS NOT NULL THEN
+            CASE 
+                WHEN km.loaiGiamGia = 'PhanTram' THEN gv.giaVe * (1 - km.giaTriGiam / 100)
+                WHEN km.loaiGiamGia = 'CoDinh' THEN GREATEST(gv.giaVe - km.giaTriGiam, 0)
+                ELSE gv.giaVe
+            END
+        ELSE gv.giaVe
+    END AS GiaVeSauGiam,
+    v.ngayDat AS NgayDat,
+    pc.tenPhong AS TenPhong,
+    sc.ngayGioChieu AS NgayGioChieu,
+    p.tenPhim AS TenPhim,
+    COALESCE(km.tenKhuyenMai, 'Không có') AS TenKhuyenMai
+FROM 
+    Ve v
+    INNER JOIN Ghe g ON v.maGhe = g.maGhe
+    INNER JOIN PhongChieu pc ON g.maPhong = pc.maPhong
+    INNER JOIN SuatChieu sc ON v.maSuatChieu = sc.maSuatChieu
+    INNER JOIN Phim p ON sc.maPhim = p.maPhim
+    INNER JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
+    LEFT JOIN KhuyenMai km ON v.maKhuyenMai = km.maKhuyenMai
+WHERE 
+    p.trangThai = 'active'
+ORDER BY 
+    v.maVe;
+
+SELECT DATE(v.ngayDat) as ngay, COUNT(*) as soVe, SUM(v.giaVeSauGiam) as doanhThu 
+FROM Ve v
+WHERE v.trangThai = 'PAID' AND DATE(v.ngayDat) BETWEEN 01/01/2025 AND 12/31/2025 
+GROUP BY DATE(v.ngayDat)
+ORDER BY ngay
 
 -- Tạo các chỉ mục để tối ưu hóa truy vấn
 CREATE INDEX idx_phim_maTheLoai ON Phim(maTheLoai);
@@ -548,6 +619,10 @@ CREATE INDEX idx_suatchieu_ngaygiochieu ON SuatChieu(ngayGioChieu);
 CREATE INDEX idx_ve_trangthai ON Ve(trangThai);
 CREATE INDEX idx_phim_trangthai_ngaykhoichieu ON Phim(trangThai, ngayKhoiChieu);
 CREATE INDEX idx_danhgia_maphim ON DanhGia(maPhim);
+
+-- Tạo chỉ mục mới
+CREATE INDEX idx_phimtheloai_maphim ON PhimTheLoai(maPhim);
+CREATE INDEX idx_phimtheloai_matheloai ON PhimTheLoai(maTheLoai);
 
 INSERT INTO NguoiDung (hoTen, soDienThoai, email, loaiNguoiDung) VALUES
 ('Lê Trần Minh Khôi', '0565321247', 'letranminhkhoi2506@gmail.com', 'KhachHang'),
@@ -779,52 +854,3 @@ INSERT INTO PhienLamViec (maNhanVien, thoiGianBatDau, thoiGianKetThuc, tongDoanh
 (10, '2025-01-15 16:00:00', '2025-01-15 23:59:00', 3000000.00, 12),
 (8, '2025-01-16 08:00:00', '2025-01-16 16:00:00', 2500000.00, 10);
 
-select * from VeView;
-
-CREATE OR REPLACE VIEW VeView AS
-SELECT 
-    v.maVe AS MaVe,
-    v.trangThai AS TrangThai,
-    g.soGhe AS SoGhe,
-    gv.giaVe AS GiaVeGoc,
-    CASE 
-        WHEN v.maKhuyenMai IS NOT NULL THEN
-            CASE 
-                WHEN km.loaiGiamGia = 'PhanTram' THEN gv.giaVe * (km.giaTriGiam / 100)
-                WHEN km.loaiGiamGia = 'CoDinh' THEN km.giaTriGiam
-                ELSE 0
-            END
-        ELSE 0
-    END AS TienGiam,
-    CASE 
-        WHEN v.maKhuyenMai IS NOT NULL THEN
-            CASE 
-                WHEN km.loaiGiamGia = 'PhanTram' THEN gv.giaVe * (1 - km.giaTriGiam / 100)
-                WHEN km.loaiGiamGia = 'CoDinh' THEN GREATEST(gv.giaVe - km.giaTriGiam, 0)
-                ELSE gv.giaVe
-            END
-        ELSE gv.giaVe
-    END AS GiaVeSauGiam,
-    v.ngayDat AS NgayDat,
-    pc.tenPhong AS TenPhong,
-    sc.ngayGioChieu AS NgayGioChieu,
-    p.tenPhim AS TenPhim,
-    COALESCE(km.tenKhuyenMai, 'Không có') AS TenKhuyenMai
-FROM 
-    Ve v
-    INNER JOIN Ghe g ON v.maGhe = g.maGhe
-    INNER JOIN PhongChieu pc ON g.maPhong = pc.maPhong
-    INNER JOIN SuatChieu sc ON v.maSuatChieu = sc.maSuatChieu
-    INNER JOIN Phim p ON sc.maPhim = p.maPhim
-    INNER JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
-    LEFT JOIN KhuyenMai km ON v.maKhuyenMai = km.maKhuyenMai
-WHERE 
-    p.trangThai = 'active'
-ORDER BY 
-    v.maVe;
-
-SELECT DATE(v.ngayDat) as ngay, COUNT(*) as soVe, SUM(v.giaVeSauGiam) as doanhThu 
-FROM Ve v
-WHERE v.trangThai = 'PAID' AND DATE(v.ngayDat) BETWEEN 01/01/2025 AND 12/31/2025 
-GROUP BY DATE(v.ngayDat)
-ORDER BY ngay
