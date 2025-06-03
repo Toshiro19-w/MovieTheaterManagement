@@ -11,6 +11,8 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
@@ -19,20 +21,26 @@ import javax.swing.JScrollPane;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 
+import com.cinema.components.MultiSelectComboBox;
 import com.cinema.models.Phim;
+import com.cinema.models.repositories.PhimRepository;
 import com.cinema.services.PhimService;
+import com.cinema.services.PhimTheLoaiService;
 import com.cinema.utils.PaginationResult;
 import com.cinema.views.admin.PhimView;
 
 public class PhimController {
     private PhimView view;
     private PhimService service;
+    private PhimTheLoaiService phimTheLoaiService;
+    private Map<Integer, String> theLoaiMap;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     public PhimController(PhimView view) throws SQLException {
         this.view = view;
         this.service = new PhimService(view.getDatabaseConnection());
+        this.phimTheLoaiService = new PhimTheLoaiService(view.getDatabaseConnection());
         
         try {
             loadComboBoxData();
@@ -44,12 +52,42 @@ public class PhimController {
         setupTableSelectionListener();
     }
 
+    public void loadTheLoaiList() throws SQLException {
+        PhimRepository phimRepository = new PhimRepository(view.getDatabaseConnection());
+        List<String> theLoaiList = phimRepository.getAllTheLoai();
+        
+        // Lấy danh sách thể loại đã chọn trước đó để giữ lại trạng thái
+        List<Object> selectedIds = view.getCbTenTheLoai().getSelectedIds();
+        
+        // Xóa tất cả các item hiện tại
+        view.getCbTenTheLoai().removeAllItems();
+        
+        // Thêm lại các item mới
+        for (int i = 0; i < theLoaiList.size(); i++) {
+            String tenTheLoai = theLoaiList.get(i);
+            // Sử dụng index+1 làm ID tạm thời
+            int id = i + 1;
+            try {
+                // Hoặc lấy ID thực từ repository nếu cần
+                id = phimRepository.getMaTheLoaiByTen(tenTheLoai);
+            } catch (SQLException e) {
+                // Nếu không tìm thấy, giữ nguyên ID tạm
+            }
+            
+            // Kiểm tra xem item này có nằm trong danh sách đã chọn trước đó không
+            boolean selected = selectedIds.contains(id);
+            view.getCbTenTheLoai().addItem(id, tenTheLoai, selected);
+        }
+    }
+
     private void loadComboBoxData() throws SQLException {
         // Tải dữ liệu cho combobox thể loại
-        List<String> theLoaiList = service.getAllTheLoai();
-        view.getCbTenTheLoai().removeAllItems();
-        for (String theLoai : theLoaiList) {
-            view.getCbTenTheLoai().addItem(theLoai);
+        theLoaiMap = service.getAllTheLoaiMap();
+        MultiSelectComboBox cbTenTheLoai = view.getCbTenTheLoai();
+        cbTenTheLoai.removeAllItems();
+        
+        for (Map.Entry<Integer, String> entry : theLoaiMap.entrySet()) {
+            cbTenTheLoai.addItem(entry.getKey(), entry.getValue(), false);
         }
         
         // Tải dữ liệu cho combobox kiểu phim
@@ -186,7 +224,6 @@ public class PhimController {
             List<Phim> phimList = service.getAllPhim();
             for (Phim phim : phimList) {
                 if (phim.getTenPhim().equals(tenPhim) && 
-                    phim.getTenTheLoai().equals(theLoai) && 
                     phim.getThoiLuong() == thoiLuong) {
                     return phim.getMaPhim();
                 }
@@ -203,8 +240,11 @@ public class PhimController {
         view.getTxtMoTa().setText(phim.getMoTa());
         view.getTxtDaoDien().setText(phim.getDaoDien());
         
-        // Set combobox values
-        view.getCbTenTheLoai().setSelectedItem(phim.getTenTheLoai());
+        // Set combobox values - Cập nhật để hỗ trợ nhiều thể loại
+        MultiSelectComboBox cbTenTheLoai = view.getCbTenTheLoai();
+        List<Integer> selectedTheLoaiIds = phim.getMaTheLoaiList();
+        cbTenTheLoai.setSelectedIds(selectedTheLoaiIds);
+        
         view.getTxtTrangThai().setText(phim.getTrangThai());
         view.getCbKieuPhim().setSelectedItem(phim.getKieuPhim());
         view.getCbNuocSanXuat().setSelectedItem(phim.getNuocSanXuat());
@@ -265,7 +305,7 @@ public class PhimController {
         phim.setTrangThai("upcoming");
         
         // Lưu phim vào database thông qua service
-        service.addPhim(phim);
+        int maPhim = service.addPhim(phim);
         
         JOptionPane.showMessageDialog(view, "Thêm phim thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
         view.clearForm();
@@ -326,8 +366,17 @@ public class PhimController {
         phim.setMoTa(view.getTxtMoTa().getText());
         phim.setDaoDien(view.getTxtDaoDien().getText());
         
-        // Set thể loại
-        String tenTheLoai = (String) view.getCbTenTheLoai().getSelectedItem();
+        // Set thể loại - Cập nhật để hỗ trợ nhiều thể loại
+        MultiSelectComboBox cbTenTheLoai = view.getCbTenTheLoai();
+        List<Object> selectedIds = cbTenTheLoai.getSelectedIds();
+        List<Integer> maTheLoaiList = selectedIds.stream()
+                .map(id -> (Integer) id)
+                .collect(Collectors.toList());
+        phim.setMaTheLoaiList(maTheLoaiList);
+        
+        // Tạo chuỗi tên thể loại để hiển thị
+        List<String> selectedTexts = cbTenTheLoai.getSelectedTexts();
+        String tenTheLoai = String.join(", ", selectedTexts);
         phim.setTenTheLoai(tenTheLoai);
         
         // Set trạng thái và kiểu phim
@@ -388,16 +437,13 @@ public class PhimController {
                 
                 // Lấy thông tin từ model
                 String tenPhim = view.getTableModel().getValueAt(modelRow, 1).toString();
-                String theLoai = view.getTableModel().getValueAt(modelRow, 2).toString();
                 int thoiLuong = (int) view.getTableModel().getValueAt(modelRow, 3);
                 
                 // Tìm phim theo các thông tin này
                 Phim phim = null;
                 List<Phim> phimList = service.getAllPhim();
                 for (Phim p : phimList) {
-                    if (p.getTenPhim().equals(tenPhim) && 
-                        p.getTenTheLoai().equals(theLoai) && 
-                        p.getThoiLuong() == thoiLuong) {
+                    if (p.getTenPhim().equals(tenPhim) && p.getThoiLuong() == thoiLuong) {
                         phim = p;
                         break;
                     }

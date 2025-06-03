@@ -34,10 +34,10 @@ public class PaginationPanel extends JPanel {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
         buttonPanel.setOpaque(false);
         
-        btnFirst = createPaginationButton("<<", _ -> goToPage(1));
-        btnPrev = createPaginationButton("<", _ -> goToPage(currentPage - 1));
-        btnNext = createPaginationButton(">", _ -> goToPage(currentPage + 1));
-        btnLast = createPaginationButton(">>", _ -> goToPage(totalPages));
+        btnFirst = createPaginationButton("\u00AB", _ -> goToPage(1)); // Unicode for «
+        btnPrev = createPaginationButton("\u2039", _ -> goToPage(currentPage - 1)); // Unicode for ‹
+        btnNext = createPaginationButton("\u203A", _ -> goToPage(currentPage + 1)); // Unicode for ›
+        btnLast = createPaginationButton("\u00BB", _ -> goToPage(totalPages)); // Unicode for »
         
         lblPageInfo = new JLabel("Trang 1 / 1", SwingConstants.CENTER);
         lblPageInfo.setForeground(UIConstants.TEXT_COLOR);
@@ -54,7 +54,7 @@ public class PaginationPanel extends JPanel {
     }
     
     private JButton createPaginationButton(String text, ActionListener action) {
-        JButton button = ModernUIApplier.createModernButton(text, UIConstants.PRIMARY_COLOR, Color.WHITE);
+        JButton button = ModernUIApplier.createUnicodeButton(text, UIConstants.PRIMARY_COLOR, Color.WHITE);
         button.setPreferredSize(new Dimension(40, 30));
         button.addActionListener(action);
         return button;

@@ -57,6 +57,13 @@ public class ModernUIApplier {
     public static JButton createModernButton(String text, Color bgColor, Color textColor) {
         return ModernUIComponents.createButton(text, bgColor, textColor);
     }
+
+    /**
+     * Áp dụng style hiện đại có hỗ trợ chữ Unicode cho JButton
+     */
+    public static JButton createUnicodeButton(String text, Color bgColor, Color textColor) {
+        return ModernUIComponents.createUnicodeButton(text, bgColor, textColor);
+    }
     
     /**
      * Tạo nút với màu mặc định

@@ -47,6 +47,7 @@ public class UIConstants {
     public static final Font BUTTON_FONT = new Font("Segoe UI", Font.PLAIN, 14);
     public static final Font SMALL_FONT = new Font("Segoe UI", Font.PLAIN, 12);
     public static final Font LABEL_FONT = new Font("Segoe UI", Font.PLAIN, 14);
+    public static final Font ICON_FONT = new Font("Arial Unicode MS", Font.PLAIN, 18);
     
     // Kích thước và khoảng cách
     public static final int BORDER_RADIUS = 20;
