@@ -1,30 +1,23 @@
 package com.cinema.services;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.cinema.models.Phim;
 import com.cinema.models.repositories.PhimRepository;
+import com.cinema.models.repositories.TheLoaiRepository;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.PaginationResult;
 
 public class PhimService {
-    private Connection connection;
-    private PhimTheLoaiService phimTheLoaiService;
-    private PhimRepository phimRepository;
+    private final TheLoaiRepository theLoaiRepository;
+    private final PhimRepository phimRepository;
     
     public PhimService(DatabaseConnection dbConnection) throws SQLException {
-        this.connection = dbConnection.getConnection();
-        this.phimTheLoaiService = new PhimTheLoaiService(dbConnection);
+        dbConnection.getConnection();
         this.phimRepository = new PhimRepository(dbConnection);
+        this.theLoaiRepository = new TheLoaiRepository(dbConnection);
     }
     
     /**
@@ -130,18 +123,7 @@ public class PhimService {
      * @throws SQLException Nếu có lỗi SQL
      */
     public Map<Integer, String> getAllTheLoaiMap() throws SQLException {
-        Map<Integer, String> theLoaiMap = new HashMap<>();
-        String sql = "SELECT maTheLoai, tenTheLoai FROM TheLoaiPhim ORDER BY tenTheLoai";
-        
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            
-            while (rs.next()) {
-                theLoaiMap.put(rs.getInt("maTheLoai"), rs.getString("tenTheLoai"));
-            }
-        }
-        
-        return theLoaiMap;
+        return theLoaiRepository.getAllTheLoaiMap();
     }
     
     /**

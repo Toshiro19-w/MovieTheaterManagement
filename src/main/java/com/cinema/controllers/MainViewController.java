@@ -82,6 +82,18 @@ public class MainViewController {
         }
     }
     
+    /**
+     * Khởi tạo các panel cho khách hàng
+     */
+    public void initializeCustomerPanels() throws IOException, SQLException {
+        // Khởi tạo màn hình danh sách phim
+        PhimListView phimListView = new PhimListView(phimController, this::openBookingView, username);
+        mainContentPanel.add(phimListView, "Phim");
+        
+        // Hiển thị màn hình phim mặc định
+        cardLayout.show(mainContentPanel, "Phim");
+    }
+    
     public void handleMenuSelection(String feature, SidebarMenuItem menuItem) {
         if (permissionManager.isAdmin() || permissionManager.isQuanLyPhim() || 
             permissionManager.isThuNgan() || permissionManager.isBanVe()) {
@@ -103,21 +115,20 @@ public class MainViewController {
                     JOptionPane.ERROR_MESSAGE);
             }
         } else if (permissionManager.isUser()) {
-            if (feature.equals("Phim đang chiếu") || feature.equals("Đặt vé")) {
-                for (Component comp : mainContentPanel.getComponents()) {
-                    if (comp instanceof PhimListView) {
-                        ((PhimListView) comp).loadPhimList("");
-                        break;
-                    }
+            try {
+                if (feature.equals("Phim")) {
+                    cardLayout.show(mainContentPanel, "Phim");
+                } else if (feature.equals("Thông tin cá nhân")) {
+                    // Hiển thị thông tin cá nhân trong dialog
+                    UserInfoView userInfoView = new UserInfoView(view, username);
+                    userInfoView.setVisible(true);
                 }
-            } else if (feature.equals("Thông tin cá nhân")) {
-                UserInfoView userInfoView;
-                try {
-                    userInfoView = new UserInfoView(view, username);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                userInfoView.setVisible(true);
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(view, 
+                    "Lỗi khi chuyển đổi view: " + e.getMessage(), 
+                    "Lỗi", 
+                    JOptionPane.ERROR_MESSAGE);
             }
         }
     }

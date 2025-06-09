@@ -74,9 +74,6 @@ public class PhimView extends JPanel {
     private JPanel sidebarContainer;
     private boolean isSidebarVisible = false;
 
-    // Sử dụng màu sắc từ ModernUIComponents
-    private static final Color ROW_ALTERNATE_COLOR = new Color(240, 240, 240);
-
     public PhimView() throws IOException {
         dbConnection = new DatabaseConnection();
         this.messages = ResourceBundle.getBundle("Messages");
@@ -391,7 +388,7 @@ public class PhimView extends JPanel {
         tablePanel.setBackground(UIConstants.BACKGROUND_COLOR);
         tablePanel.setLayout(new BorderLayout(0, 2)); // Giảm khoảng cách dọc xuống 5px
         tablePanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // Giảm padding
-        tablePanel.setMaximumSize(new Dimension(1250, 2000));
+        tablePanel.setMaximumSize(new Dimension(1200, 2000));
         
         // Panel tiêu đề và tìm kiếm
         JPanel headerPanel = new JPanel(new BorderLayout(10, 0));
@@ -455,17 +452,14 @@ public class PhimView extends JPanel {
             public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
                 Component c = super.prepareRenderer(renderer, row, column);
                 
-                // Hiệu ứng hover và chọn dòng
+                // Chỉ hiệu ứng khi chọn dòng, bỏ màu nâu trắng xen kẽ
                 if (isRowSelected(row)) {
                     c.setBackground(new Color(UIConstants.PRIMARY_COLOR.getRed(), 
                                              UIConstants.PRIMARY_COLOR.getGreen(), 
                                              UIConstants.PRIMARY_COLOR.getBlue(), 40));
                     c.setForeground(UIConstants.PRIMARY_COLOR);
-                } else if (row % 2 == 0) {
-                    c.setBackground(UIConstants.CARD_BACKGROUND);
-                    c.setForeground(UIConstants.TEXT_COLOR);
                 } else {
-                    c.setBackground(ROW_ALTERNATE_COLOR);
+                    c.setBackground(UIConstants.CARD_BACKGROUND);
                     c.setForeground(UIConstants.TEXT_COLOR);
                 }
                 
@@ -481,8 +475,10 @@ public class PhimView extends JPanel {
         // Áp dụng style hiện đại cho bảng
         ModernUIApplier.applyModernTableStyle(table);
         table.setRowHeight(120); // Giảm chiều cao dòng để hiển thị nhiều phim hơn
-        table.setIntercellSpacing(new Dimension(10, 5)); // Khoảng cách giữa các ô
-        table.setShowGrid(false); // Ẩn lưới để giao diện sạch hơn
+        table.setIntercellSpacing(new Dimension(0, 0)); // Bỏ khoảng cách giữa các ô
+        table.setShowHorizontalLines(true); // Chỉ hiển thị đường kẻ ngang
+        table.setShowVerticalLines(false); // Ẩn đường kẻ dọc
+        table.setGridColor(new Color(230, 230, 230)); // Màu đường kẻ nhẹ
         table.setFillsViewportHeight(true);
         
         // Thiết lập TableRowSorter cho bảng
@@ -498,24 +494,11 @@ public class PhimView extends JPanel {
         table.getColumnModel().getColumn(4).setPreferredWidth(100);
         table.getColumnModel().getColumn(5).setPreferredWidth(100);
         
-        // Renderer cho cột trạng thái với thiết kế badge hiện đại
+        // Renderer cho cột trạng thái với thiết kế đơn giản
         table.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                JLabel label = new JLabel() {
-                    @Override
-                    protected void paintComponent(Graphics g) {
-                        Graphics2D g2d = (Graphics2D) g.create();
-                        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                        
-                        // Vẽ nền với góc bo tròn
-                        g2d.setColor(getBackground());
-                        g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
-                        
-                        super.paintComponent(g2d);
-                        g2d.dispose();
-                    }
-                };
+                JLabel label = new JLabel();
                 
                 label.setHorizontalAlignment(JLabel.CENTER);
                 label.setFont(UIConstants.SMALL_FONT.deriveFont(Font.BOLD));
@@ -523,15 +506,12 @@ public class PhimView extends JPanel {
                 
                 if ("active".equals(value)) {
                     label.setText("ĐANG CHIẾU");
-                    label.setBackground(new Color(46, 204, 113, 40)); // Màu xanh lá
                     label.setForeground(new Color(46, 204, 113));
                 } else if ("deleted".equals(value)) {
                     label.setText("KẾT THÚC");
-                    label.setBackground(new Color(231, 76, 60, 40)); // Màu đỏ đậm hơn
                     label.setForeground(new Color(231, 76, 60));
                 } else if ("upcoming".equals(value)) {
                     label.setText("SẮP CHIẾU");
-                    label.setBackground(new Color(52, 152, 219, 40)); // Màu xanh dương
                     label.setForeground(new Color(52, 152, 219));
                 } else {
                     label.setText(value != null ? value.toString() : "");
@@ -541,10 +521,11 @@ public class PhimView extends JPanel {
                     label.setBackground(new Color(UIConstants.PRIMARY_COLOR.getRed(), 
                                                 UIConstants.PRIMARY_COLOR.getGreen(), 
                                                 UIConstants.PRIMARY_COLOR.getBlue(), 40));
+                    label.setOpaque(true);
+                } else {
+                    label.setOpaque(false);
                 }
                 
-                // Đặt opaque thành true để hiển thị màu nền
-                label.setOpaque(true);
                 return label;
             }
         });
@@ -561,55 +542,7 @@ public class PhimView extends JPanel {
             }
         });
         
-        // Renderer cho cột trạng thái với thiết kế badge hiện đại
-        table.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                JLabel label = new JLabel() {
-                    @Override
-                    protected void paintComponent(Graphics g) {
-                        Graphics2D g2d = (Graphics2D) g.create();
-                        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                        
-                        // Vẽ nền với góc bo tròn
-                        g2d.setColor(getBackground());
-                        g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
-                        
-                        super.paintComponent(g2d);
-                        g2d.dispose();
-                    }
-                };
-                
-                label.setHorizontalAlignment(JLabel.CENTER);
-                label.setFont(UIConstants.SMALL_FONT.deriveFont(Font.BOLD));
-                label.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-                
-                if ("active".equals(value)) {
-                    label.setText("ĐANG CHIẾU");
-                    label.setBackground(new Color(46, 204, 113, 40)); // Màu xanh lá
-                    label.setForeground(new Color(46, 204, 113));
-                } else if ("deleted".equals(value)) {
-                    label.setText("KẾT THÚC");
-                    label.setBackground(new Color(231, 76, 60, 40)); // Màu đỏ đậm hơn
-                    label.setForeground(new Color(231, 76, 60));
-                } else if ("upcoming".equals(value)) {
-                    label.setText("SẮP CHIẾU");
-                    label.setBackground(new Color(52, 152, 219, 40)); // Màu xanh dương
-                    label.setForeground(new Color(52, 152, 219));
-                } else {
-                    label.setText(value != null ? value.toString() : "");
-                }
-                
-                if (isSelected) {
-                    label.setBackground(new Color(UIConstants.PRIMARY_COLOR.getRed(), 
-                                                UIConstants.PRIMARY_COLOR.getGreen(), 
-                                                UIConstants.PRIMARY_COLOR.getBlue(), 40));
-                }
-                
-                label.setOpaque(true);
-                return label;
-            }
-        });
+
 
         // Tạo container cho bảng với hiệu ứng đổ bóng
         JPanel tableContainer = ModernUIApplier.createModernPanel();
@@ -631,6 +564,7 @@ public class PhimView extends JPanel {
         
         // Thêm phân trang với thiết kế hiện đại
         CustomPaginationPanel paginationPanel = new CustomPaginationPanel();
+        paginationPanel.setName("paginationPanel"); // Đặt tên để dễ tìm kiếm
         paginationPanel.setBackground(UIConstants.CARD_BACKGROUND);
         paginationPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
         paginationPanel.setPageChangeListener(page -> {
@@ -857,7 +791,7 @@ public class PhimView extends JPanel {
         sidebarContainer.setPreferredSize(new Dimension(350, getHeight()));
         sidebarContainer.setVisible(false);
         
-        theLoaiSidebar = new TheLoaiSidebar(dbConnection, e -> hideSidebar());
+        theLoaiSidebar = new TheLoaiSidebar(dbConnection,_ -> hideSidebar());
         sidebarContainer.add(theLoaiSidebar, BorderLayout.CENTER);
         
         add(sidebarContainer, BorderLayout.EAST);

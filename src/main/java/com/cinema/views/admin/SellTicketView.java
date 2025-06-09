@@ -529,6 +529,7 @@ public class SellTicketView extends JPanel {
             }
         } catch (SQLException e) {
             showSnackbar(messages.getString("dbError") + e.getMessage(), false);
+            e.printStackTrace();
         }
     }
 
@@ -596,6 +597,7 @@ public class SellTicketView extends JPanel {
             bookingView.setVisible(true);
         } catch (Exception e) {
             showSnackbar(messages.getString("dbError") + e.getMessage(), false);
+            e.printStackTrace();
         }
     }
 

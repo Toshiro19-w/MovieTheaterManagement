@@ -1,5 +1,6 @@
 package com.cinema.models.repositories;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -25,7 +26,8 @@ public class PhienLamViecRepository extends BaseRepository<PhienLamViec> impleme
         List<PhienLamViec> phienLamViecs = new ArrayList<>();
         String query = "SELECT * FROM PhienLamViec";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query);
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
             
             while (rs.next()) {
@@ -39,7 +41,8 @@ public class PhienLamViecRepository extends BaseRepository<PhienLamViec> impleme
     public PhienLamViec findById(int id) throws SQLException {
         String query = "SELECT * FROM PhienLamViec WHERE maPhien = ?";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, id);
             
             try (ResultSet rs = stmt.executeQuery()) {
@@ -57,7 +60,8 @@ public class PhienLamViecRepository extends BaseRepository<PhienLamViec> impleme
         String query = "INSERT INTO PhienLamViec (maNhanVien, thoiGianBatDau, thoiGianKetThuc, tongDoanhThu, soVeDaBan) " +
                       "VALUES (?, ?, ?, ?, ?)";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setInt(1, entity.getMaNhanVien());
             stmt.setTimestamp(2, Timestamp.valueOf(entity.getThoiGianBatDau()));
             
@@ -93,7 +97,8 @@ public class PhienLamViecRepository extends BaseRepository<PhienLamViec> impleme
         String query = "UPDATE PhienLamViec SET maNhanVien = ?, thoiGianBatDau = ?, thoiGianKetThuc = ?, " +
                       "tongDoanhThu = ?, soVeDaBan = ? WHERE maPhien = ?";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, entity.getMaNhanVien());
             stmt.setTimestamp(2, Timestamp.valueOf(entity.getThoiGianBatDau()));
             
@@ -121,7 +126,8 @@ public class PhienLamViecRepository extends BaseRepository<PhienLamViec> impleme
     public void delete(int id) throws SQLException {
         String query = "DELETE FROM PhienLamViec WHERE maPhien = ?";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, id);
             stmt.executeUpdate();
         }
@@ -131,7 +137,8 @@ public class PhienLamViecRepository extends BaseRepository<PhienLamViec> impleme
     public PhienLamViec findActiveSessionByNhanVien(int maNhanVien) throws SQLException {
         String query = "SELECT * FROM PhienLamViec WHERE maNhanVien = ? AND thoiGianKetThuc IS NULL";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, maNhanVien);
             
             try (ResultSet rs = stmt.executeQuery()) {
@@ -149,7 +156,8 @@ public class PhienLamViecRepository extends BaseRepository<PhienLamViec> impleme
         List<PhienLamViec> phienLamViecs = new ArrayList<>();
         String query = "SELECT * FROM PhienLamViec WHERE thoiGianBatDau BETWEEN ? AND ?";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setTimestamp(1, Timestamp.valueOf(tuNgay));
             stmt.setTimestamp(2, Timestamp.valueOf(denNgay));
             
@@ -167,7 +175,8 @@ public class PhienLamViecRepository extends BaseRepository<PhienLamViec> impleme
     public void updateAfterSale(int maPhien, double giaVe) throws SQLException {
         String query = "UPDATE PhienLamViec SET tongDoanhThu = tongDoanhThu + ?, soVeDaBan = soVeDaBan + 1 WHERE maPhien = ?";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setDouble(1, giaVe);
             stmt.setInt(2, maPhien);
             
@@ -183,7 +192,8 @@ public class PhienLamViecRepository extends BaseRepository<PhienLamViec> impleme
     public void endSession(int maPhien) throws SQLException {
         String query = "UPDATE PhienLamViec SET thoiGianKetThuc = ? WHERE maPhien = ?";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
             stmt.setInt(2, maPhien);
             
@@ -200,7 +210,8 @@ public class PhienLamViecRepository extends BaseRepository<PhienLamViec> impleme
         List<PhienLamViec> phienLamViecs = new ArrayList<>();
         String query = "SELECT * FROM PhienLamViec WHERE maNhanVien = ? ORDER BY thoiGianBatDau DESC";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, maNhanVien);
             
             try (ResultSet rs = stmt.executeQuery()) {

@@ -1,11 +1,14 @@
 package com.cinema.models.repositories;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.cinema.models.TheLoaiPhim;
 import com.cinema.utils.DatabaseConnection;
@@ -20,7 +23,8 @@ public class TheLoaiRepository extends BaseRepository<TheLoaiPhim> {
     public List<TheLoaiPhim> findAll() throws SQLException {
         List<TheLoaiPhim> list = new ArrayList<>();
         String sql = "SELECT * FROM TheLoaiPhim ORDER BY tenTheLoai";
-        try (Statement stmt = conn.createStatement();
+        try (Connection conn = getConnection();
+            Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 TheLoaiPhim theLoai = new TheLoaiPhim();
@@ -35,7 +39,8 @@ public class TheLoaiRepository extends BaseRepository<TheLoaiPhim> {
     @Override
     public TheLoaiPhim findById(int id) throws SQLException {
         String sql = "SELECT * FROM TheLoaiPhim WHERE maTheLoai = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
@@ -51,7 +56,8 @@ public class TheLoaiRepository extends BaseRepository<TheLoaiPhim> {
     @Override
     public TheLoaiPhim save(TheLoaiPhim entity) throws SQLException {
         String sql = "INSERT INTO TheLoaiPhim (tenTheLoai) VALUES (?)";
-        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, entity.getTenTheLoai());
             stmt.executeUpdate();
             ResultSet rs = stmt.getGeneratedKeys();
@@ -65,7 +71,8 @@ public class TheLoaiRepository extends BaseRepository<TheLoaiPhim> {
     @Override
     public TheLoaiPhim update(TheLoaiPhim entity) throws SQLException {
         String sql = "UPDATE TheLoaiPhim SET tenTheLoai = ? WHERE maTheLoai = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, entity.getTenTheLoai());
             stmt.setInt(2, entity.getMaTheLoai());
             int rowsAffected = stmt.executeUpdate();
@@ -80,7 +87,8 @@ public class TheLoaiRepository extends BaseRepository<TheLoaiPhim> {
     public void delete(int id) throws SQLException {
         // Kiểm tra xem thể loại có đang được sử dụng không
         String checkSql = "SELECT COUNT(*) FROM PhimTheLoai WHERE maTheLoai = ?";
-        try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+        try (Connection conn = getConnection();
+            PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
             checkStmt.setInt(1, id);
             ResultSet rs = checkStmt.executeQuery();
             if (rs.next() && rs.getInt(1) > 0) {
@@ -90,7 +98,8 @@ public class TheLoaiRepository extends BaseRepository<TheLoaiPhim> {
         
         // Nếu không được sử dụng, tiến hành xóa
         String sql = "DELETE FROM TheLoaiPhim WHERE maTheLoai = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);
             stmt.executeUpdate();
         }
@@ -98,7 +107,8 @@ public class TheLoaiRepository extends BaseRepository<TheLoaiPhim> {
     
     public boolean isTheLoaiExists(String tenTheLoai, int excludeMaTheLoai) throws SQLException {
         String sql = "SELECT COUNT(*) FROM TheLoaiPhim WHERE tenTheLoai = ? AND maTheLoai != ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, tenTheLoai);
             stmt.setInt(2, excludeMaTheLoai);
             ResultSet rs = stmt.executeQuery();
@@ -107,5 +117,27 @@ public class TheLoaiRepository extends BaseRepository<TheLoaiPhim> {
             }
             return false;
         }
+    }
+    
+    /**
+     * Lấy danh sách tất cả thể loại phim với mã và tên
+     * 
+     * @return Map chứa mã thể loại và tên thể loại
+     * @throws SQLException Nếu có lỗi SQL
+     */
+    public Map<Integer, String> getAllTheLoaiMap() throws SQLException {
+        Map<Integer, String> theLoaiMap = new HashMap<>();
+        String sql = "SELECT maTheLoai, tenTheLoai FROM TheLoaiPhim ORDER BY tenTheLoai";
+        
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            while (rs.next()) {
+                theLoaiMap.put(rs.getInt("maTheLoai"), rs.getString("tenTheLoai"));
+            }
+        }
+        
+        return theLoaiMap;
     }
 }

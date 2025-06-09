@@ -14,6 +14,7 @@ public class UIConstants {
     public static final Color ACCENT_COLOR = new Color(99, 102, 241);
     
     // Màu nền
+    public static final Color CONTENT_BACKGROUND_COLOR = new Color(252, 252, 247); // Pearl color
     public static final Color BACKGROUND_COLOR = new Color(245, 245, 245);
     public static final Color CARD_BACKGROUND = Color.WHITE;
     public static final Color SIDEBAR_COLOR = new Color(248, 249, 250);

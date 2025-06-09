@@ -2,7 +2,6 @@ package com.cinema.views;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -38,6 +37,7 @@ import com.cinema.controllers.DatVeController;
 import com.cinema.controllers.PaymentController;
 import com.cinema.models.Ghe;
 import com.cinema.models.SuatChieu;
+import com.cinema.models.dto.BookingResultDTO;
 
 public class BookingView extends JDialog {
     // Màu sắc và font chữ giống với MainView
@@ -55,14 +55,14 @@ public class BookingView extends JDialog {
     private final PaymentController paymentController;
     private final int maPhim;
     private final int maKhachHang;
-    private final Consumer<BookingResult> confirmCallback;
+    private final Consumer<BookingResultDTO> confirmCallback;
     private SuatChieu selectedSuatChieu;
     private List<Ghe> selectedGheList = new ArrayList<>();
     private BigDecimal ticketPrice;
     private Integer maVe;
     private NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
 
-    public BookingView(JFrame parent, DatVeController datVeController, PaymentController paymentController, int maPhim, int maKhachHang, Consumer<BookingResult> confirmCallback) {
+    public BookingView(JFrame parent, DatVeController datVeController, PaymentController paymentController, int maPhim, int maKhachHang, Consumer<BookingResultDTO> confirmCallback) {
         super(parent, "Đặt vé", true);
         this.datVeController = datVeController;
         this.paymentController = paymentController;
@@ -334,7 +334,7 @@ public class BookingView extends JDialog {
                 // Mở PaymentView ngay sau khi đặt vé thành công
                 PaymentView paymentView = new PaymentView((JFrame) getParent(), paymentController, datVeController, selectedSuatChieu, selectedGheList.get(0), totalPrice, maVe, maKhachHang, paymentResult -> {
                     if (paymentResult != null) {
-                        confirmCallback.accept(new BookingResult(selectedSuatChieu,
+                        confirmCallback.accept(new BookingResultDTO(selectedSuatChieu,
                                 selectedGheList.get(0),
                                 totalPrice,
                                 paymentResult.transactionId));
@@ -491,6 +491,4 @@ public class BookingView extends JDialog {
             g2.dispose();
         }
     }
-
-    public record BookingResult(SuatChieu suatChieu, Ghe ghe, BigDecimal giaVe, String transactionId) {}
 }

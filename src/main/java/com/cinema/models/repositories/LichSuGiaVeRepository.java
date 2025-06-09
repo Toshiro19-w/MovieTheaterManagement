@@ -20,7 +20,8 @@ public class LichSuGiaVeRepository extends BaseRepository<LichSuGiaVe> implement
         List<LichSuGiaVe> lichSuList = new ArrayList<>();
         String query = "SELECT * FROM LichSuGiaVe ORDER BY ngayThayDoi DESC";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query);
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
             
             while (rs.next()) {
@@ -35,7 +36,8 @@ public class LichSuGiaVeRepository extends BaseRepository<LichSuGiaVe> implement
     public LichSuGiaVe findById(int id) throws SQLException {
         String query = "SELECT * FROM LichSuGiaVe WHERE maLichSu = ?";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, id);
             
             try (ResultSet rs = stmt.executeQuery()) {
@@ -53,7 +55,8 @@ public class LichSuGiaVeRepository extends BaseRepository<LichSuGiaVe> implement
         String query = "INSERT INTO LichSuGiaVe (loaiGhe, giaVeCu, giaVeMoi, ngayThayDoi, nguoiThayDoi) " +
                       "VALUES (?, ?, ?, ?, ?)";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, entity.getLoaiGhe());
             stmt.setDouble(2, entity.getGiaVeCu());
             stmt.setDouble(3, entity.getGiaVeMoi());
@@ -88,7 +91,8 @@ public class LichSuGiaVeRepository extends BaseRepository<LichSuGiaVe> implement
         String query = "UPDATE LichSuGiaVe SET loaiGhe = ?, giaVeCu = ?, giaVeMoi = ?, " +
                       "ngayThayDoi = ?, nguoiThayDoi = ? WHERE maLichSu = ?";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, entity.getLoaiGhe());
             stmt.setDouble(2, entity.getGiaVeCu());
             stmt.setDouble(3, entity.getGiaVeMoi());
@@ -116,7 +120,8 @@ public class LichSuGiaVeRepository extends BaseRepository<LichSuGiaVe> implement
     public void delete(int id) throws SQLException {
         String query = "DELETE FROM LichSuGiaVe WHERE maLichSu = ?";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, id);
             stmt.executeUpdate();
         }
@@ -127,7 +132,8 @@ public class LichSuGiaVeRepository extends BaseRepository<LichSuGiaVe> implement
         List<LichSuGiaVe> lichSuList = new ArrayList<>();
         String query = "SELECT * FROM LichSuGiaVe WHERE loaiGhe = ? ORDER BY ngayThayDoi DESC";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, loaiGhe);
             
             try (ResultSet rs = stmt.executeQuery()) {
@@ -145,7 +151,8 @@ public class LichSuGiaVeRepository extends BaseRepository<LichSuGiaVe> implement
         List<LichSuGiaVe> lichSuList = new ArrayList<>();
         String query = "SELECT * FROM LichSuGiaVe WHERE ngayThayDoi BETWEEN ? AND ? ORDER BY ngayThayDoi DESC";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setTimestamp(1, Timestamp.valueOf(tuNgay));
             stmt.setTimestamp(2, Timestamp.valueOf(denNgay));
             
@@ -164,7 +171,8 @@ public class LichSuGiaVeRepository extends BaseRepository<LichSuGiaVe> implement
         List<LichSuGiaVe> lichSuList = new ArrayList<>();
         String query = "SELECT * FROM LichSuGiaVe WHERE nguoiThayDoi = ? ORDER BY ngayThayDoi DESC";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, maNhanVien);
             
             try (ResultSet rs = stmt.executeQuery()) {

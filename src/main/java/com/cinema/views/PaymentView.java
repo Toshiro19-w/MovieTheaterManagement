@@ -153,6 +153,7 @@ public class PaymentView extends JDialog {
     private void cancelBooking() {
         try {
             datVeController.cancelVe(maVe);
+            JOptionPane.showMessageDialog(this, "Đã hủy đặt vé thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             paymentCallback.accept(null);
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Lỗi khi hủy vé: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);

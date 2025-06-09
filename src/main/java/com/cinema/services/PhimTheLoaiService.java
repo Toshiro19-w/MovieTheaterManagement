@@ -1,23 +1,19 @@
 package com.cinema.services;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
-import com.cinema.models.PhimTheLoai;
+import com.cinema.models.repositories.PhimTheLoaiRepository;
 import com.cinema.utils.DatabaseConnection;
 
 /**
  * Lớp service để quản lý mối quan hệ giữa Phim và TheLoaiPhim
  */
 public class PhimTheLoaiService {
-    private Connection connection;
+    private final PhimTheLoaiRepository phimTheLoaiRepository;
     
-    public PhimTheLoaiService(DatabaseConnection dbConnection) throws SQLException {
-        this.connection = dbConnection.getConnection();
+    public PhimTheLoaiService(DatabaseConnection dbConnection) {
+        this.phimTheLoaiRepository = new PhimTheLoaiRepository(dbConnection);
     }
     
     /**
@@ -28,12 +24,7 @@ public class PhimTheLoaiService {
      * @throws SQLException Nếu có lỗi SQL
      */
     public void addTheLoaiForPhim(int maPhim, int maTheLoai) throws SQLException {
-        String sql = "INSERT INTO PhimTheLoai (maPhim, maTheLoai) VALUES (?, ?)";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, maPhim);
-            stmt.setInt(2, maTheLoai);
-            stmt.executeUpdate();
-        }
+        phimTheLoaiRepository.addTheLoaiForPhim(maPhim, maTheLoai);
     }
     
     /**
@@ -44,15 +35,7 @@ public class PhimTheLoaiService {
      * @throws SQLException Nếu có lỗi SQL
      */
     public void addTheLoaisForPhim(int maPhim, List<Integer> maTheLoaiList) throws SQLException {
-        String sql = "INSERT INTO PhimTheLoai (maPhim, maTheLoai) VALUES (?, ?)";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            for (Integer maTheLoai : maTheLoaiList) {
-                stmt.setInt(1, maPhim);
-                stmt.setInt(2, maTheLoai);
-                stmt.addBatch();
-            }
-            stmt.executeBatch();
-        }
+        phimTheLoaiRepository.addTheLoaisForPhim(maPhim, maTheLoaiList);
     }
     
     /**
@@ -62,11 +45,7 @@ public class PhimTheLoaiService {
      * @throws SQLException Nếu có lỗi SQL
      */
     public void deleteAllTheLoaiOfPhim(int maPhim) throws SQLException {
-        String sql = "DELETE FROM PhimTheLoai WHERE maPhim = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, maPhim);
-            stmt.executeUpdate();
-        }
+        phimTheLoaiRepository.deleteAllTheLoaiOfPhim(maPhim);
     }
     
     /**
@@ -77,17 +56,7 @@ public class PhimTheLoaiService {
      * @throws SQLException Nếu có lỗi SQL
      */
     public List<Integer> getTheLoaiIdsByPhimId(int maPhim) throws SQLException {
-        List<Integer> theLoaiIds = new ArrayList<>();
-        String sql = "SELECT maTheLoai FROM PhimTheLoai WHERE maPhim = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, maPhim);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    theLoaiIds.add(rs.getInt("maTheLoai"));
-                }
-            }
-        }
-        return theLoaiIds;
+        return phimTheLoaiRepository.getTheLoaiIdsByPhimId(maPhim);
     }
     
     /**
@@ -98,19 +67,7 @@ public class PhimTheLoaiService {
      * @throws SQLException Nếu có lỗi SQL
      */
     public List<String> getTheLoaiNamesByPhimId(int maPhim) throws SQLException {
-        List<String> theLoaiNames = new ArrayList<>();
-        String sql = "SELECT tl.tenTheLoai FROM PhimTheLoai pt " +
-                     "JOIN TheLoaiPhim tl ON pt.maTheLoai = tl.maTheLoai " +
-                     "WHERE pt.maPhim = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, maPhim);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    theLoaiNames.add(rs.getString("tenTheLoai"));
-                }
-            }
-        }
-        return theLoaiNames;
+        return phimTheLoaiRepository.getTheLoaiNamesByPhimId(maPhim);
     }
     
     /**
@@ -121,8 +78,7 @@ public class PhimTheLoaiService {
      * @throws SQLException Nếu có lỗi SQL
      */
     public String getTheLoaiNamesStringByPhimId(int maPhim) throws SQLException {
-        List<String> theLoaiNames = getTheLoaiNamesByPhimId(maPhim);
-        return String.join(", ", theLoaiNames);
+        return phimTheLoaiRepository.getTheLoaiNamesStringByPhimId(maPhim);
     }
     
     /**
@@ -133,12 +89,6 @@ public class PhimTheLoaiService {
      * @throws SQLException Nếu có lỗi SQL
      */
     public void updateTheLoaisForPhim(int maPhim, List<Integer> maTheLoaiList) throws SQLException {
-        // Xóa tất cả thể loại cũ
-        deleteAllTheLoaiOfPhim(maPhim);
-        
-        // Thêm thể loại mới
-        if (maTheLoaiList != null && !maTheLoaiList.isEmpty()) {
-            addTheLoaisForPhim(maPhim, maTheLoaiList);
-        }
+        phimTheLoaiRepository.updateTheLoaisForPhim(maPhim, maTheLoaiList);
     }
 }

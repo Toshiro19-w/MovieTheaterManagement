@@ -5,8 +5,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -14,6 +16,8 @@ import javax.swing.JList;
 import javax.swing.ListCellRenderer;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
+
+import com.cinema.models.dto.CheckableItem;
 
 /**
  * ComboBox cho phép chọn nhiều giá trị
@@ -23,7 +27,6 @@ public class MultiSelectComboBox extends JComboBox<CheckableItem> {
     
     private Map<Object, CheckableItem> items = new HashMap<>();
     private boolean keepOpen = false;
-    private List<ActionListener> actionListeners = new ArrayList<>();
     
     public MultiSelectComboBox() {
         init();
@@ -31,6 +34,22 @@ public class MultiSelectComboBox extends JComboBox<CheckableItem> {
     
     private void init() {
         setRenderer(new CheckBoxRenderer());
+        
+        // Ngăn không cho dropdown tự đóng khi chọn item
+        setUI(new javax.swing.plaf.basic.BasicComboBoxUI() {
+            @Override
+            protected javax.swing.plaf.basic.ComboPopup createPopup() {
+                return new javax.swing.plaf.basic.BasicComboPopup(comboBox) {
+                    @Override
+                    protected void firePopupMenuWillBecomeInvisible() {
+                        if (!keepOpen) {
+                            super.firePopupMenuWillBecomeInvisible();
+                        }
+                    }
+                };
+            }
+        });
+        
         addPopupMenuListener(new PopupMenuListener() {
             @Override
             public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
@@ -39,10 +58,7 @@ public class MultiSelectComboBox extends JComboBox<CheckableItem> {
             
             @Override
             public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-                if (keepOpen) {
-                    showPopup();
-                }
-                keepOpen = false;
+                // Không làm gì khi popup đóng
             }
             
             @Override
@@ -51,37 +67,20 @@ public class MultiSelectComboBox extends JComboBox<CheckableItem> {
             }
         });
         
-        addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (e.getModifiers() == ActionEvent.MOUSE_EVENT_MASK) {
-                    int index = getSelectedIndex();
-                    if (index >= 0) {
-                        CheckableItem item = getItemAt(index);
-                        item.setSelected(!item.isSelected());
-                        keepOpen = true;
-                        setSelectedIndex(-1); // Reset selection
-                        setSelectedIndex(index);
-                        repaint(); // Cập nhật giao diện
-                        
-                        // Thông báo cho các listener
-                        for (ActionListener listener : actionListeners) {
-                            listener.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "selectionChanged"));
-                        }
-                    }
-                }
+        super.addActionListener(e -> {
+            int index = getSelectedIndex();
+            if (index >= 0) {
+                CheckableItem item = getItemAt(index);
+                item.setSelected(!item.isSelected());
+                
+                // Update display
+                setSelectedIndex(-1);
+                repaint();
+                
+                // Notify item change
+                fireItemStateChanged();
             }
         });
-    }
-    
-    @Override
-    public void addActionListener(ActionListener l) {
-        actionListeners.add(l);
-    }
-    
-    @Override
-    public void removeActionListener(ActionListener l) {
-        actionListeners.remove(l);
     }
     
     /**
@@ -94,7 +93,7 @@ public class MultiSelectComboBox extends JComboBox<CheckableItem> {
     public void addItem(Object id, String text, boolean selected) {
         CheckableItem item = new CheckableItem(id, text, selected);
         items.put(id, item);
-        addItem(item);
+        super.addItem(item);
     }
     
     /**
@@ -162,34 +161,30 @@ public class MultiSelectComboBox extends JComboBox<CheckableItem> {
      * @param ids Danh sách ID cần chọn
      */
     public void setSelectedIds(List<?> ids) {
-        // Đảm bảo ids không null
         if (ids == null) {
             ids = new ArrayList<>();
         }
         
-        // Reset tất cả các item về trạng thái không chọn
-        for (int i = 0; i < getItemCount(); i++) {
-            CheckableItem item = getItemAt(i);
-            item.setSelected(false);
-        }
+        // Tạo set để tìm kiếm nhanh hơn
+        Set<Object> idSet = new HashSet<>(ids);
         
-        // Chọn các item có ID trong danh sách
+        // Cập nhật trạng thái cho tất cả các item
+        boolean changed = false;
         for (int i = 0; i < getItemCount(); i++) {
             CheckableItem item = getItemAt(i);
-            for (Object id : ids) {
-                if (id != null && id.equals(item.getId())) {
-                    item.setSelected(true);
-                    break;
-                }
+            boolean shouldBeSelected = idSet.contains(item.getId());
+            if (item.isSelected() != shouldBeSelected) {
+                item.setSelected(shouldBeSelected);
+                changed = true;
             }
         }
         
-        // Cập nhật giao diện
-        repaint();
-        
-        // Thông báo cho các listener
-        for (ActionListener listener : actionListeners) {
-            listener.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "selectionChanged"));
+        if (changed) {
+            // Cập nhật giao diện
+            repaint();
+            
+            // Thông báo cho các listener
+            fireItemStateChanged();
         }
     }
     
@@ -203,28 +198,39 @@ public class MultiSelectComboBox extends JComboBox<CheckableItem> {
     }
     
     /**
+     * Thông báo cho các listener khi có sự thay đổi
+     */
+    protected void fireItemStateChanged() {
+        ActionEvent event = new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "selectionChanged");
+        for (ActionListener listener : getActionListeners()) {
+            listener.actionPerformed(event);
+        }
+    }
+
+    /**
      * Renderer cho checkbox trong combobox
      */
     private class CheckBoxRenderer implements ListCellRenderer<CheckableItem> {
+        private final JCheckBox checkbox = new JCheckBox();
+        
         @Override
         public Component getListCellRendererComponent(JList<? extends CheckableItem> list, CheckableItem value, int index,
                 boolean isSelected, boolean cellHasFocus) {
             
-            if (index == -1) {
+            if (index == -1 && value == null) {
                 // Hiển thị text khi không có item nào được chọn hoặc có item được chọn
                 String text = getSelectedItemsText();
                 if (text.isEmpty()) {
                     text = "Chọn thể loại";
                 }
-                JCheckBox checkbox = new JCheckBox(text);
-                checkbox.setBackground(list.getBackground());
-                checkbox.setForeground(list.getForeground());
-                return checkbox;
+                checkbox.setText(text);
+            } else if (value != null) {
+                // Hiển thị item trong dropdown
+                checkbox.setText(value.getText());
+                checkbox.setSelected(value.isSelected());
             }
             
-            // Hiển thị item trong dropdown
-            JCheckBox checkbox = new JCheckBox(value.getText());
-            checkbox.setSelected(value.isSelected());
+            checkbox.setOpaque(true);
             checkbox.setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
             checkbox.setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
             return checkbox;
@@ -232,38 +238,3 @@ public class MultiSelectComboBox extends JComboBox<CheckableItem> {
     }
 }
 
-/**
- * Item có thể chọn trong combobox
- */
-class CheckableItem {
-    private Object id;
-    private String text;
-    private boolean selected;
-    
-    public CheckableItem(Object id, String text, boolean selected) {
-        this.id = id;
-        this.text = text;
-        this.selected = selected;
-    }
-    
-    public Object getId() {
-        return id;
-    }
-    
-    public String getText() {
-        return text;
-    }
-    
-    public boolean isSelected() {
-        return selected;
-    }
-    
-    public void setSelected(boolean selected) {
-        this.selected = selected;
-    }
-    
-    @Override
-    public String toString() {
-        return text;
-    }
-}

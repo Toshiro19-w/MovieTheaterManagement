@@ -1,17 +1,33 @@
 package com.cinema.views.admin;
 
-import com.cinema.controllers.NhanVienController;
-import com.cinema.utils.DatabaseConnection;
-
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableRowSorter;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.sql.SQLException;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.RowFilter;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
+
+import com.cinema.components.ModernUIApplier;
+import com.cinema.components.UIConstants;
+import com.cinema.controllers.NhanVienController;
+import com.cinema.utils.DatabaseConnection;
 
 /**
  * NhanVienView is a JPanel that provides a GUI for managing employee information
@@ -48,21 +64,22 @@ public class NhanVienView extends JPanel {
 
     /**
      * Initializes the user interface components
-     */
-    private void initializeUI() {
+     */    private void initializeUI() {
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(10, 10, 10, 10));
+        setBackground(UIConstants.CONTENT_BACKGROUND_COLOR);
 
         // Initialize panels
-        JPanel topPanel = new JPanel(new BorderLayout(10, 10));
+        JPanel topPanel = new JPanel(new GridLayout(1, 2, 10, 0));
+        topPanel.setOpaque(false);
         JPanel accountPanel = createAccountPanel();
         JPanel infoPanel = createInfoPanel();
         JPanel tablePanel = createTablePanel();
         JPanel buttonPanel = createButtonPanel();
 
-        // Combine info and account panels
-        topPanel.add(accountPanel, BorderLayout.NORTH);
-        topPanel.add(infoPanel, BorderLayout.CENTER);
+        // Add panels side by side
+        topPanel.add(accountPanel);
+        topPanel.add(infoPanel);
 
         // Add components to main panel
         add(topPanel, BorderLayout.NORTH);
@@ -72,25 +89,29 @@ public class NhanVienView extends JPanel {
 
     /**
      * Creates the account creation panel
-     */
-    private JPanel createAccountPanel() {
-        JPanel panel = new JPanel(new GridLayout(4, 2, 10, 10));
-        panel.setBorder(BorderFactory.createTitledBorder("TẠO TÀI KHOẢN NHÂN VIÊN"));
+     */    private JPanel createAccountPanel() {
+        JPanel panel = ModernUIApplier.createTitledPanel("TẠO TÀI KHOẢN NHÂN VIÊN");
+        panel.setLayout(new GridLayout(4, 2, 10, 10));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            panel.getBorder(),
+            new EmptyBorder(20, 10, 20, 10)));
 
-        panel.add(new JLabel("Tên Đăng Nhập:"));
-        txtTenDangNhap = new JTextField();
-        panel.add(txtTenDangNhap);
-
-        panel.add(new JLabel("Mật Khẩu:"));
+        txtTenDangNhap = ModernUIApplier.createModernTextField("");
         txtMatKhau = new JPasswordField();
-        panel.add(txtMatKhau);
+        txtMatKhau.setBorder(txtTenDangNhap.getBorder());
+        txtMatKhau.setFont(UIConstants.BODY_FONT);
 
-        panel.add(new JLabel("Loại Tài Khoản:"));
         cmbLoaiTaiKhoan = new JComboBox<>(new String[]{"Admin", "QuanLyPhim", "ThuNgan", "BanVe"});
-        panel.add(cmbLoaiTaiKhoan);
+        ModernUIApplier.applyModernComboBoxStyle(cmbLoaiTaiKhoan);
 
+        panel.add(ModernUIApplier.createModernInfoLabel("Tên Đăng Nhập:"));
+        panel.add(txtTenDangNhap);
+        panel.add(ModernUIApplier.createModernInfoLabel("Mật Khẩu:"));
+        panel.add(txtMatKhau);
+        panel.add(ModernUIApplier.createModernInfoLabel("Loại Tài Khoản:"));
+        panel.add(cmbLoaiTaiKhoan);
         panel.add(new JLabel(""));
-        btnTaoTaiKhoan = new JButton("TẠO TÀI KHOẢN");
+        btnTaoTaiKhoan = ModernUIApplier.createPrimaryButton("TẠO TÀI KHOẢN");
         panel.add(btnTaoTaiKhoan);
 
         return panel;
@@ -98,39 +119,53 @@ public class NhanVienView extends JPanel {
 
     /**
      * Creates the employee information panel
-     */
-    private JPanel createInfoPanel() {
-        JPanel infoPanel = new JPanel(new BorderLayout(10, 10));
-        infoPanel.setBorder(BorderFactory.createTitledBorder("THÔNG TIN NHÂN VIÊN"));
+     */    private JPanel createInfoPanel() {
+        JPanel panel = ModernUIApplier.createTitledPanel("THÔNG TIN NHÂN VIÊN");
+        panel.setLayout(new GridLayout(7, 2, 10, 10));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            panel.getBorder(),
+            new EmptyBorder(20, 10, 20, 10)));
 
-        JPanel fieldsPanel = new JPanel(new GridLayout(7, 2, 10, 10));
-        initializeFields(fieldsPanel);
+        txtMaND = ModernUIApplier.createModernInfoLabel("");
+        txtHoTen = ModernUIApplier.createModernTextField("");
+        txtSDT = ModernUIApplier.createModernTextField("");
+        txtEmail = ModernUIApplier.createModernTextField("");
+        txtLuong = ModernUIApplier.createModernTextField("");
+        vaiTroCombo = new JComboBox<>(new String[]{"Admin", "QuanLyPhim", "ThuNgan", "BanVe"});
+        ModernUIApplier.applyModernComboBoxStyle(vaiTroCombo);
+        searchField = ModernUIApplier.createModernTextField("");
 
-        infoPanel.add(fieldsPanel, BorderLayout.CENTER);
-        return infoPanel;
+        panel.add(ModernUIApplier.createModernInfoLabel("Mã Nhân Viên:"));
+        panel.add(txtMaND);
+        panel.add(ModernUIApplier.createModernInfoLabel("Họ Tên:"));
+        panel.add(txtHoTen);
+        panel.add(ModernUIApplier.createModernInfoLabel("Số Điện Thoại:"));
+        panel.add(txtSDT);
+        panel.add(ModernUIApplier.createModernInfoLabel("Email:"));
+        panel.add(txtEmail);
+        panel.add(ModernUIApplier.createModernInfoLabel("Lương:"));
+        panel.add(txtLuong);
+        panel.add(ModernUIApplier.createModernInfoLabel("Vai Trò:"));
+        panel.add(vaiTroCombo);
+        panel.add(ModernUIApplier.createModernInfoLabel("Tìm Kiếm:"));
+        panel.add(searchField);
+
+        return panel;
     }
 
     /**
-     * Initializes input fields for employee information
+     * Creates the table panel for displaying employees
      */
-    private void initializeFields(JPanel fieldsPanel) {
-        txtMaND = new JLabel();
-        txtHoTen = new JTextField();
-        txtSDT = new JTextField();
-        txtEmail = new JTextField();
-        txtLuong = new JTextField();
-        vaiTroCombo = new JComboBox<>(new String[]{"Admin", "QuanLyPhim", "ThuNgan", "BanVe"});
-        searchField = new JTextField();
+    private JPanel createTablePanel() {
+        String[] columns = {"Mã Nhân Viên", "Họ Tên", "SĐT", "Email", "Lương", "Vai Trò"};
+        tableModel = new DefaultTableModel(columns, 0);
+        table = new JTable(tableModel);
+        ModernUIApplier.applyModernTableStyle(table);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        addField(fieldsPanel, "Mã Nhân Viên:", txtMaND);
-        addField(fieldsPanel, "Họ Tên:", txtHoTen);
-        addField(fieldsPanel, "Số Điện Thoại:", txtSDT);
-        addField(fieldsPanel, "Email:", txtEmail);
-        addField(fieldsPanel, "Lương:", txtLuong);
-        addField(fieldsPanel, "Vai Trò:", vaiTroCombo);
-        addField(fieldsPanel, "Tìm Kiếm:", searchField);
+        sorter = new TableRowSorter<>(tableModel);
+        table.setRowSorter(sorter);
 
-        // Add search functionality
         searchField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
@@ -141,30 +176,7 @@ public class NhanVienView extends JPanel {
                     sorter.setRowFilter(RowFilter.regexFilter("(?i)" + searchText));
                 }
             }
-        });
-    }
-
-    /**
-     * Adds a label and component to the fields panel
-     */
-    private void addField(JPanel panel, String labelText, JComponent component) {
-        panel.add(new JLabel(labelText));
-        panel.add(component);
-    }
-
-    /**
-     * Creates the table panel for displaying employees
-     */
-    private JPanel createTablePanel() {
-        String[] columns = {"Mã Nhân Viên", "Họ Tên", "SĐT", "Email", "Lương", "Vai Trò"};
-        tableModel = new DefaultTableModel(columns, 0);
-        table = new JTable(tableModel);
-        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-        sorter = new TableRowSorter<>(tableModel);
-        table.setRowSorter(sorter);
-
-        // Handle table selection
+        });        
         table.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = table.getSelectedRow();
@@ -177,8 +189,10 @@ public class NhanVienView extends JPanel {
         });
 
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("DANH SÁCH NHÂN VIÊN"));
-        return new JPanel(new BorderLayout()) {{ add(scrollPane, BorderLayout.CENTER); }};
+        JPanel panel = ModernUIApplier.createTitledPanel("DANH SÁCH NHÂN VIÊN");
+        panel.setLayout(new BorderLayout());
+        panel.add(scrollPane, BorderLayout.CENTER);
+        return panel;
     }
 
     /**
@@ -186,15 +200,18 @@ public class NhanVienView extends JPanel {
      */
     private JPanel createButtonPanel() {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        btnThem = new JButton("THÊM");
-        btnSua = new JButton("SỬA");
-        btnXoa = new JButton("XÓA");
-        btnClear = new JButton("CLEAR");
+        buttonPanel.setOpaque(false);
+
+        btnThem = ModernUIApplier.createPrimaryButton("THÊM");
+        btnSua = ModernUIApplier.createPrimaryButton("SỬA");
+        btnXoa = ModernUIApplier.createPrimaryButton("XÓA");
+        btnClear = ModernUIApplier.createSecondaryButton("CLEAR");
 
         buttonPanel.add(btnThem);
         buttonPanel.add(btnSua);
         buttonPanel.add(btnXoa);
         buttonPanel.add(btnClear);
+
         return buttonPanel;
     }
 

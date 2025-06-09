@@ -7,7 +7,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 public abstract class BaseRepository<T> implements IRepository<T> {
-    protected Connection conn;
     protected final DatabaseConnection dbConnection;
 
     public BaseRepository(DatabaseConnection dbConnection) {
@@ -15,10 +14,9 @@ public abstract class BaseRepository<T> implements IRepository<T> {
             throw new IllegalArgumentException("DatabaseConnection cannot be null");
         }
         this.dbConnection = dbConnection;
-        try {
-            this.conn = dbConnection.getConnection();
-        } catch (SQLException e) {
-            throw new RuntimeException("Không thể lấy kết nối cơ sở dữ liệu", e);
-        }
+    }
+    
+    protected Connection getConnection() throws SQLException {
+        return dbConnection.getConnection();
     }
 }

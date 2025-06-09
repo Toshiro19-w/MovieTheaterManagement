@@ -13,7 +13,6 @@ import com.cinema.models.repositories.Interface.IKhachHangRepository;
 import com.cinema.utils.DatabaseConnection;
 
 public class KhachHangRepository implements IKhachHangRepository {
-    protected Connection conn;
     protected DatabaseConnection dbConnection;
 
     public KhachHangRepository(DatabaseConnection dbConnection) {
@@ -21,11 +20,6 @@ public class KhachHangRepository implements IKhachHangRepository {
             throw new IllegalArgumentException("DatabaseConnection cannot be null");
         }
         this.dbConnection = dbConnection;
-        try {
-            this.conn = dbConnection.getConnection();
-        } catch (SQLException e) {
-            throw new RuntimeException("Không thể lấy kết nối cơ sở dữ liệu", e);
-        }
     }
 
     // Lấy thông tin khách hàng qua maHoaDon
@@ -37,7 +31,8 @@ public class KhachHangRepository implements IKhachHangRepository {
                 JOIN HoaDon hd ON nd.maNguoiDung = hd.maKhachHang
                 JOIN Ve v ON v.maHoaDon = hd.maHoaDon
                 WHERE v.maVe = ?;""";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, maVe);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -60,7 +55,8 @@ public class KhachHangRepository implements IKhachHangRepository {
             FROM NguoiDung nd
             JOIN TaiKhoan tk ON nd.maNguoiDung = tk.maNguoiDung
             WHERE tk.tenDangNhap = ?""";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, username);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -78,13 +74,15 @@ public class KhachHangRepository implements IKhachHangRepository {
 
     @Override
     public int getMaKhachHangFromSession(String username) throws SQLException {
-        try (PreparedStatement stmt = conn.prepareStatement(
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
                      "SELECT nd.maNguoiDung FROM NguoiDung nd JOIN TaiKhoan tk ON nd.maNguoiDung = tk.maNguoiDung " +
                              "WHERE tk.tenDangNhap = ? AND nd.loaiNguoiDung = 'KhachHang'")) {
             stmt.setString(1, username);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt("maNguoiDung");
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("maNguoiDung");
+                }
             }
         }
         return -1;
@@ -98,7 +96,9 @@ public class KhachHangRepository implements IKhachHangRepository {
                 SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email, kh.diemTichLuy
                 FROM NguoiDung nd
                 JOIN KhachHang kh ON nd.maNguoiDung = kh.maNguoiDung""";
-        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+             Statement stmt = conn.createStatement(); 
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 KhachHang khachHang = new KhachHang();
                 khachHang.setMaNguoiDung(rs.getInt("maNguoiDung"));
@@ -123,7 +123,8 @@ public class KhachHangRepository implements IKhachHangRepository {
                 OR nd.soDienThoai LIKE ?
                 OR LOWER(nd.email) LIKE LOWER(?)
                 LIMIT 10""";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             String searchPattern = "%" + keyword + "%";
             stmt.setString(1, searchPattern);
             stmt.setString(2, searchPattern);
@@ -151,7 +152,8 @@ public class KhachHangRepository implements IKhachHangRepository {
                 JOIN KhachHang kh ON nd.maNguoiDung = kh.maNguoiDung
                 ORDER BY nd.maNguoiDung DESC
                 LIMIT ?""";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, limit);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {

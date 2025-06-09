@@ -64,7 +64,6 @@ CREATE TABLE IF NOT EXISTS PhimTheLoai (
 CREATE TABLE IF NOT EXISTS Phim (
     maPhim INT AUTO_INCREMENT PRIMARY KEY,
     tenPhim NVARCHAR(100) NOT NULL,
-    maTheLoai INT NOT NULL,
     thoiLuong INT CHECK (thoiLuong > 0) NOT NULL,
     ngayKhoiChieu DATE NOT NULL,
     nuocSanXuat NVARCHAR(50) NOT NULL,
@@ -72,7 +71,7 @@ CREATE TABLE IF NOT EXISTS Phim (
     moTa TEXT,
     daoDien NVARCHAR(100) NOT NULL,
     duongDanPoster TEXT,
-    trangThai ENUM('active', 'deleted') DEFAULT 'active',
+    trangThai ENUM('active', 'deleted', 'upcoming') DEFAULT 'active',
     FOREIGN KEY (maTheLoai) REFERENCES TheLoaiPhim(maTheLoai) ON DELETE CASCADE
 );
 
@@ -111,6 +110,8 @@ BEGIN
 END //
 DELIMITER ;
 
+SET GLOBAL event_scheduler = ON;
+
 -- Tạo event để tự động cập nhật trạng thái phim hàng ngày
 DELIMITER //
 CREATE EVENT IF NOT EXISTS update_movie_status_daily
@@ -131,6 +132,8 @@ BEGIN
     AND ngayKhoiChieu < DATE_SUB(CURDATE(), INTERVAL 10 DAY);
 END //
 DELIMITER ;
+
+select * from phim;
 
 -- trigger kiểm tra trước khi xoá phim
 DELIMITER //
@@ -695,8 +698,24 @@ INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, kie
 ('Spider-Man 4', 1, 145, '2025-06-27', 'Mỹ', 'IMAX', 'Cuộc phiêu lưu mới của Spider-Man', 'Jon Watts', 'SpiderMan4.jpg'),
 ('The Matrix 5', 5, 160, '2025-08-22', 'Mỹ', 'IMAX', 'Phần tiếp theo của The Matrix', 'Lana Wachowski', 'Matrix5.jpg'),
 ('Black Panther 3', 1, 150, '2025-11-07', 'Mỹ', 'IMAX', 'Phần tiếp theo của Black Panther', 'Ryan Coogler', 'BP3.jpg');
+INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, kieuPhim, moTa, daoDien, duongDanPoster) VALUES
+('Dune: Part Three', 5, 165, '2025-06-09', 'Mỹ', 'IMAX', 'Phần cuối của series Dune', 'Denis Villeneuve', 'Dune3.jpg'),
+('Fast & Furious 11', 1, 140, '2025-06-24', 'Mỹ', 'IMAX', 'Phần mới nhất của Fast Saga', 'Louis Leterrier', 'FF11.jpg'),
+('Blade', 1, 135, '2025-06-24', 'Mỹ', 'IMAX', 'Phiên bản reboot của Marvel', 'Yann Demange', 'Blade.jpg'),
+('Planet of the Apes 4', 5, 155, '2025-06-24', 'Mỹ', '3D', 'Phần tiếp theo của Planet of the Apes', 'Wes Ball', 'Apes4.jpg'),
+('John Wick 5', 1, 130, '2025-06-24', 'Mỹ', 'IMAX', 'Chapter cuối của John Wick', 'Chad Stahelski', 'JW5.jpg'),
+('Godzilla vs Kong 2', 1, 145, '2025-06-24', 'Mỹ', 'IMAX', 'Cuộc chiến tiếp theo của hai quái vật', 'Adam Wingard', 'GvK2.jpg'),
+('Indiana Jones 6', 8, 140, '2025-06-24', 'Mỹ', 'IMAX', 'Cuộc phiêu lưu mới của Indiana Jones', 'James Mangold', 'IJ6.jpg'),
+('Mad Max: The Wasteland', 1, 150, '2025-06-24', 'Úc', 'IMAX', 'Phần tiếp theo của series Mad Max', 'George Miller', 'MM5.jpg'),
+('The Flash 2', 1, 135, '2025-06-24', 'Mỹ', 'IMAX', 'Phần tiếp theo của The Flash', 'Andy Muschietti', 'Flash2.jpg');
 
-select * from phim;
+INSERT INTO Phim (tenPhim, thoiLuong, ngayKhoiChieu, nuocSanXuat, kieuPhim, moTa, daoDien, duongDanPoster) VALUES
+('Fast & Furious 11', 140, '2025-06-24', 'Mỹ', 'IMAX', 'Phần mới nhất của Fast Saga', 'Louis Leterrier', 'FF11.jpg'),
+('Blade', 135, '2025-06-24', 'Mỹ', 'IMAX', 'Phiên bản reboot của Marvel', 'Yann Demange', 'Blade.jpg');
+
+INSERT INTO SuatChieu (maPhim, maPhong, ngayGioChieu) VALUES
+(13, 1, '2025-06-10 18:00:00'),
+(14, 1, '2025-06-10 18:00:00');
 
 -- Dữ liệu cho bảng PhongChieu
 INSERT INTO PhongChieu (tenPhong, soLuongGhe, loaiPhong) VALUES
@@ -776,7 +795,70 @@ INSERT INTO SuatChieu (maPhim, maPhong, ngayGioChieu) VALUES
 (9, 2, '2025-08-22 10:00:00'), -- The Matrix 5
 (9, 3, '2025-08-22 14:00:00'), -- The Matrix 5
 (10, 4, '2025-11-07 10:00:00'), -- Black Panther 3
-(10, 5, '2025-11-07 14:00:00'); -- Black Panther 3
+(10, 5, '2025-11-07 14:00:00'), -- Black Panther 3
+-- Thêm suất chiếu cho Dune: Part Three (ID: 11)
+(11, 1, '2025-06-24 10:00:00'),
+(11, 2, '2025-06-25 14:00:00'),
+(11, 3, '2025-06-26 18:00:00'),
+(11, 4, '2025-06-27 10:00:00'),
+(11, 5, '2025-06-28 14:00:00'),
+(11, 1, '2025-06-29 18:00:00'),
+-- Fast & Furious 11 (ID: 12)
+(12, 2, '2025-06-24 14:00:00'),
+(12, 3, '2025-06-25 18:00:00'),
+(12, 4, '2025-06-26 10:00:00'),
+(12, 5, '2025-06-27 14:00:00'),
+(12, 1, '2025-06-28 18:00:00'),
+(12, 2, '2025-06-29 10:00:00'),
+-- Blade (ID: 13)
+(13, 3, '2025-06-24 18:00:00'),
+(13, 4, '2025-06-25 10:00:00'),
+(13, 5, '2025-06-26 14:00:00'),
+(13, 1, '2025-06-27 18:00:00'),
+(13, 2, '2025-06-28 10:00:00'),
+(13, 3, '2025-06-29 14:00:00'),
+-- Planet of the Apes 4 (ID: 14)
+(14, 4, '2025-06-24 10:00:00'),
+(14, 5, '2025-06-25 14:00:00'),
+(14, 1, '2025-06-26 18:00:00'),
+(14, 2, '2025-06-27 10:00:00'),
+(14, 3, '2025-06-28 14:00:00'),
+(14, 4, '2025-06-29 18:00:00'),
+-- John Wick 5 (ID: 15)
+(15, 5, '2025-06-24 14:00:00'),
+(15, 1, '2025-06-25 18:00:00'),
+(15, 2, '2025-06-26 10:00:00'),
+(15, 3, '2025-06-27 14:00:00'),
+(15, 4, '2025-06-28 18:00:00'),
+(15, 5, '2025-06-29 10:00:00'),
+-- Godzilla vs Kong 2 (ID: 16)
+(16, 1, '2025-06-24 18:00:00'),
+(16, 2, '2025-06-25 10:00:00'),
+(16, 3, '2025-06-26 14:00:00'),
+(16, 4, '2025-06-27 18:00:00'),
+(16, 5, '2025-06-28 10:00:00'),
+(16, 1, '2025-06-29 14:00:00'),
+-- Indiana Jones 6 (ID: 17)
+(17, 2, '2025-06-24 10:00:00'),
+(17, 3, '2025-06-25 14:00:00'),
+(17, 4, '2025-06-26 18:00:00'),
+(17, 5, '2025-06-27 10:00:00'),
+(17, 1, '2025-06-28 14:00:00'),
+(17, 2, '2025-06-29 18:00:00'),
+-- Mad Max: The Wasteland (ID: 18)
+(18, 3, '2025-06-24 14:00:00'),
+(18, 4, '2025-06-25 18:00:00'),
+(18, 5, '2025-06-26 10:00:00'),
+(18, 1, '2025-06-27 14:00:00'),
+(18, 2, '2025-06-28 18:00:00'),
+(18, 3, '2025-06-29 10:00:00'),
+-- The Flash 2 (ID: 19)
+(19, 4, '2025-06-24 18:00:00'),
+(19, 5, '2025-06-25 10:00:00'),
+(19, 1, '2025-06-26 14:00:00'),
+(19, 2, '2025-06-27 18:00:00'),
+(19, 3, '2025-06-28 10:00:00'),
+(19, 4, '2025-06-29 14:00:00');
 
 -- Dữ liệu cho bảng HoaDon
 INSERT INTO HoaDon (maNhanVien, maKhachHang, ngayLap) VALUES

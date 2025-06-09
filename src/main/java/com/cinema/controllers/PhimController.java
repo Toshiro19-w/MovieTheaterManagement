@@ -1,6 +1,7 @@
 package com.cinema.controllers;
 
 import java.awt.Component;
+import java.awt.Container;
 import java.awt.Image;
 import java.io.File;
 import java.nio.file.Files;
@@ -23,6 +24,7 @@ import javax.swing.table.TableRowSorter;
 
 import com.cinema.components.MultiSelectComboBox;
 import com.cinema.models.Phim;
+import com.cinema.models.dto.CustomPaginationPanel;
 import com.cinema.models.repositories.PhimRepository;
 import com.cinema.services.PhimService;
 import com.cinema.services.PhimTheLoaiService;
@@ -150,15 +152,8 @@ public class PhimController {
                 });
             }
         
-            // Cập nhật thông tin phân trang nếu có
-            for (Component comp : view.getComponents()) {
-                if (comp instanceof JScrollPane scrollPane) {
-                    Component viewComp = scrollPane.getViewport().getView();
-                    if (viewComp instanceof JPanel jPanel) {
-                        findAndUpdatePaginationPanel(jPanel, result);
-                    }
-                }
-            }
+            // Tìm pagination panel theo tên
+            findPaginationPanelByName(view, "paginationPanel", result);
             
             // Đảm bảo TableRowSorter được cập nhật
             if (view.getTable().getRowSorter() instanceof TableRowSorter) {
@@ -174,21 +169,23 @@ public class PhimController {
         }
     }
     
-    /**
-     * Tìm và cập nhật PaginationPanel trong cây thành phần
-     */
-    private void findAndUpdatePaginationPanel(JPanel panel, PaginationResult<Phim> result) {
-        for (Component comp : panel.getComponents()) {
-            if (comp instanceof com.cinema.components.PaginationPanel paginationPanel) {
-                paginationPanel.updatePagination(
-                    result.getCurrentPage(), result.getTotalPages());
-                return;
-            } else if (comp instanceof JPanel jPanel) {
-                findAndUpdatePaginationPanel(jPanel, result);
+    // Tìm kiếm PaginationPanel theo tên
+    private void findPaginationPanelByName(Component component, String name, PaginationResult<Phim> result) {
+        if (component instanceof CustomPaginationPanel && name.equals(component.getName())) {
+            CustomPaginationPanel paginationPanel = (CustomPaginationPanel) component;
+            paginationPanel.updatePagination(result.getCurrentPage(), result.getTotalPages());
+            System.out.println("Pagination updated: page " + result.getCurrentPage() + " of " + result.getTotalPages());
+            return;
+        }
+        
+        if (component instanceof Container) {
+            Component[] children = ((Container) component).getComponents();
+            for (Component child : children) {
+                findPaginationPanelByName(child, name, result);
             }
         }
     }
-
+    
     private void setupTableSelectionListener() {
         view.getTable().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
