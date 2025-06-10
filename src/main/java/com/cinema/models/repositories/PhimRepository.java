@@ -12,7 +12,7 @@ import java.util.List;
 import com.cinema.models.Phim;
 import com.cinema.services.PhimTheLoaiService;
 import com.cinema.utils.DatabaseConnection;
-import com.cinema.utils.PaginationResult;
+import com.cinema.models.dto.PaginationResult;
 
 public class PhimRepository extends BaseRepository<Phim> {
     private final PhimTheLoaiService phimTheLoaiService;

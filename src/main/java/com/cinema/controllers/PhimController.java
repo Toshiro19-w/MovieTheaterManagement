@@ -25,10 +25,10 @@ import javax.swing.table.TableRowSorter;
 import com.cinema.components.MultiSelectComboBox;
 import com.cinema.models.Phim;
 import com.cinema.models.dto.CustomPaginationPanel;
+import com.cinema.models.dto.PaginationResult;
 import com.cinema.models.repositories.PhimRepository;
 import com.cinema.services.PhimService;
 import com.cinema.services.PhimTheLoaiService;
-import com.cinema.utils.PaginationResult;
 import com.cinema.views.admin.PhimView;
 
 public class PhimController {

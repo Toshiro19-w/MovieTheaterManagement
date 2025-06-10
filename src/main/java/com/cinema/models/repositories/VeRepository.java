@@ -14,97 +14,236 @@ import java.util.List;
 
 import com.cinema.enums.TrangThaiVe;
 import com.cinema.models.Ve;
+import com.cinema.models.dto.PaginationResult;
 import com.cinema.models.repositories.Interface.IVeRepository;
-import com.cinema.utils.DatabaseConnection; 
+import com.cinema.utils.DatabaseConnection;
 
 public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
 
     public VeRepository(DatabaseConnection dbConnection) {
         super(dbConnection);
     }
+    
+    /**
+     * Lấy mã suất chiếu từ ngày giờ chiếu và tên phòng
+     */
+    public Integer getMaSuatChieuByNgayGioAndTenPhong(LocalDateTime ngayGioChieu, String tenPhong) throws SQLException {
+        String sql = """
+                SELECT maSuatChieu 
+                FROM SuatChieu sc 
+                JOIN PhongChieu pc ON sc.maPhong = pc.maPhong 
+                WHERE sc.ngayGioChieu = ? AND pc.tenPhong = ?""";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setTimestamp(1, Timestamp.valueOf(ngayGioChieu));
+            stmt.setString(2, tenPhong);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("maSuatChieu");
+                }
+                return null;
+            }
+        }
+    }
+    
+    /**
+     * Lấy mã ghế từ số ghế và tên phòng
+     */
+    public Integer getMaGheByTenPhong(String soGhe, String tenPhong) throws SQLException {
+        String sql = """
+                SELECT maGhe 
+                FROM Ghe g 
+                JOIN PhongChieu pc ON g.maPhong = pc.maPhong 
+                WHERE g.soGhe = ? AND pc.tenPhong = ?""";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, soGhe);
+            stmt.setString(2, tenPhong);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("maGhe");
+                }
+                return null;
+            }
+        }
+    }
+    
+    /**
+     * Lấy mã khuyến mãi từ tên khuyến mãi
+     */
+    public Integer getMaKhuyenMaiByTen(String tenKhuyenMai) throws SQLException {
+        String sql = """
+                SELECT maKhuyenMai 
+                FROM KhuyenMai 
+                WHERE tenKhuyenMai = ? AND trangThai = 'HoatDong' 
+                AND NOW() BETWEEN ngayBatDau AND ngayKetThuc""";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, tenKhuyenMai);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("maKhuyenMai");
+                }
+                return null;
+            }
+        }
+    }
+    
+    /**
+     * Lấy tên khuyến mãi từ mã khuyến mãi
+     */
+    public String getTenKhuyenMaiByMa(int maKhuyenMai) throws SQLException {
+        String sql = "SELECT tenKhuyenMai FROM KhuyenMai WHERE maKhuyenMai = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, maKhuyenMai);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("tenKhuyenMai");
+                }
+                return null;
+            }
+        }
+    }
+    
+    /**
+     * Kiểm tra khuyến mãi có hợp lệ không
+     */
+    public boolean isPromotionValid(String tenKhuyenMai) throws SQLException {
+        String sql = """
+                SELECT COUNT(*) 
+                FROM KhuyenMai 
+                WHERE tenKhuyenMai = ? AND trangThai = 'HoatDong' 
+                AND NOW() BETWEEN ngayBatDau AND ngayKetThuc""";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, tenKhuyenMai);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+                return false;
+            }
+        }
+    }
+    
+    /**
+     * Lấy danh sách khuyến mãi hợp lệ
+     */
+    public List<String> getValidPromotions() throws SQLException {
+        List<String> promotions = new ArrayList<>();
+        promotions.add("Không có"); // Default option
+        String sql = """
+                SELECT tenKhuyenMai 
+                FROM KhuyenMai 
+                WHERE trangThai = 'HoatDong' 
+                AND NOW() BETWEEN ngayBatDau AND ngayKetThuc""";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    promotions.add(rs.getString("tenKhuyenMai"));
+                }
+            }
+        }
+        return promotions;
+    }
 
     @Override
     public List<Ve> findAll() throws SQLException {
+        return findAllPaginated(1, Integer.MAX_VALUE).getData();
+    }
+
+    public PaginationResult<Ve> findAllPaginated(int page, int pageSize) throws SQLException {
         List<Ve> veList = new ArrayList<>();
-        String sql = "SELECT * FROM VeView";
+        int offset = (page - 1) * pageSize;
+        int totalItems = 0;
+        int totalPages = 0;
         
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+        // Sử dụng một kết nối cho cả hai truy vấn để tối ưu hiệu suất
+        try (Connection conn = getConnection()) {
+            // Đếm tổng số vé
+            String countSql = "SELECT COUNT(*) FROM VeView";
+            try (Statement countStmt = conn.createStatement();
+                 ResultSet countRs = countStmt.executeQuery(countSql)) {
+                if (countRs.next()) {
+                    totalItems = countRs.getInt(1);
+                    totalPages = (int) Math.ceil((double) totalItems / pageSize);
+                }
+            }
             
-            while (rs.next()) {
-                Ve ve = new Ve();
-                ve.setMaVe(rs.getInt("MaVe"));
-                ve.setTrangThai(TrangThaiVe.fromString(rs.getString("TrangThai")));
-                ve.setSoGhe(rs.getString("SoGhe"));
-                ve.setGiaVeGoc(rs.getBigDecimal("GiaVeGoc"));
-                ve.setTienGiam(rs.getBigDecimal("TienGiam"));
-                ve.setGiaVeSauGiam(rs.getBigDecimal("GiaVeSauGiam"));
+            // Lấy danh sách vé theo trang với chỉ mục để tối ưu hiệu suất
+            String sqlPaging = """
+                    SELECT * FROM VeView 
+                    ORDER BY NgayDat DESC 
+                    LIMIT ? OFFSET ?""";
+            
+            try (PreparedStatement stmt = conn.prepareStatement(sqlPaging)) {
+                stmt.setInt(1, pageSize);
+                stmt.setInt(2, offset);
+                stmt.setFetchSize(pageSize); // Thiết lập fetch size để tối ưu hiệu suất
                 
-                Timestamp ngayDat = rs.getTimestamp("NgayDat");
-                if (ngayDat != null) {
-                    ve.setNgayDat(ngayDat.toLocalDateTime());
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        Ve ve = mapResultSetToVe(rs);
+                        veList.add(ve);
+                    }
                 }
-                
-                ve.setTenPhong(rs.getString("TenPhong"));
-                
-                Timestamp ngayGioChieu = rs.getTimestamp("NgayGioChieu");
-                if (ngayGioChieu != null) {
-                    ve.setNgayGioChieu(ngayGioChieu.toLocalDateTime());
-                }
-                
-                ve.setTenPhim(rs.getString("TenPhim"));
-                ve.setTenKhuyenMai(rs.getString("TenKhuyenMai"));
-                
-                veList.add(ve);
             }
         }
         
-        return veList;
+        return new PaginationResult<>(veList, page, totalPages, pageSize, totalItems);
+    }
+    
+    /**
+     * Chuyển đổi ResultSet thành đối tượng Ve
+     */
+    private Ve mapResultSetToVe(ResultSet rs) throws SQLException {
+        Ve ve = new Ve();
+        ve.setMaVe(rs.getInt("MaVe"));
+        ve.setTrangThai(TrangThaiVe.fromString(rs.getString("TrangThai")));
+        ve.setSoGhe(rs.getString("SoGhe"));
+        ve.setGiaVeGoc(rs.getBigDecimal("GiaVeGoc"));
+        ve.setTienGiam(rs.getBigDecimal("TienGiam"));
+        ve.setGiaVeSauGiam(rs.getBigDecimal("GiaVeSauGiam"));
+        
+        Timestamp ngayDat = rs.getTimestamp("NgayDat");
+        if (ngayDat != null) {
+            ve.setNgayDat(ngayDat.toLocalDateTime());
+        }
+        
+        ve.setTenPhong(rs.getString("TenPhong"));
+        
+        Timestamp ngayGioChieu = rs.getTimestamp("NgayGioChieu");
+        if (ngayGioChieu != null) {
+            ve.setNgayGioChieu(ngayGioChieu.toLocalDateTime());
+        }
+        
+        ve.setTenPhim(rs.getString("TenPhim"));
+        ve.setTenKhuyenMai(rs.getString("TenKhuyenMai"));
+        
+        // Xử lý trường hợp MaHoaDon có thể là NULL
+        try {
+            int maHoaDon = rs.getInt("MaHoaDon");
+            if (!rs.wasNull()) {
+                ve.setMaHoaDon(maHoaDon);
+                System.out.println("Vé " + ve.getMaVe() + " có mã hóa đơn: " + maHoaDon);
+            } else {
+                ve.setMaHoaDon(0);
+                System.out.println("Vé " + ve.getMaVe() + " không có mã hóa đơn");
+            }
+        } catch (SQLException e) {
+            // Trường hợp không có cột MaHoaDon trong ResultSet
+            System.err.println("Không tìm thấy cột MaHoaDon trong ResultSet: " + e.getMessage());
+            ve.setMaHoaDon(0);
+        }
+        
+        return ve;
     }
 
     @Override
     public Ve findById(int id) throws SQLException {
         return findVeByMaVe(id);
-    }
-
-    @Override
-    public List<Ve> findAllDetail() throws SQLException {
-        List<Ve> veList = new ArrayList<>();
-        String sql = "SELECT * FROM VeView";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            
-            while (rs.next()) {
-                Ve ve = new Ve();
-                ve.setMaVe(rs.getInt("MaVe"));
-                ve.setTrangThai(TrangThaiVe.fromString(rs.getString("TrangThai")));
-                ve.setSoGhe(rs.getString("SoGhe"));
-                ve.setGiaVeGoc(rs.getBigDecimal("GiaVeGoc"));
-                ve.setTienGiam(rs.getBigDecimal("TienGiam"));
-                ve.setGiaVeSauGiam(rs.getBigDecimal("GiaVeSauGiam"));
-                
-                Timestamp ngayDat = rs.getTimestamp("NgayDat");
-                if (ngayDat != null) {
-                    ve.setNgayDat(ngayDat.toLocalDateTime());
-                }
-                
-                ve.setTenPhong(rs.getString("TenPhong"));
-                
-                Timestamp ngayGioChieu = rs.getTimestamp("NgayGioChieu");
-                if (ngayGioChieu != null) {
-                    ve.setNgayGioChieu(ngayGioChieu.toLocalDateTime());
-                }
-                
-                ve.setTenPhim(rs.getString("TenPhim"));
-                ve.setTenKhuyenMai(rs.getString("TenKhuyenMai"));
-                
-                veList.add(ve);
-            }
-        }
-        return veList;
     }
 
     @Override
@@ -118,30 +257,7 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
             stmt.setString(1, soGhe);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    Ve ve = new Ve();
-                    ve.setMaVe(rs.getInt("MaVe"));
-                    ve.setTrangThai(TrangThaiVe.fromString(rs.getString("TrangThai")));
-                    ve.setSoGhe(rs.getString("SoGhe"));
-                    ve.setGiaVeGoc(rs.getBigDecimal("GiaVeGoc"));
-                    ve.setTienGiam(rs.getBigDecimal("TienGiam"));
-                    ve.setGiaVeSauGiam(rs.getBigDecimal("GiaVeSauGiam"));
-                    
-                    Timestamp ngayDat = rs.getTimestamp("NgayDat");
-                    if (ngayDat != null) {
-                        ve.setNgayDat(ngayDat.toLocalDateTime());
-                    }
-                    
-                    ve.setTenPhong(rs.getString("TenPhong"));
-                    
-                    Timestamp ngayGioChieu = rs.getTimestamp("NgayGioChieu");
-                    if (ngayGioChieu != null) {
-                        ve.setNgayGioChieu(ngayGioChieu.toLocalDateTime());
-                    }
-                    
-                    ve.setTenPhim(rs.getString("TenPhim"));
-                    ve.setTenKhuyenMai(rs.getString("TenKhuyenMai"));
-                    
-                    veList.add(ve);
+                    veList.add(mapResultSetToVe(rs));
                 }
             }
         }
@@ -150,28 +266,45 @@ public class VeRepository extends BaseRepository<Ve> implements IVeRepository {
 
     @Override
     public Ve findVeByMaVe(int maVe) throws SQLException {
-        String sql = "SELECT * FROM VeView WHERE maVe = ?";
-                
+        String sql = """
+                SELECT v.*, vv.* 
+                FROM Ve v
+                JOIN VeView vv ON v.maVe = vv.maVe
+                WHERE v.maVe = ?""";
+        
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setInt(1, maVe);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    Ve ve = new Ve();
-                    ve.setMaVe(rs.getInt("maVe"));
-                    ve.setTrangThai(TrangThaiVe.fromString(rs.getString("trangThai")));
-                    ve.setSoGhe(rs.getString("soGhe"));
-                    ve.setNgayDat(rs.getTimestamp("ngayDat") != null ? 
-                        rs.getTimestamp("ngayDat").toLocalDateTime() : null);
-                    ve.setTenPhong(rs.getString("tenPhong"));
-                    ve.setNgayGioChieu(rs.getTimestamp("ngayGioChieu").toLocalDateTime());
-                    ve.setTenPhim(rs.getString("tenPhim"));
-                    ve.setTenKhuyenMai(rs.getString("tenKhuyenMai"));
-                    ve.setGiaVeGoc(rs.getBigDecimal("giaVeGoc"));
-                    ve.setTienGiam(rs.getBigDecimal("tienGiam"));
-                    ve.setGiaVeSauGiam(rs.getBigDecimal("giaVeSauGiam"));
+                    Ve ve = mapResultSetToVe(rs);
+                    // Đảm bảo lấy MaHoaDon từ bảng Ve
+                    ve.setMaHoaDon(rs.getInt("v.maHoaDon"));
                     return ve;
+                }
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Tìm vé theo mã suất chiếu và số ghế
+     */
+    public Ve findBySuatChieuAndSoGhe(int maSuatChieu, String soGhe) throws SQLException {
+        String sql = """
+                SELECT * FROM VeView 
+                WHERE maSuatChieu = ? AND soGhe = ? 
+                AND trangThai NOT IN ('cancelled', 'deleted')""";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, maSuatChieu);
+            stmt.setString(2, soGhe);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToVe(rs);
                 }
             }
         }

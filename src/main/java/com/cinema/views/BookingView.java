@@ -54,7 +54,7 @@ public class BookingView extends JDialog {
     private final DatVeController datVeController;
     private final PaymentController paymentController;
     private final int maPhim;
-    private final int maKhachHang;
+    private final int maKhachHang, maNhanVien;
     private final Consumer<BookingResultDTO> confirmCallback;
     private SuatChieu selectedSuatChieu;
     private List<Ghe> selectedGheList = new ArrayList<>();
@@ -62,12 +62,13 @@ public class BookingView extends JDialog {
     private Integer maVe;
     private NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
 
-    public BookingView(JFrame parent, DatVeController datVeController, PaymentController paymentController, int maPhim, int maKhachHang, Consumer<BookingResultDTO> confirmCallback) {
+    public BookingView(JFrame parent, DatVeController datVeController, PaymentController paymentController, int maPhim, int maKhachHang, int maNhanVien, Consumer<BookingResultDTO> confirmCallback) {
         super(parent, "Đặt vé", true);
         this.datVeController = datVeController;
         this.paymentController = paymentController;
         this.maPhim = maPhim;
         this.maKhachHang = maKhachHang;
+        this.maNhanVien = maNhanVien;
         this.confirmCallback = confirmCallback;
 
         setSize(900, 700);
@@ -300,10 +301,10 @@ public class BookingView extends JDialog {
             }
             
             try {
-                // Đặt vé cho từng ghế đã chọn
+                // Tạo vé chờ thanh toán cho từng ghế đã chọn
                 List<Integer> maVeList = new ArrayList<>();
                 for (Ghe ghe : selectedGheList) {
-                    datVeController.datVe(
+                    datVeController.createPendingVe(
                             selectedSuatChieu.getMaSuatChieu(),
                             ghe.getMaPhong(),
                             ghe.getSoGhe(),
@@ -311,7 +312,7 @@ public class BookingView extends JDialog {
                             maKhachHang
                     );
                     
-                    Integer maVe = datVeController.getMaVeFromBooking(
+                    Integer maVe = datVeController.getPendingVeFromBooking(
                             selectedSuatChieu.getMaSuatChieu(),
                             ghe.getSoGhe(),
                             maKhachHang
@@ -329,10 +330,10 @@ public class BookingView extends JDialog {
                 // Lưu mã vé đầu tiên để sử dụng trong PaymentView
                 maVe = maVeList.get(0);
                 
-                JOptionPane.showMessageDialog(this, "Đặt vé thành công! Vui lòng tiến hành thanh toán.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Đã tạo vé chờ thanh toán! Vui lòng tiến hành thanh toán.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
 
-                // Mở PaymentView ngay sau khi đặt vé thành công
-                PaymentView paymentView = new PaymentView((JFrame) getParent(), paymentController, datVeController, selectedSuatChieu, selectedGheList.get(0), totalPrice, maVe, maKhachHang, paymentResult -> {
+                // Mở PaymentView ngay sau khi tạo vé chờ thanh toán thành công
+                PaymentView paymentView = new PaymentView((JFrame) getParent(), paymentController, datVeController, selectedSuatChieu, selectedGheList.get(0), totalPrice, maVe, maKhachHang, maNhanVien, paymentResult -> {
                     if (paymentResult != null) {
                         confirmCallback.accept(new BookingResultDTO(selectedSuatChieu,
                                 selectedGheList.get(0),

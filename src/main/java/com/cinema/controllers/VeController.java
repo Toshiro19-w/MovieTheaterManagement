@@ -1,7 +1,5 @@
 package com.cinema.controllers;
 
-import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -11,16 +9,21 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import javax.swing.*;
+import javax.swing.JComboBox;
+import javax.swing.JOptionPane;
+import javax.swing.RowFilter;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 
 import com.cinema.components.UnderlineTextField;
 import com.cinema.enums.TrangThaiVe;
 import com.cinema.models.KhachHang;
 import com.cinema.models.PhongChieu;
 import com.cinema.models.Ve;
+import com.cinema.models.dto.CustomPaginationPanel;
+import com.cinema.models.dto.PaginationResult;
 import com.cinema.services.PhimService;
 import com.cinema.services.PhongChieuService;
 import com.cinema.services.SuatChieuService;
@@ -37,6 +40,10 @@ public class VeController {
     private final ResourceBundle messages;
     private final DateTimeFormatter ngayDatFormatter;
     private final DateTimeFormatter ngayGioChieuFormatter;
+    private TableRowSorter<DefaultTableModel> tableSorter;
+    
+    // Cấu hình phân trang
+    private static final int PAGE_SIZE = 10;
 
     public VeController(VeView view) throws SQLException {
         this.view = view;
@@ -52,29 +59,45 @@ public class VeController {
         initView();
         addListeners();
         addValidationListeners();
+        setupPagination();
     }
 
     private void initView() {
         try {
-            loadVeList(service.getAllVeDetail());
+            loadVePaginated(1, PAGE_SIZE);
         } catch (SQLException e) {
             handleException("Lỗi khi tải dữ liệu vé", e);
         }
     }
 
     private void addListeners() {
-        view.getSearchField().addKeyListener(new java.awt.event.KeyAdapter() {
+        // Thiết lập TableRowSorter cho bảng
+        tableSorter = new TableRowSorter<>(view.getTableModel());
+        view.getTable().setRowSorter(tableSorter);
+        
+        // Thêm listener cho tìm kiếm sử dụng TableRowSorter
+        view.getSearchField().getDocument().addDocumentListener(new DocumentListener() {
             @Override
-            public void keyReleased(java.awt.event.KeyEvent evt) {
-                searchVe();
-            }
+            public void insertUpdate(DocumentEvent e) { searchVe(); }
+            @Override
+            public void removeUpdate(DocumentEvent e) { searchVe(); }
+            @Override
+            public void changedUpdate(DocumentEvent e) { searchVe(); }
         });
 
+        // Sử dụng một biến để theo dõi lần chọn cuối cùng để tránh xử lý nhiều lần
         view.getTable().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = view.getTable().getSelectedRow();
                 if (selectedRow >= 0) {
-                    displayVeInfo(selectedRow);
+                    // Sử dụng SwingUtilities.invokeLater để tránh vấn đề với event dispatch thread
+                    javax.swing.SwingUtilities.invokeLater(() -> {
+                        try {
+                            displayVeInfo(selectedRow);
+                        } catch (Exception ex) {
+                            handleException("Lỗi khi hiển thị thông tin vé", ex);
+                        }
+                    });
                 } else {
                     clearForm();
                 }
@@ -86,6 +109,20 @@ public class VeController {
         view.getBtnXoa().addActionListener(_ -> xoaVe());
         view.getBtnClear().addActionListener(_ -> clearForm());
         view.getBtnRefresh().addActionListener(_ -> refreshData());
+    }
+    
+    private void setupPagination() {
+        // Thiết lập tên cho pagination panel để có thể tìm thấy nó
+        view.getPaginationPanel().setName("paginationPanel");
+        
+        // Thiết lập trực tiếp listener cho pagination panel
+        view.getPaginationPanel().setPageChangeListener(page -> {
+            try {
+                loadVePaginated(page, PAGE_SIZE);
+            } catch (SQLException e) {
+                handleException("Lỗi khi chuyển trang", e);
+            }
+        });
     }
 
     private void addValidationListeners() {
@@ -177,29 +214,106 @@ public class VeController {
         });
     }
 
-    private void loadVeList(List<Ve> veList) {
-        DefaultTableModel model = view.getTableModel();
-        model.setRowCount(0);
-        for (Ve ve : veList) {
-            model.addRow(new Object[]{
-                ve.getMaVe(),
-                ve.getTrangThai().toString(),
-                ve.getSoGhe(),
-                formatCurrency(ve.getGiaVeGoc()),
-                formatCurrency(ve.getTienGiam()),
-                formatCurrency(ve.getGiaVeSauGiam()),
-                ve.getNgayDat() != null ? ve.getNgayDat().format(ngayDatFormatter) : "Chưa đặt",
-                ve.getTenPhong() != null ? ve.getTenPhong() : "Chưa đặt",
-                ve.getNgayGioChieu() != null ? ve.getNgayGioChieu().format(ngayGioChieuFormatter) : "Chưa có",
-                ve.getTenPhim(),
-                ve.getTenKhuyenMai() != null ? ve.getTenKhuyenMai() : "Không có"
-            });
+    /**
+     * Tải danh sách vé theo phân trang
+     * 
+     * @param page Trang hiện tại
+     * @param pageSize Số lượng vé trên mỗi trang
+     * @throws SQLException Nếu có lỗi truy vấn CSDL
+     */
+    public void loadVePaginated(int page, int pageSize) throws SQLException {
+        try {
+            // Lấy dữ liệu phân trang từ service
+            PaginationResult<Ve> result = service.getAllVePaginated(page, pageSize);
+            
+            // Cập nhật dữ liệu bảng
+            DefaultTableModel model = view.getTableModel();
+            model.setRowCount(0);
+            
+            // Sử dụng batch processing để thêm dữ liệu vào bảng
+            for (Ve ve : result.getData()) {
+                model.addRow(new Object[]{
+                    ve.getMaVe(),
+                    ve.getTrangThai().toString(),
+                    ve.getSoGhe(),
+                    formatCurrency(ve.getGiaVeGoc()),
+                    formatCurrency(ve.getTienGiam()),
+                    formatCurrency(ve.getGiaVeSauGiam()),
+                    ve.getNgayDat() != null ? ve.getNgayDat().format(ngayDatFormatter) : "Chưa đặt",
+                    ve.getTenPhong() != null ? ve.getTenPhong() : "Chưa đặt",
+                    ve.getNgayGioChieu() != null ? ve.getNgayGioChieu().format(ngayGioChieuFormatter) : "Chưa có",
+                    ve.getTenPhim(),
+                    ve.getTenKhuyenMai() != null ? ve.getTenKhuyenMai() : "Không có"
+                });
+            }
+            
+            // Cập nhật trực tiếp pagination panel
+            CustomPaginationPanel paginationPanel = view.getPaginationPanel();
+            if (paginationPanel != null) {
+                paginationPanel.updatePagination(result.getCurrentPage(), result.getTotalPages());
+            }
+            
+            // Đảm bảo TableRowSorter được cập nhật
+            if (view.getTable().getRowSorter() instanceof TableRowSorter) {
+                ((TableRowSorter<?>) view.getTable().getRowSorter()).sort();
+            }
+            
+        } catch (SQLException e) {
+            handleException("Lỗi khi tải dữ liệu vé", e);
+            throw e;
         }
-    }  
+    }
     
     private void displayVeInfo(int selectedRow) {
         if (selectedRow < 0) return;
 
+        try {
+            DefaultTableModel model = view.getTableModel();
+            int modelRow = view.getTable().convertRowIndexToModel(selectedRow);
+            
+            // Đặt timeout cho các thao tác CSDL
+            String maVe = model.getValueAt(modelRow, 0).toString();
+            
+            // Sử dụng SwingWorker để tải thông tin vé trong background
+            new javax.swing.SwingWorker<Ve, Void>() {
+                @Override
+                protected Ve doInBackground() throws Exception {
+                    try {
+                        return service.findVeByMaVe(Integer.parseInt(maVe));
+                    } catch (Exception e) {
+                        System.err.println("Lỗi khi tải thông tin vé: " + e.getMessage());
+                        return null;
+                    }
+                }
+                
+                @Override
+                protected void done() {
+                    try {
+                        Ve ve = get();
+                        if (ve != null) {
+                            displayVeInfo(ve);
+                        } else {
+                            // Fallback nếu không lấy được từ service
+                            displayVeInfoFromTable(selectedRow);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Lỗi khi hiển thị thông tin vé: " + e.getMessage());
+                        // Fallback nếu có lỗi
+                        displayVeInfoFromTable(selectedRow);
+                    }
+                }
+            }.execute();
+            
+        } catch (Exception e) {
+            // Bắt tất cả các ngoại lệ để tránh treo ứng dụng
+            System.err.println("Lỗi không xác định khi hiển thị thông tin vé: " + e.getMessage());
+            e.printStackTrace(System.err);
+            clearForm(); // Xóa form nếu có lỗi
+        }
+    }
+
+    // Phương thức mới để hiển thị thông tin vé từ bảng (fallback)
+    private void displayVeInfoFromTable(int selectedRow) {
         try {
             DefaultTableModel model = view.getTableModel();
             int modelRow = view.getTable().convertRowIndexToModel(selectedRow);
@@ -218,29 +332,31 @@ public class VeController {
             view.getCbNgayGioChieu().setSelectedItem(model.getValueAt(modelRow, 8).toString());
             view.getCbTenPhim().setSelectedItem(model.getValueAt(modelRow, 9).toString());
             
-            // Check if promotion is expired
-            if (!tenKhuyenMai.equals("Không có") && !service.isPromotionValid(tenKhuyenMai)) {
-                view.getCbKhuyenMai().setEnabled(false);
-                view.getCbKhuyenMai().removeAllItems();
-                view.getCbKhuyenMai().addItem(tenKhuyenMai);
-                view.getCbKhuyenMai().setSelectedItem(tenKhuyenMai);
-                ValidationUtils.showError(view.getKhuyenMaiErrorLabel(), "Khuyến mãi đã hết hạn, không thể chỉnh sửa");
-            } else {
-                view.getCbKhuyenMai().setEnabled(true);
-                loadKhuyenMaiList();
-                view.getCbKhuyenMai().setSelectedItem(tenKhuyenMai);
-            }
-
-            loadKhachHangInfo(Integer.parseInt(maVe));
-        } catch (SQLException e) {
-            handleException("Lỗi khi kiểm tra trạng thái khuyến mãi", e);
-        } catch (NumberFormatException e) {
-            handleException("Lỗi định dạng số", e);
+            // Không tải thông tin khuyến mãi và khách hàng để tránh lỗi
+            view.getCbKhuyenMai().setEnabled(true);
+            view.getCbKhuyenMai().removeAllItems();
+            view.getCbKhuyenMai().addItem(tenKhuyenMai);
+            view.getCbKhuyenMai().setSelectedItem(tenKhuyenMai);
+            
+            // Xóa thông tin khách hàng
+            clearCustomerFields();
+        } catch (Exception e) {
+            System.err.println("Lỗi khi hiển thị thông tin vé từ bảng: " + e.getMessage());
+            clearForm();
         }
     }
 
     private void displayVeInfo(Ve ve) {
-        if (ve == null) return;
+        if (ve == null) {
+            System.out.println("displayVeInfo: ve là null");
+            return;
+        }
+        
+        System.out.println("\n=== Bắt đầu displayVeInfo ===");
+        System.out.println("Thông tin vé:");
+        System.out.println("- Mã vé: " + ve.getMaVe());
+        System.out.println("- Mã hóa đơn: " + ve.getMaHoaDon());
+        System.out.println("- Trạng thái: " + ve.getTrangThai());
         
         view.getTxtMaVe().setText(String.valueOf(ve.getMaVe()));
         view.getCbTrangThai().setSelectedItem(ve.getTrangThai().toString());
@@ -254,7 +370,7 @@ public class VeController {
         view.getCbTenPhim().setSelectedItem(ve.getTenPhim());
         view.getCbNgayGioChieu().setSelectedItem(ve.getNgayGioChieu() != null ?
             ve.getNgayGioChieu().format(ngayGioChieuFormatter) : "");
-        
+
         String tenKhuyenMai = ve.getTenKhuyenMai() != null ? ve.getTenKhuyenMai() : "Không có";
         try {
             if (!tenKhuyenMai.equals("Không có") && !service.isPromotionValid(tenKhuyenMai)) {
@@ -273,38 +389,72 @@ public class VeController {
         }
 
         if (ve.getMaHoaDon() != 0) {
-            loadKhachHangInfo(ve.getMaVe());
-        } else {
-            view.getTxtTenKhachHang().setText("");
-            view.getTxtSoDienThoai().setText("");
-            view.getTxtEmail().setText("");
-            view.getTxtDiemTichLuy().setText("");
-        }
-    }
-
-    private void loadKhachHangInfo(int maVe) {
-        try {
-            KhachHang khachHang = service.getKhachHangByMaVe(maVe);
-            if (khachHang != null) {
-                updateCustomerUIFields(khachHang);
-                disableCustomerFields();
-                view.showMessage("Đã tìm thấy thông tin khách hàng", true);
-            } else {
-                view.showMessage("Không tìm thấy thông tin khách hàng", false);
+            System.out.println("Vé có mã hóa đơn: " + ve.getMaHoaDon() + ", gọi loadKhachHangInfo");
+            try {
+                loadKhachHangInfo(ve.getMaVe());
+            } catch (Exception e) {
+                System.err.println("Lỗi khi tải thông tin khách hàng: " + e.getMessage());
+                e.printStackTrace();
                 clearCustomerFields();
             }
-        } catch (SQLException e) {
-            view.showMessage("Lỗi khi tải thông tin khách hàng" + e.getMessage(), false);
-            handleException("",e);
+        } else {
+            System.out.println("Vé không có mã hóa đơn, xóa thông tin khách hàng");
+            clearCustomerFields();
         }
-    }
-
-    // Phương thức cập nhật UI
-    private void updateCustomerUIFields(KhachHang khachHang) {
-        view.getTxtTenKhachHang().setText(khachHang.getHoTen());
-        view.getTxtSoDienThoai().setText(khachHang.getSoDienThoai());
-        view.getTxtEmail().setText(khachHang.getEmail());
-        view.getTxtDiemTichLuy().setText(String.valueOf(khachHang.getDiemTichLuy()));
+        System.out.println("=== Kết thúc displayVeInfo ===\n");
+    }    private void loadKhachHangInfo(int maVe) {
+        // Xóa thông tin khách hàng cũ trước khi tải thông tin mới
+        clearCustomerFields();
+        
+        try {
+            System.out.println("\n=== Bắt đầu loadKhachHangInfo ===");
+            System.out.println("Đang tải thông tin khách hàng cho vé: " + maVe);
+            
+            // Kiểm tra vé
+            Ve ve = service.findVeByMaVe(maVe);
+            if (ve == null) {
+                System.out.println("Không tìm thấy vé với mã: " + maVe);
+                return;
+            }
+            System.out.println("Tìm thấy vé - MaHoaDon: " + ve.getMaHoaDon());
+            
+            // Chỉ tải thông tin khách hàng nếu vé có hóa đơn
+            if (ve.getMaHoaDon() == 0) {
+                System.out.println("Vé chưa có hóa đơn, bỏ qua tìm khách hàng");
+                return;
+            }
+            
+            // Tải thông tin khách hàng
+            KhachHang khachHang = service.getKhachHangByMaVe(maVe);
+            System.out.println("Kết quả tìm khách hàng: " + (khachHang != null ? "Tìm thấy" : "Không tìm thấy"));
+            
+            if (khachHang != null) {
+                System.out.println("Đã tìm thấy khách hàng: " + khachHang.getHoTen());
+                // Cập nhật UI
+                view.getTxtTenKhachHang().setText(khachHang.getHoTen());
+                view.getTxtSoDienThoai().setText(khachHang.getSoDienThoai());
+                view.getTxtEmail().setText(khachHang.getEmail());
+                view.getTxtDiemTichLuy().setText(String.valueOf(khachHang.getDiemTichLuy()));
+                
+                // Kiểm tra xem các trường đã được set đúng chưa
+                System.out.println("Giá trị các trường sau khi set:");
+                System.out.println("- Tên: " + view.getTxtTenKhachHang().getText());
+                System.out.println("- SĐT: " + view.getTxtSoDienThoai().getText());
+                System.out.println("- Email: " + view.getTxtEmail().getText());
+                System.out.println("- Điểm: " + view.getTxtDiemTichLuy().getText());
+                
+                disableCustomerFields();
+            } else {
+                System.out.println("Không tìm thấy thông tin khách hàng cho vé: " + maVe);
+            }
+            System.out.println("=== Kết thúc loadKhachHangInfo ===\n");
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi tải thông tin khách hàng:");
+            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("Lỗi không xác định khi tải thông tin khách hàng:");
+            e.printStackTrace();
+        }
     }
 
     // Phương thức vô hiệu hóa các trường
@@ -339,9 +489,11 @@ public class VeController {
 
             Ve result = service.saveVe(ve, tenPhong, tenKhuyenMai, ngayGioChieu);
             if (result != null) {
-                showSuccess("Thêm vé thành công!");
-                loadVeList(service.getAllVeDetail());
-                displayVeInfo(ve); // Hiển thị vé vừa thêm
+                view.showMessage("Thêm vé thành công", true);
+                // Giữ nguyên trang hiện tại khi thêm vé mới
+                int currentPage = view.getPaginationPanel().getCurrentPage();
+                loadVePaginated(currentPage, PAGE_SIZE);
+                displayVeInfo(result); // Hiển thị vé vừa thêm với thông tin đầy đủ
                 clearForm();
             }
         } catch (SQLException e) {
@@ -374,8 +526,10 @@ public class VeController {
 
             Ve result = service.updateVe(ve, tenPhong, tenKhuyenMai, ngayGioChieu);
             if (result != null) {
-                showSuccess("Cập nhật vé thành công!");
-                loadVeList(service.getAllVeDetail());
+                view.showMessage("Cập nhật vé thanh công", true);
+                // Giữ nguyên trang hiện tại khi sửa vé
+                int currentPage = view.getPaginationPanel().getCurrentPage();
+                loadVePaginated(currentPage, PAGE_SIZE);
                 clearForm();
             }
         } catch (SQLException e) {
@@ -406,8 +560,18 @@ public class VeController {
             try {
                 int maVe = Integer.parseInt(view.getTxtMaVe().getText());
                 service.deleteVe(maVe);
-                showSuccess("Xóa vé thành công!");
-                loadVeList(service.getAllVeDetail());
+                view.showMessage("Xoá vé thành công", true);
+                
+                // Giữ nguyên trang hiện tại khi xóa vé
+                int currentPage = view.getPaginationPanel().getCurrentPage();
+                int totalPages = view.getPaginationPanel().getTotalPages();
+                
+                // Nếu xóa vé cuối cùng của trang cuối, quay lại trang trước đó
+                if (currentPage == totalPages && view.getTableModel().getRowCount() == 1) {
+                    currentPage = Math.max(1, currentPage - 1);
+                }
+                
+                loadVePaginated(currentPage, PAGE_SIZE);
                 clearForm();
             } catch (SQLException e) {
                 handleException("Lỗi khi xóa vé", e);
@@ -416,35 +580,28 @@ public class VeController {
     }
 
     private void searchVe() {
-        String searchText = view.getSearchField().getText().trim().toLowerCase();
-        try {
-            if (searchText.isEmpty()) {
-                loadVeList(service.getAllVeDetail());
-            } else {
-                List<Ve> allVe = service.getAllVeDetail();
-                List<Ve> filtered = new java.util.ArrayList<>();
-                for (Ve ve : allVe) {
-                    if (String.valueOf(ve.getMaVe()).toLowerCase().contains(searchText)
-                        || ve.getSoGhe().toLowerCase().contains(searchText)
-                        || (ve.getTenPhim() != null && ve.getTenPhim().toLowerCase().contains(searchText))
-                        || (ve.getTenPhong() != null && ve.getTenPhong().toLowerCase().contains(searchText))
-                        || ve.getTrangThai().toString().toLowerCase().contains(searchText)
-                        || (ve.getTenKhuyenMai() != null && ve.getTenKhuyenMai().toLowerCase().contains(searchText))) {
-                        filtered.add(ve);
-                    }
-                }
-                loadVeList(filtered);
+        String searchText = view.getSearchField().getText().trim();
+        if (searchText.isEmpty()) {
+            tableSorter.setRowFilter(null);
+        } else {
+            try {
+                // Tìm kiếm không phân biệt chữ hoa/thường trong các cột
+                tableSorter.setRowFilter(RowFilter.regexFilter("(?i)" + searchText, 0, 1, 2, 7, 9, 10));
+            } catch (java.util.regex.PatternSyntaxException e) {
+                // Xử lý trường hợp chuỗi tìm kiếm có ký tự đặc biệt của regex
+                String escapedText = java.util.regex.Pattern.quote(searchText);
+                tableSorter.setRowFilter(RowFilter.regexFilter("(?i)" + escapedText, 0, 1, 2, 7, 9, 10));
             }
-        } catch (SQLException e) {
-            handleException("Lỗi khi tìm kiếm vé", e);
         }
     }
 
     private void refreshData() {
         try {
-            loadVeList(service.getAllVeDetail());
+            // Giữ nguyên trang hiện tại khi làm mới dữ liệu
+            int currentPage = view.getPaginationPanel().getCurrentPage();
+            loadVePaginated(currentPage, PAGE_SIZE);
             loadKhuyenMaiList();
-            showSuccess("Dữ liệu đã được cập nhật!");
+            view.showMessage("Cập nhật dữ liệu thanh công", true);
         } catch (SQLException e) {
             handleException("Lỗi khi cập nhật dữ liệu", e);
         }
@@ -528,20 +685,40 @@ public class VeController {
         JOptionPane.showMessageDialog(view, message, "Lỗi", JOptionPane.ERROR_MESSAGE);
     }
 
-    private void showSuccess(String message) {
-        JOptionPane.showMessageDialog(view, message, "Thành công", JOptionPane.INFORMATION_MESSAGE);
-    }
-
     private void handleException(String message, Exception e) {
         System.err.println(message);
         System.err.println("Chi tiết lỗi:");
         e.printStackTrace(System.err);
+        
+        // Kiểm tra xem lỗi có phải là lỗi kết nối CSDL không
+        if (e instanceof SQLException) {
+            SQLException sqlEx = (SQLException) e;
+            if (sqlEx.getErrorCode() == 0 || // Lỗi kết nối
+                sqlEx.getMessage().contains("Connection") || 
+                sqlEx.getMessage().contains("connect") ||
+                sqlEx.getMessage().contains("timeout")) {
+                showError("Lỗi kết nối đến cơ sở dữ liệu. Vui lòng kiểm tra kết nối và thử lại sau.");
+                return;
+            }
+            
+            // Xử lý lỗi dữ liệu không tìm thấy
+            if (sqlEx.getMessage().contains("not found") || 
+                sqlEx.getMessage().contains("không tìm thấy") ||
+                sqlEx.getMessage().contains("không tồn tại")) {
+                showError("Dữ liệu yêu cầu không tồn tại trong cơ sở dữ liệu.");
+                return;
+            }
+        }
+        
+        // Hiển thị thông báo lỗi chung nếu không phải các trường hợp đặc biệt
         showError(message);
     }
 
     public void refreshView() {
         try {
-            loadVeList(service.getAllVeDetail());
+            // Giữ nguyên trang hiện tại khi làm mới view
+            int currentPage = view.getPaginationPanel().getCurrentPage();
+            loadVePaginated(currentPage, PAGE_SIZE);
             loadKhuyenMaiList();
         } catch (SQLException e) {
             handleException("Không thể làm mới dữ liệu", e);
@@ -550,68 +727,208 @@ public class VeController {
 
     private void loadSuatChieuByPhongVaPhim(String tenPhong, String tenPhim) {
         try {
-            List<String> suatChieuList = suatChieuService.getThoiGianChieuByPhongVaPhim(tenPhong, tenPhim);
-            System.out.println("Tìm thấy " + suatChieuList.size() + " suất chiếu cho phim " + tenPhim + " tại phòng " + tenPhong);
+            // Lưu lại item đang chọn
+            String selectedItem = null;
+            if (view.getCbNgayGioChieu().getSelectedItem() != null) {
+                selectedItem = view.getCbNgayGioChieu().getSelectedItem().toString();
+            }
             
+            // Tạm thời tắt sự kiện để tránh gọi nhiều lần
             JComboBox<String> cbNgayGioChieu = view.getCbNgayGioChieu();
+            ActionListener[] listeners = cbNgayGioChieu.getActionListeners();
+            for (ActionListener listener : listeners) {
+                cbNgayGioChieu.removeActionListener(listener);
+            }
+            
+            // Tải danh sách suất chiếu
+            List<String> suatChieuList = suatChieuService.getThoiGianChieuByPhongVaPhim(tenPhong, tenPhim);
             cbNgayGioChieu.removeAllItems();
             
+            // Thêm các suất chiếu vào combobox
             for (String thoiGian : suatChieuList) {
-                System.out.println("Thêm suất chiếu: " + thoiGian);
                 cbNgayGioChieu.addItem(thoiGian);
             }
             
-            System.out.println("Số lượng item trong combobox: " + cbNgayGioChieu.getItemCount());
+            // Khôi phục các sự kiện
+            for (ActionListener listener : listeners) {
+                cbNgayGioChieu.addActionListener(listener);
+            }
+            
+            // Khôi phục item đã chọn hoặc chọn mặc định
+            boolean found = false;
+            if (selectedItem != null) {
+                for (int i = 0; i < cbNgayGioChieu.getItemCount(); i++) {
+                    if (selectedItem.equals(cbNgayGioChieu.getItemAt(i))) {
+                        cbNgayGioChieu.setSelectedIndex(i);
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!found && cbNgayGioChieu.getItemCount() > 0) {
+                cbNgayGioChieu.setSelectedIndex(0);
+            }
         } catch (Exception ex) {
-            handleException("Lỗi khi tải suất chiếu", ex);
+            System.err.println("Lỗi khi tải suất chiếu: " + ex.getMessage());
+            ex.printStackTrace(System.err);
         }
     }
 
     private void loadPhongChieuList() {
         try {
-            List<PhongChieu> phongChieuList = new PhongChieuService(view.getDatabaseConnection()).getAllPhongChieu();
+            // Lưu lại item đang chọn
+            String selectedItem = null;
+            if (view.getCbTenPhong().getSelectedItem() != null) {
+                selectedItem = view.getCbTenPhong().getSelectedItem().toString();
+            }
+            
+            // Tạm thời tắt sự kiện để tránh gọi nhiều lần
             JComboBox<String> cbTenPhong = view.getCbTenPhong();
+            ActionListener[] listeners = cbTenPhong.getActionListeners();
+            for (ActionListener listener : listeners) {
+                cbTenPhong.removeActionListener(listener);
+            }
+            
+            // Tải danh sách phòng chiếu
+            List<PhongChieu> phongChieuList = new PhongChieuService(view.getDatabaseConnection()).getAllPhongChieu();
             cbTenPhong.removeAllItems();
+            
+            // Thêm các phòng chiếu vào combobox
             for (PhongChieu pc : phongChieuList) {
                 cbTenPhong.addItem(pc.getTenPhong());
             }
-            if (cbTenPhong.getItemCount() > 0) {
+            
+            // Khôi phục các sự kiện
+            for (ActionListener listener : listeners) {
+                cbTenPhong.addActionListener(listener);
+            }
+            
+            // Khôi phục item đã chọn hoặc chọn mặc định
+            boolean found = false;
+            if (selectedItem != null) {
+                for (int i = 0; i < cbTenPhong.getItemCount(); i++) {
+                    if (selectedItem.equals(cbTenPhong.getItemAt(i))) {
+                        cbTenPhong.setSelectedIndex(i);
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!found && cbTenPhong.getItemCount() > 0) {
                 cbTenPhong.setSelectedIndex(0);
+            }
+            
+            // Tải phim nếu có phòng được chọn
+            if (cbTenPhong.getSelectedItem() != null) {
                 loadPhimByPhong((String) cbTenPhong.getSelectedItem());
             }
         } catch (Exception e) {
-            handleException("Lỗi khi tải danh sách phòng chiếu", e);
+            System.err.println("Lỗi khi tải danh sách phòng chiếu: " + e.getMessage());
+            e.printStackTrace(System.err);
         }
     }
 
     private void loadPhimByPhong(String tenPhong) {
         try {
-            List<com.cinema.models.Phim> phimList = phimService.getPhimByTenPhong(tenPhong);
+            // Lưu lại item đang chọn
+            String selectedItem = null;
+            if (view.getCbTenPhim().getSelectedItem() != null) {
+                selectedItem = view.getCbTenPhim().getSelectedItem().toString();
+            }
+            
+            // Tạm thời tắt sự kiện để tránh gọi nhiều lần
             JComboBox<String> cbTenPhim = view.getCbTenPhim();
+            ActionListener[] listeners = cbTenPhim.getActionListeners();
+            for (ActionListener listener : listeners) {
+                cbTenPhim.removeActionListener(listener);
+            }
+            
+            // Tải danh sách phim
+            List<com.cinema.models.Phim> phimList = phimService.getPhimByTenPhong(tenPhong);
             cbTenPhim.removeAllItems();
+            
+            // Thêm các phim vào combobox
             for (com.cinema.models.Phim phim : phimList) {
                 cbTenPhim.addItem(phim.getTenPhim());
             }
-            if (cbTenPhim.getItemCount() > 0) {
+            
+            // Khôi phục các sự kiện
+            for (ActionListener listener : listeners) {
+                cbTenPhim.addActionListener(listener);
+            }
+            
+            // Khôi phục item đã chọn hoặc chọn mặc định
+            boolean found = false;
+            if (selectedItem != null) {
+                for (int i = 0; i < cbTenPhim.getItemCount(); i++) {
+                    if (selectedItem.equals(cbTenPhim.getItemAt(i))) {
+                        cbTenPhim.setSelectedIndex(i);
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!found && cbTenPhim.getItemCount() > 0) {
                 cbTenPhim.setSelectedIndex(0);
+            }
+            
+            // Tải suất chiếu nếu có phim được chọn
+            if (cbTenPhim.getSelectedItem() != null) {
                 loadSuatChieuByPhongVaPhim(tenPhong, (String) cbTenPhim.getSelectedItem());
             }
         } catch (Exception ex) {
-            handleException("Lỗi khi tải danh sách phim", ex);
+            System.err.println("Lỗi khi tải danh sách phim: " + ex.getMessage());
+            ex.printStackTrace(System.err);
         }
     }
 
     private void loadKhuyenMaiList() {
         try {
+            // Lưu lại item đang chọn
+            String selectedItem = null;
+            if (view.getCbKhuyenMai().getSelectedItem() != null) {
+                selectedItem = view.getCbKhuyenMai().getSelectedItem().toString();
+            }
+            
+            // Tải danh sách khuyến mãi
             List<String> promotions = service.getValidPromotions();
             JComboBox<String> cbKhuyenMai = view.getCbKhuyenMai();
+            
+            // Tạm thời tắt sự kiện để tránh gọi nhiều lần
+            ActionListener[] listeners = cbKhuyenMai.getActionListeners();
+            for (ActionListener listener : listeners) {
+                cbKhuyenMai.removeActionListener(listener);
+            }
+            
             cbKhuyenMai.removeAllItems();
             for (String promotion : promotions) {
                 cbKhuyenMai.addItem(promotion);
             }
-            cbKhuyenMai.setSelectedItem("Không có");
+            
+            // Khôi phục item đã chọn hoặc chọn mặc định
+            if (selectedItem != null && promotions.contains(selectedItem)) {
+                cbKhuyenMai.setSelectedItem(selectedItem);
+            } else {
+                cbKhuyenMai.setSelectedItem("Không có");
+            }
+            
+            // Khôi phục các sự kiện
+            for (ActionListener listener : listeners) {
+                cbKhuyenMai.addActionListener(listener);
+            }
         } catch (SQLException e) {
-            handleException("Lỗi khi tải danh sách khuyến mãi", e);
+            System.err.println("Lỗi khi tải danh sách khuyến mãi: " + e.getMessage());
+            e.printStackTrace(System.err);
+            
+            // Đảm bảo combobox luôn có ít nhất một item
+            JComboBox<String> cbKhuyenMai = view.getCbKhuyenMai();
+            if (cbKhuyenMai.getItemCount() == 0) {
+                cbKhuyenMai.addItem("Không có");
+                cbKhuyenMai.setSelectedIndex(0);
+            }
         }
     }
 }

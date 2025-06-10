@@ -126,4 +126,32 @@ public class NhanVienRepository extends BaseRepository<NhanVien> {
             }
         }
     }
+
+    public NhanVien findByUsername(String username) throws SQLException {
+        String sql = "SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email, nd.loaiNguoiDung, " +
+                "nv.luong, nv.vaiTro " +
+                "FROM NguoiDung nd " +
+                "JOIN NhanVien nv ON nd.maNguoiDung = nv.maNguoiDung " +
+                "JOIN TaiKhoan tk ON nd.maNguoiDung = tk.maNguoiDung " +
+                "WHERE tk.tenDangNhap = ?";
+        
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new NhanVien(
+                        rs.getInt("maNguoiDung"),
+                        rs.getString("hoTen"),
+                        rs.getString("soDienThoai"),
+                        rs.getString("email"),
+                        LoaiNguoiDung.fromString(rs.getString("loaiNguoiDung")),
+                        rs.getBigDecimal("luong"),
+                        VaiTro.fromString(rs.getString("vaiTro"))
+                    );
+                }
+                return null;
+            }
+        }
+    }
 }

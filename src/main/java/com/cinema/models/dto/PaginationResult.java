@@ -1,4 +1,4 @@
-package com.cinema.utils;
+package com.cinema.models.dto;
 
 import java.util.List;
 /*  

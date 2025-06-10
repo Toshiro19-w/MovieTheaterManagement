@@ -5,10 +5,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.cinema.models.Phim;
+import com.cinema.models.dto.PaginationResult;
 import com.cinema.models.repositories.PhimRepository;
 import com.cinema.models.repositories.TheLoaiRepository;
 import com.cinema.utils.DatabaseConnection;
-import com.cinema.utils.PaginationResult;
 
 public class PhimService {
     private final TheLoaiRepository theLoaiRepository;

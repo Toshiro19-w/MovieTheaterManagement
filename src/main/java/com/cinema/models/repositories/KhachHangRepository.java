@@ -22,17 +22,20 @@ public class KhachHangRepository implements IKhachHangRepository {
         this.dbConnection = dbConnection;
     }
 
-    // Lấy thông tin khách hàng qua maHoaDon
+    // Lấy thông tin khách hàng qua maVe
     @Override
     public KhachHang getKhachHangByMaVe(int maVe) throws SQLException {
+        // Truy vấn trực tiếp từ bảng Ve thay vì dựa vào view
         String sql = """
-                SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email\s
-                FROM NguoiDung nd\s
-                JOIN HoaDon hd ON nd.maNguoiDung = hd.maKhachHang
-                JOIN Ve v ON v.maHoaDon = hd.maHoaDon
-                WHERE v.maVe = ?;""";
+                SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email, kh.diemTichLuy
+                FROM Ve v
+                JOIN HoaDon hd ON v.maHoaDon = hd.maHoaDon
+                JOIN NguoiDung nd ON hd.maKhachHang = nd.maNguoiDung
+                JOIN KhachHang kh ON nd.maNguoiDung = kh.maNguoiDung
+                WHERE v.maVe = ?""";
+        
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, maVe);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -41,11 +44,14 @@ public class KhachHangRepository implements IKhachHangRepository {
                     khachHang.setHoTen(rs.getString("hoTen"));
                     khachHang.setSoDienThoai(rs.getString("soDienThoai"));
                     khachHang.setEmail(rs.getString("email"));
+                    khachHang.setDiemTichLuy(rs.getInt("diemTichLuy"));
+                    System.out.println("Tìm thấy khách hàng: " + khachHang.getHoTen() + ", Điểm tích lũy: " + khachHang.getDiemTichLuy());
                     return khachHang;
                 }
             }
         }
-        return null; // Nếu không tìm thấy khách hàng
+        System.out.println("Không tìm thấy khách hàng cho vé: " + maVe);
+        return null;
     }
 
     @Override

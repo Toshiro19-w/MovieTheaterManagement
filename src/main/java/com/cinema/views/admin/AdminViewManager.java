@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import javax.swing.JPanel;
 
 import com.cinema.enums.LoaiTaiKhoan;
+import com.cinema.models.NhanVien;
 import com.cinema.utils.PermissionManager;
 
 public class AdminViewManager {
@@ -14,12 +15,14 @@ public class AdminViewManager {
     private final JPanel mainContentPanel;
     private final CardLayout cardLayout;
     private final String username;
+    private NhanVien currentNhanVien;
 
-    public AdminViewManager(LoaiTaiKhoan loaiTaiKhoan, JPanel mainContentPanel, CardLayout cardLayout, String username) {
+    public AdminViewManager(LoaiTaiKhoan loaiTaiKhoan, JPanel mainContentPanel, CardLayout cardLayout, String username, NhanVien nhanVien) {
         this.permissionManager = new PermissionManager(loaiTaiKhoan);
         this.mainContentPanel = mainContentPanel;
         this.cardLayout = cardLayout;
         this.username = username;
+        this.currentNhanVien = nhanVien;
     }
 
     public void initializeAdminPanels() throws IOException, SQLException {
@@ -42,7 +45,7 @@ public class AdminViewManager {
             mainContentPanel.add(new BaoCaoView(), "Báo cáo");
         }
         if (permissionManager.hasPermission("Bán vé")) {
-            mainContentPanel.add(new SellTicketView(), "Bán vé");
+            mainContentPanel.add(new SellTicketView(currentNhanVien), "Bán vé");
         }
     }
 }

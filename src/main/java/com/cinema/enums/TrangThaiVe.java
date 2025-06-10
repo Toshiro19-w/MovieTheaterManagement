@@ -5,7 +5,8 @@ public enum TrangThaiVe {
     BOOKED("booked"),
     PAID("paid"),
     PENDING("pending"),
-    CANCELLED("cancelled");
+    CANCELLED("cancelled"),
+    DELETED("deleted");
 
     private final String value;
 

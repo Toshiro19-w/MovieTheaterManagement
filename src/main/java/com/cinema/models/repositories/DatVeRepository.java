@@ -26,49 +26,48 @@ public class DatVeRepository implements IDatVeRepository {
     }
 
     @Override
-    public void datVe(int maSuatChieu, Integer maPhong, String soGhe, BigDecimal giaVe, int maKhachHang) throws SQLException {
+    public void datVe(int maSuatChieu, Integer maPhong, String soGhe, BigDecimal giaVe, int maKhachHang, int maNhanVien) throws SQLException {
+        // Phương thức này giờ chỉ được gọi khi thanh toán thành công
+        // Nó sẽ cập nhật trạng thái của vé từ PENDING sang BOOKED
         Connection conn = null;
         try {
             conn = dbConnection.getConnection();
             conn.setAutoCommit(false);
             
-            // Kiểm tra xem suất chiếu có tồn tại không
-            if (!veRepository.isSuatChieuExists(maSuatChieu)) {
-                throw new SQLException("Suất chiếu không tồn tại: " + maSuatChieu);
-            }
-
-            // Kiểm tra xem ghế đã được đặt chưa
-            if (veRepository.isSeatTaken(maSuatChieu, soGhe)) {
-                throw new SQLException("Ghế " + soGhe + " đã được đặt cho suất chiếu " + maSuatChieu);
-            }
-
             // Lấy mã ghế từ số ghế và mã suất chiếu
             int maGhe = veRepository.getMaGheFromSoGhe(soGhe, maSuatChieu);
             if (maGhe <= 0) {
                 throw new SQLException("Không tìm thấy ghế " + soGhe + " trong phòng chiếu");
             }
-
-            // Lấy mã giá vé từ mã ghế
-            int maGiaVe = veRepository.getMaGiaVeFromMaGhe(maGhe);
-            if (maGiaVe <= 0) {
-                throw new SQLException("Không tìm thấy giá vé cho ghế " + soGhe);
-            }
-
-            // Thêm vé mới
-            String insertVeSql = "INSERT INTO Ve (maSuatChieu, maGhe, maGiaVe, trangThai, ngayDat) VALUES (?, ?, ?, ?, ?)";
-            PreparedStatement veStmt = null;
-            try {
-                veStmt = conn.prepareStatement(insertVeSql, PreparedStatement.RETURN_GENERATED_KEYS);
-                veStmt.setInt(1, maSuatChieu);
-                veStmt.setInt(2, maGhe);
-                veStmt.setInt(3, maGiaVe);
-                veStmt.setString(4, TrangThaiVe.BOOKED.toString());
-                veStmt.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
-                veStmt.executeUpdate();
-            } finally {
-                if (veStmt != null) {
-                    veStmt.close();
-                }
+            
+            // Kiểm tra xem có vé đang ở trạng thái PENDING cho ghế này không
+            String checkPendingSql = """
+                SELECT maVe 
+                FROM Ve 
+                WHERE maSuatChieu = ? 
+                AND maGhe = ? 
+                AND trangThai = 'pending'""";
+            
+            PreparedStatement checkStmt = conn.prepareStatement(checkPendingSql);
+            checkStmt.setInt(1, maSuatChieu);
+            checkStmt.setInt(2, maGhe);
+            ResultSet rs = checkStmt.executeQuery();
+            
+            if (rs.next()) {
+                // Nếu có vé đang ở trạng thái PENDING, cập nhật trạng thái thành BOOKED
+                int maVe = rs.getInt("maVe");
+                String updateSql = "UPDATE Ve SET trangThai = ? WHERE maVe = ?";
+                PreparedStatement updateStmt = conn.prepareStatement(updateSql);
+                updateStmt.setString(1, TrangThaiVe.BOOKED.toString());
+                updateStmt.setInt(2, maVe);
+                updateStmt.executeUpdate();
+                updateStmt.close();
+                rs.close();
+                checkStmt.close();
+            } else {
+                rs.close();
+                checkStmt.close();
+                throw new SQLException("Không tìm thấy vé đang chờ thanh toán cho ghế " + soGhe);
             }
 
             conn.commit();
@@ -92,9 +91,101 @@ public class DatVeRepository implements IDatVeRepository {
             }
         }
     }
+    
+    @Override
+    public void createPendingVe(int maSuatChieu, Integer maPhong, String soGhe, BigDecimal giaVe, int maKhachHang) throws SQLException {
+        Connection conn = null;
+        try {
+            conn = dbConnection.getConnection();
+            conn.setAutoCommit(false);
+            
+            // Kiểm tra xem suất chiếu có tồn tại không
+            if (!veRepository.isSuatChieuExists(maSuatChieu)) {
+                throw new SQLException("Suất chiếu không tồn tại: " + maSuatChieu);
+            }
+
+            // Lấy mã ghế từ số ghế và mã suất chiếu
+            int maGhe = veRepository.getMaGheFromSoGhe(soGhe, maSuatChieu);
+            if (maGhe <= 0) {
+                throw new SQLException("Không tìm thấy ghế " + soGhe + " trong phòng chiếu");
+            }
+
+            // Kiểm tra xem có vé đã hủy cho ghế này không
+            String checkCancelledSql = """
+                SELECT maVe 
+                FROM Ve 
+                WHERE maSuatChieu = ? 
+                AND maGhe = ? 
+                AND trangThai = 'cancelled'""";
+            
+            PreparedStatement checkStmt = conn.prepareStatement(checkCancelledSql);
+            checkStmt.setInt(1, maSuatChieu);
+            checkStmt.setInt(2, maGhe);
+            ResultSet rs = checkStmt.executeQuery();
+            
+            if (rs.next()) {
+                // Nếu có vé đã hủy, cập nhật lại trạng thái thay vì tạo mới
+                int maVe = rs.getInt("maVe");
+                String updateSql = "UPDATE Ve SET trangThai = ?, ngayDat = ?, maHoaDon = NULL WHERE maVe = ?";
+                PreparedStatement updateStmt = conn.prepareStatement(updateSql);
+                updateStmt.setString(1, TrangThaiVe.PENDING.toString());
+                updateStmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
+                updateStmt.setInt(3, maVe);
+                updateStmt.executeUpdate();
+                updateStmt.close();
+                rs.close();
+                checkStmt.close();
+            } else {
+                rs.close();
+                checkStmt.close();
+                
+                // Kiểm tra xem ghế đã được đặt chưa (không bao gồm vé đã hủy)
+                if (veRepository.isSeatTaken(maSuatChieu, soGhe)) {
+                    throw new SQLException("Ghế " + soGhe + " đã được đặt cho suất chiếu " + maSuatChieu);
+                }
+
+                // Lấy mã giá vé từ mã ghế
+                int maGiaVe = veRepository.getMaGiaVeFromMaGhe(maGhe);
+                if (maGiaVe <= 0) {
+                    throw new SQLException("Không tìm thấy giá vé cho ghế " + soGhe);
+                }
+
+                // Thêm vé mới với trạng thái PENDING
+                String insertVeSql = "INSERT INTO Ve (maSuatChieu, maGhe, maGiaVe, trangThai, ngayDat) VALUES (?, ?, ?, ?, ?)";
+                PreparedStatement veStmt = conn.prepareStatement(insertVeSql);
+                veStmt.setInt(1, maSuatChieu);
+                veStmt.setInt(2, maGhe);
+                veStmt.setInt(3, maGiaVe);
+                veStmt.setString(4, TrangThaiVe.PENDING.toString());
+                veStmt.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
+                veStmt.executeUpdate();
+                veStmt.close();
+            }
+
+            conn.commit();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    // Ghi log lỗi rollback nếu cần
+                }
+            }
+            throw new SQLException("Lỗi khi tạo vé chờ thanh toán: " + e.getMessage(), e);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    // Ghi log lỗi đóng kết nối nếu cần
+                }
+            }
+        }
+    }
 
     @Override
-    public int confirmPayment(int maVe, int maKhachHang) throws SQLException {
+    public int confirmPayment(int maVe, int maKhachHang, int maNhanVien) throws SQLException {
         Connection conn = null;
         PreparedStatement hoaDonStmt = null;
         PreparedStatement updateVeStmt = null;
@@ -108,10 +199,10 @@ public class DatVeRepository implements IDatVeRepository {
             
             BigDecimal giaVe = getGiaVeFromVe(maVe, conn);
 
-            String hoaDonSql = "INSERT INTO HoaDon (maKhachHang, ngayLap, tongTien) VALUES (?, NOW(), ?)";
+            String hoaDonSql = "INSERT INTO HoaDon (maKhachHang, maNhanVien, ngayLap) VALUES (?, ?, NOW())";
             hoaDonStmt = conn.prepareStatement(hoaDonSql, PreparedStatement.RETURN_GENERATED_KEYS);
             hoaDonStmt.setInt(1, maKhachHang);
-            hoaDonStmt.setBigDecimal(2, giaVe);
+            hoaDonStmt.setInt(2, maNhanVien);
             hoaDonStmt.executeUpdate();
 
             generatedKeys = hoaDonStmt.getGeneratedKeys();
@@ -250,6 +341,41 @@ public class DatVeRepository implements IDatVeRepository {
                 return rs.getInt("maVe");
             }
             throw new SQLException("Không tìm thấy mã vé vừa đặt!");
+        } finally {
+            if (rs != null) try { rs.close(); } catch (SQLException e) {}
+            if (stmt != null) try { stmt.close(); } catch (SQLException e) {}
+            if (conn != null) try { conn.close(); } catch (SQLException e) {}
+        }
+    }
+    
+    @Override
+    public int getPendingVeFromBooking(int maSuatChieu, String soGhe, int maKhachHang) throws SQLException {
+        String sql = """
+            SELECT v.maVe 
+            FROM Ve v
+            JOIN Ghe g ON v.maGhe = g.maGhe
+            WHERE v.maSuatChieu = ? 
+            AND g.soGhe = ? 
+            AND v.maHoaDon IS NULL 
+            AND v.trangThai = 'pending'
+            ORDER BY v.ngayDat DESC 
+            LIMIT 1""";
+            
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        
+        try {
+            conn = dbConnection.getConnection();
+            stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, maSuatChieu);
+            stmt.setString(2, soGhe);
+            rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt("maVe");
+            }
+            throw new SQLException("Không tìm thấy mã vé đang chờ thanh toán!");
         } finally {
             if (rs != null) try { rs.close(); } catch (SQLException e) {}
             if (stmt != null) try { stmt.close(); } catch (SQLException e) {}

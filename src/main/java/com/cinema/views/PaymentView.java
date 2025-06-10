@@ -1,22 +1,35 @@
 package com.cinema.views;
 
-import com.cinema.controllers.PaymentController;
-import com.cinema.controllers.DatVeController;
-import com.cinema.models.dto.PaymentRequest;
-import com.cinema.models.dto.PaymentResponse;
-import com.cinema.enums.PaymentStatus;
-import com.cinema.enums.PaymentMethod;
-import com.cinema.models.SuatChieu;
-import com.cinema.models.Ghe;
-
-import javax.swing.*;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.FlowLayout;
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.sql.SQLException;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+
+import com.cinema.controllers.DatVeController;
+import com.cinema.controllers.PaymentController;
+import com.cinema.enums.PaymentMethod;
+import com.cinema.enums.PaymentStatus;
+import com.cinema.models.Ghe;
+import com.cinema.models.SuatChieu;
+import com.cinema.models.dto.PaymentRequest;
+import com.cinema.models.dto.PaymentResponse;
 
 public class PaymentView extends JDialog {
     private final PaymentController paymentController;
@@ -26,10 +39,9 @@ public class PaymentView extends JDialog {
     private final BigDecimal giaVe;
     private final String transactionId;
     private final Consumer<PaymentResult> paymentCallback;
-    private final int maVe;
-    private final int maKhachHang;
+    private final int maVe, maKhachHang, maNhanVien;
 
-    public PaymentView(JFrame parent, PaymentController paymentController, DatVeController datVeController, SuatChieu suatChieu, Ghe ghe, BigDecimal giaVe, int maVe, int maKhachHang, Consumer<PaymentResult> paymentCallback) {
+    public PaymentView(JFrame parent, PaymentController paymentController, DatVeController datVeController, SuatChieu suatChieu, Ghe ghe, BigDecimal giaVe, int maVe, int maKhachHang, int maNhanVien, Consumer<PaymentResult> paymentCallback) {
         super(parent, "Thanh toán bằng MoMo", true);
         this.paymentController = paymentController;
         this.datVeController = datVeController;
@@ -39,6 +51,7 @@ public class PaymentView extends JDialog {
         this.transactionId = UUID.randomUUID().toString();
         this.maVe = maVe;
         this.maKhachHang = maKhachHang;
+        this.maNhanVien = maNhanVien;
         this.paymentCallback = paymentCallback;
 
         setSize(350, 500);
@@ -109,31 +122,52 @@ public class PaymentView extends JDialog {
         try {
             PaymentStatus status = paymentController.checkPaymentStatus(transactionId);
 
-            if (status == PaymentStatus.COMPLETED) {
-                statusLabel.setText("Thanh toán thành công!");
-                int maHoaDon = datVeController.confirmPayment(maVe, maKhachHang);
-                paymentCallback.accept(new PaymentResult(suatChieu, ghe, giaVe, transactionId));
-                dispose();
-            } else if (status == PaymentStatus.FAILED) {
-                statusLabel.setText("Thanh toán thất bại!");
-                JOptionPane.showMessageDialog(this,
-                        "Thanh toán thất bại! Vui lòng thử lại.",
-                        "Thất bại",
-                        JOptionPane.ERROR_MESSAGE);
-            } else if (status == PaymentStatus.EXPIRED) {
-                statusLabel.setText("Thanh toán đã hết hạn!");
-                JOptionPane.showMessageDialog(this,
-                        "Thanh toán đã hết hạn! Vui lòng tạo giao dịch mới.",
-                        "Hết hạn",
-                        JOptionPane.WARNING_MESSAGE);
-                cancelBooking();
-                dispose();
-            } else {
+            if (null == status) {
                 statusLabel.setText("Đang chờ thanh toán...");
                 JOptionPane.showMessageDialog(this,
                         "Chưa nhận được thanh toán. Vui lòng quét mã QR và hoàn tất thanh toán.",
                         "Đang chờ",
                         JOptionPane.INFORMATION_MESSAGE);
+            } else switch (status) {
+                case COMPLETED -> {
+                    statusLabel.setText("Thanh toán thành công!");
+                    // Đặt vé chính thức sau khi thanh toán thành công
+                    datVeController.datVe(
+                            suatChieu.getMaSuatChieu(),
+                            ghe.getMaPhong(),
+                            ghe.getSoGhe(),
+                            giaVe,
+                            maKhachHang,
+                            maNhanVien
+                    );
+                    // Sử dụng mã nhân viên 1 (có thể thay đổi sau)
+                    int maHoaDon = datVeController.confirmPayment(maVe, maKhachHang, maNhanVien);
+                    paymentCallback.accept(new PaymentResult(suatChieu, ghe, giaVe, transactionId));
+                    dispose();
+                }
+                case FAILED -> {
+                    statusLabel.setText("Thanh toán thất bại!");
+                    JOptionPane.showMessageDialog(this,
+                            "Thanh toán thất bại! Vui lòng thử lại.",
+                            "Thất bại",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+                case EXPIRED -> {
+                    statusLabel.setText("Thanh toán đã hết hạn!");
+                    JOptionPane.showMessageDialog(this,
+                            "Thanh toán đã hết hạn! Vui lòng tạo giao dịch mới.",
+                            "Hết hạn",
+                            JOptionPane.WARNING_MESSAGE);
+                    cancelBooking();
+                    dispose();
+                }
+                default -> {
+                    statusLabel.setText("Đang chờ thanh toán...");
+                    JOptionPane.showMessageDialog(this,
+                            "Chưa nhận được thanh toán. Vui lòng quét mã QR và hoàn tất thanh toán.",
+                            "Đang chờ",
+                            JOptionPane.INFORMATION_MESSAGE);
+                }
             }
         } catch (SQLException e) {
             statusLabel.setText("Lỗi xác nhận thanh toán!");

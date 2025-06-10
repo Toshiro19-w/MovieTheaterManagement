@@ -33,8 +33,6 @@ import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 
-import org.mindrot.jbcrypt.BCrypt;
-
 import com.cinema.enums.LoaiTaiKhoan;
 import com.cinema.utils.AppIconUtils;
 import com.cinema.utils.DatabaseConnection;
@@ -257,7 +255,6 @@ public class LoginView extends JFrame {
         return field;
     }
 
-    @SuppressWarnings("CallToPrintStackTrace")
     private void handleLogin() {
         if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
             JOptionPane.showMessageDialog(this, messages.getString("accountLocked"));

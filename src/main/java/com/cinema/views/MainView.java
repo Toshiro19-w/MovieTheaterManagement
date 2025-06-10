@@ -541,8 +541,8 @@ public class MainView extends JFrame implements ThemeableComponent {
         super.dispose();
     }
 
-    public void openBookingViewForEmployee(int maPhim, int maKhachHang) {
-        controller.openBookingView(maPhim, maKhachHang);
+    public void openBookingViewForEmployee(int maPhim, int maKhachHang, int maNhanVien) {
+        controller.openBookingView(maPhim, maKhachHang, maNhanVien);
     }
 
     /**

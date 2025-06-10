@@ -34,16 +34,24 @@ public class DatVeController {
         return veService.getTicketPriceBySuatChieu(maSuatChieu);
     }
 
-    public void datVe(int maSuatChieu, Integer maPhong, String soGhe, BigDecimal giaVe, int maKhachHang) throws SQLException {
-        veService.datVe(maSuatChieu, maPhong, soGhe, giaVe, maKhachHang);
+    public void datVe(int maSuatChieu, Integer maPhong, String soGhe, BigDecimal giaVe, int maKhachHang, int maNhanVien) throws SQLException {
+        veService.datVe(maSuatChieu, maPhong, soGhe, giaVe, maKhachHang, maNhanVien);
+    }
+    
+    public void createPendingVe(int maSuatChieu, Integer maPhong, String soGhe, BigDecimal giaVe, int maKhachHang) throws SQLException {
+        veService.createPendingVe(maSuatChieu, maPhong, soGhe, giaVe, maKhachHang);
     }
 
-    public int confirmPayment(int maVe, int maKhachHang) throws SQLException {
-        return veService.confirmPayment(maVe, maKhachHang);
+    public int confirmPayment(int maVe, int maKhachHang, int maNhanVien) throws SQLException {
+        return veService.confirmPayment(maVe, maKhachHang, maNhanVien);
     }
 
     public int getMaVeFromBooking(int maSuatChieu, String soGhe, int maKhachHang) throws SQLException {
         return veService.getMaVeFromBooking(maSuatChieu, soGhe, maKhachHang);
+    }
+    
+    public int getPendingVeFromBooking(int maSuatChieu, String soGhe, int maKhachHang) throws SQLException {
+        return veService.getPendingVeFromBooking(maSuatChieu, soGhe, maKhachHang);
     }
 
     public void cancelVe(int maVe) throws SQLException {

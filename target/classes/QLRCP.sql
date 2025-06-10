@@ -452,15 +452,22 @@ SELECT
     h.maNhanVien,
     h.maKhachHang,
     h.ngayLap,
-    COALESCE(SUM(gv.giaVe), 0) as tongTien
+    COALESCE(SUM(CASE 
+        WHEN v.maKhuyenMai IS NOT NULL THEN
+            CASE 
+                WHEN km.loaiGiamGia = 'PhanTram' THEN gv.giaVe * (1 - km.giaTriGiam/100)
+                WHEN km.loaiGiamGia = 'CoDinh' THEN GREATEST(gv.giaVe - km.giaTriGiam, 0)
+                ELSE gv.giaVe
+            END
+        ELSE gv.giaVe
+    END), 0) as tongTien
 FROM HoaDon h
 LEFT JOIN ChiTietHoaDon cthd ON h.maHoaDon = cthd.maHoaDon
 LEFT JOIN Ve v ON cthd.maVe = v.maVe
 LEFT JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
+LEFT JOIN KhuyenMai km ON v.maKhuyenMai = km.maKhuyenMai
 WHERE v.trangThai = 'paid'
 GROUP BY h.maHoaDon, h.maNhanVien, h.maKhachHang, h.ngayLap;
-
-SELECT * FROM ThongKeHoaDon;
 
 -- Thêm dữ liệu mẫu cho bảng KhuyenMai
 CREATE TABLE IF NOT EXISTS KhuyenMai (
@@ -652,26 +659,25 @@ select * from khachhang;
 
 -- Dữ liệu cho bảng NhanVien
 INSERT INTO NhanVien (maNguoiDung, luong, vaiTro) VALUES
-(3, 15000000.00, 'QuanLyPhim'),
-(4, 8000000.00, 'ThuNgan'),
-(6, 7000000.00, 'BanVe'),
-(8, 20000000.00, 'Admin'),
-(10, 7000000.00, 'BanVe');
+(4, 15000000.00, 'QuanLyPhim'),
+(5, 8000000.00, 'ThuNgan'),
+(7, 7000000.00, 'BanVe'),
+(9, 20000000.00, 'Admin'),
+(11, 7000000.00, 'BanVe');
 
 -- Dữ liệu cho bảng TaiKhoan
 INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maNguoiDung) VALUES
-('nguyenvana', 'pass123', 'User', 1),
-('tranthib', 'pass456', 'User', 2),
-('levanc', 'pass789', 'QuanLyPhim', 3),
-('phamthid', 'pass101', 'ThuNgan', 4),
-('hoangvane', 'pass112', 'User', 5),
-('dothif', 'pass131', 'BanVe', 6),
-('buivang', 'pass415', 'User', 7),
-('vuthih', 'pass161', 'Admin', 8),
-('ngovani', 'pass718', 'user', 9),
-('maithik', 'pass192', 'BanVe', 10);
-
-select * from taikhoan;
+('letranminhkhoi', 'pass123', 'User', 1),
+('nguyenvana', 'pass123', 'User', 2),
+('tranthib', 'pass456', 'User', 3),
+('levanc', 'pass789', 'QuanLyPhim', 4),
+('phamthid', 'pass101', 'ThuNgan', 5),
+('hoangvane', 'pass112', 'User', 6),
+('dothif', 'pass131', 'BanVe', 7),
+('buivang', 'pass415', 'User', 8),
+('vuthih', 'pass161', 'Admin', 9),
+('ngovani', 'pass718', 'User', 10),
+('maithik', 'pass192', 'BanVe', 11);
 
 -- Dữ liệu cho bảng TheLoaiPhim
 INSERT INTO TheLoaiPhim (tenTheLoai) VALUES
@@ -687,27 +693,27 @@ INSERT INTO TheLoaiPhim (tenTheLoai) VALUES
 ('Cổ trang');
 
 -- Dữ liệu cho bảng Phim
-INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, kieuPhim, moTa, daoDien, duongDanPoster) VALUES
-('Avatar 3', 8, 180, '2025-01-20', 'Mỹ', '3D IMAX', 'Phần tiếp theo của Avatar', 'James Cameron', 'Avatar3.jpg'),
-('Mission: Impossible 8', 1, 150, '2025-05-23', 'Mỹ', 'IMAX', 'Nhiệm vụ bất khả thi mới', 'Christopher McQuarrie', 'MI8.jpg'),
-('The Batman 2', 1, 165, '2025-10-03', 'Mỹ', 'IMAX', 'Phần tiếp theo của Batman', 'Matt Reeves', 'Batman2.jpg'),
-('Fantastic Beasts 4', 8, 140, '2025-07-15', 'Mỹ', '3D', 'Phần mới của Sinh vật huyền bí', 'David Yates', 'FB4.jpg'),
-('Captain America 4', 1, 155, '2025-03-14', 'Mỹ', 'IMAX', 'Cuộc phiêu lưu mới của Captain America', 'Julius Onah', 'Cap4.jpg'),
-('Deadpool 3', 1, 130, '2025-07-26', 'Mỹ', 'IMAX', 'Deadpool trở lại với Wolverine', 'Shawn Levy', 'Deadpool3.jpg'),
-('Joker 2', 7, 138, '2025-10-04', 'Mỹ', 'IMAX', 'Phần tiếp theo của Joker', 'Todd Phillips', 'Joker2.jpg'),
-('Spider-Man 4', 1, 145, '2025-06-27', 'Mỹ', 'IMAX', 'Cuộc phiêu lưu mới của Spider-Man', 'Jon Watts', 'SpiderMan4.jpg'),
-('The Matrix 5', 5, 160, '2025-08-22', 'Mỹ', 'IMAX', 'Phần tiếp theo của The Matrix', 'Lana Wachowski', 'Matrix5.jpg'),
-('Black Panther 3', 1, 150, '2025-11-07', 'Mỹ', 'IMAX', 'Phần tiếp theo của Black Panther', 'Ryan Coogler', 'BP3.jpg');
-INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, kieuPhim, moTa, daoDien, duongDanPoster) VALUES
-('Dune: Part Three', 5, 165, '2025-06-09', 'Mỹ', 'IMAX', 'Phần cuối của series Dune', 'Denis Villeneuve', 'Dune3.jpg'),
-('Fast & Furious 11', 1, 140, '2025-06-24', 'Mỹ', 'IMAX', 'Phần mới nhất của Fast Saga', 'Louis Leterrier', 'FF11.jpg'),
-('Blade', 1, 135, '2025-06-24', 'Mỹ', 'IMAX', 'Phiên bản reboot của Marvel', 'Yann Demange', 'Blade.jpg'),
-('Planet of the Apes 4', 5, 155, '2025-06-24', 'Mỹ', '3D', 'Phần tiếp theo của Planet of the Apes', 'Wes Ball', 'Apes4.jpg'),
-('John Wick 5', 1, 130, '2025-06-24', 'Mỹ', 'IMAX', 'Chapter cuối của John Wick', 'Chad Stahelski', 'JW5.jpg'),
-('Godzilla vs Kong 2', 1, 145, '2025-06-24', 'Mỹ', 'IMAX', 'Cuộc chiến tiếp theo của hai quái vật', 'Adam Wingard', 'GvK2.jpg'),
-('Indiana Jones 6', 8, 140, '2025-06-24', 'Mỹ', 'IMAX', 'Cuộc phiêu lưu mới của Indiana Jones', 'James Mangold', 'IJ6.jpg'),
-('Mad Max: The Wasteland', 1, 150, '2025-06-24', 'Úc', 'IMAX', 'Phần tiếp theo của series Mad Max', 'George Miller', 'MM5.jpg'),
-('The Flash 2', 1, 135, '2025-06-24', 'Mỹ', 'IMAX', 'Phần tiếp theo của The Flash', 'Andy Muschietti', 'Flash2.jpg');
+INSERT INTO Phim (tenPhim, thoiLuong, ngayKhoiChieu, nuocSanXuat, kieuPhim, moTa, daoDien, duongDanPoster) VALUES
+('Avatar 3', 180, '2025-01-20', 'Mỹ', '3D IMAX', 'Phần tiếp theo của Avatar', 'James Cameron', 'Avatar3.jpg'),
+('Mission: Impossible 8', 150, '2025-05-23', 'Mỹ', 'IMAX', 'Nhiệm vụ bất khả thi mới', 'Christopher McQuarrie', 'MI8.jpg'),
+('The Batman 2', 165, '2025-10-03', 'Mỹ', 'IMAX', 'Phần tiếp theo của Batman', 'Matt Reeves', 'Batman2.jpg'),
+('Fantastic Beasts 4', 140, '2025-07-15', 'Mỹ', '3D', 'Phần mới của Sinh vật huyền bí', 'David Yates', 'FB4.jpg'),
+('Captain America 4', 155, '2025-03-14', 'Mỹ', 'IMAX', 'Cuộc phiêu lưu mới của Captain America', 'Julius Onah', 'Cap4.jpg'),
+('Deadpool 3', 130, '2025-07-26', 'Mỹ', 'IMAX', 'Deadpool trở lại với Wolverine', 'Shawn Levy', 'Deadpool3.jpg'),
+('Joker 2', 138, '2025-10-04', 'Mỹ', 'IMAX', 'Phần tiếp theo của Joker', 'Todd Phillips', 'Joker2.jpg'),
+('Spider-Man 4', 145, '2025-06-27', 'Mỹ', 'IMAX', 'Cuộc phiêu lưu mới của Spider-Man', 'Jon Watts', 'SpiderMan4.jpg'),
+('The Matrix 5', 160, '2025-08-22', 'Mỹ', 'IMAX', 'Phần tiếp theo của The Matrix', 'Lana Wachowski', 'Matrix5.jpg'),
+('Black Panther 3', 150, '2025-11-07', 'Mỹ', 'IMAX', 'Phần tiếp theo của Black Panther', 'Ryan Coogler', 'BP3.jpg');
+INSERT INTO Phim (tenPhim, thoiLuong, ngayKhoiChieu, nuocSanXuat, kieuPhim, moTa, daoDien, duongDanPoster) VALUES
+('Dune: Part Three', 165, '2025-06-09', 'Mỹ', 'IMAX', 'Phần cuối của series Dune', 'Denis Villeneuve', 'Dune3.jpg'),
+('Fast & Furious 11', 140, '2025-06-24', 'Mỹ', 'IMAX', 'Phần mới nhất của Fast Saga', 'Louis Leterrier', 'FF11.jpg'),
+('Blade', 135, '2025-06-24', 'Mỹ', 'IMAX', 'Phiên bản reboot của Marvel', 'Yann Demange', 'Blade.jpg'),
+('Planet of the Apes 4', 155, '2025-06-24', 'Mỹ', '3D', 'Phần tiếp theo của Planet of the Apes', 'Wes Ball', 'Apes4.jpg'),
+('John Wick 5', 130, '2025-06-24', 'Mỹ', 'IMAX', 'Chapter cuối của John Wick', 'Chad Stahelski', 'JW5.jpg'),
+('Godzilla vs Kong 2', 145, '2025-06-24', 'Mỹ', 'IMAX', 'Cuộc chiến tiếp theo của hai quái vật', 'Adam Wingard', 'GvK2.jpg'),
+('Indiana Jones 6', 140, '2025-06-24', 'Mỹ', 'IMAX', 'Cuộc phiêu lưu mới của Indiana Jones', 'James Mangold', 'IJ6.jpg'),
+('Mad Max: The Wasteland', 150, '2025-06-24', 'Úc', 'IMAX', 'Phần tiếp theo của series Mad Max', 'George Miller', 'MM5.jpg'),
+('The Flash 2', 135, '2025-06-24', 'Mỹ', 'IMAX', 'Phần tiếp theo của The Flash', 'Andy Muschietti', 'Flash2.jpg');
 
 INSERT INTO Phim (tenPhim, thoiLuong, ngayKhoiChieu, nuocSanXuat, kieuPhim, moTa, daoDien, duongDanPoster) VALUES
 ('Fast & Furious 11', 140, '2025-06-24', 'Mỹ', 'IMAX', 'Phần mới nhất của Fast Saga', 'Louis Leterrier', 'FF11.jpg'),
@@ -724,6 +730,8 @@ INSERT INTO PhongChieu (tenPhong, soLuongGhe, loaiPhong) VALUES
 ('Phòng 3', 120, 'Thường'),
 ('Phòng 4', 60, 'VIP'),
 ('Phòng 5', 150, 'Thường');
+
+select * from ve;
 
 -- Dữ liệu cho bảng Ghe
 INSERT INTO Ghe (maPhong, loaiGhe, soGhe) VALUES
