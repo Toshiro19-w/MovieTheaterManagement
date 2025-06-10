@@ -1,112 +1,151 @@
 package com.cinema.services;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 import com.cinema.models.Phim;
+import com.cinema.models.dto.PaginationResult;
 import com.cinema.models.repositories.PhimRepository;
+import com.cinema.models.repositories.TheLoaiRepository;
 import com.cinema.utils.DatabaseConnection;
-import com.cinema.utils.PaginationResult;
 
 public class PhimService {
-    private final PhimRepository phimRepo;
-    protected Connection conn;
-    protected DatabaseConnection dbConnection;
-
+    private final TheLoaiRepository theLoaiRepository;
+    private final PhimRepository phimRepository;
+    
     public PhimService(DatabaseConnection dbConnection) throws SQLException {
-        if (dbConnection == null) {
-            throw new IllegalArgumentException("DatabaseConnection cannot be null");
-        }
-        this.dbConnection = dbConnection;
-        try {
-            this.conn = dbConnection.getConnection();
-        } catch (SQLException e) {
-            throw new RuntimeException("Không thể lấy kết nối cơ sở dữ liệu", e);
-        }
-        this.phimRepo = new PhimRepository(dbConnection);
-    }
-
-    public List<Phim> getAllPhim() throws SQLException {
-        return phimRepo.findAll();
+        dbConnection.getConnection();
+        this.phimRepository = new PhimRepository(dbConnection);
+        this.theLoaiRepository = new TheLoaiRepository(dbConnection);
     }
     
+    /**
+     * Lấy danh sách tất cả phim
+     * 
+     * @return Danh sách phim
+     * @throws SQLException Nếu có lỗi SQL
+     */
+    public List<Phim> getAllPhim() throws SQLException {
+        return phimRepository.findAll();
+    }
+    
+    /**
+     * Lấy danh sách phim theo phân trang
+     * 
+     * @param page Trang hiện tại
+     * @param pageSize Số lượng phim trên mỗi trang
+     * @return Kết quả phân trang
+     * @throws SQLException Nếu có lỗi SQL
+     */
     public PaginationResult<Phim> getAllPhimPaginated(int page, int pageSize) throws SQLException {
-        return phimRepo.findAllPaginated(page, pageSize);
+        return phimRepository.findAllPaginated(page, pageSize);
     }
-
+    
+    /**
+     * Lấy thông tin phim theo mã phim
+     * 
+     * @param maPhim Mã phim
+     * @return Thông tin phim
+     * @throws SQLException Nếu có lỗi SQL
+     */
     public Phim getPhimById(int maPhim) throws SQLException {
-        return phimRepo.findById(maPhim);
+        return phimRepository.findById(maPhim);
     }
-
-    public Phim addPhim(Phim phim) throws SQLException {
-        // Kiểm tra tên phim có bị trùng không
-        if (phimRepo.isMovieTitleExists(phim.getTenPhim(), 0)) {
-            throw new SQLException("Tên phim đã tồn tại!");
-        }
-        
-        // Thiết lập mã thể loại từ tên thể loại
-        int maTheLoai = phimRepo.getMaTheLoaiByTen(phim.getTenTheLoai());
-        phim.setMaTheLoai(maTheLoai);
-        
-        // Thiết lập trạng thái mặc định nếu chưa có
-        if (phim.getTrangThai() == null || phim.getTrangThai().isEmpty()) {
-            phim.setTrangThai("active");
-        }
-        
-        return phimRepo.save(phim);
+    
+    /**
+     * Thêm phim mới
+     * 
+     * @param phim Thông tin phim
+     * @return Mã phim mới
+     * @throws SQLException Nếu có lỗi SQL
+     */
+    public int addPhim(Phim phim) throws SQLException {
+        Phim savedPhim = phimRepository.save(phim);
+        return savedPhim.getMaPhim();
     }
-
-    public Phim updatePhim(Phim phim) throws SQLException {
-        // Kiểm tra xem phim có tồn tại không
-        Phim existingPhim = phimRepo.findById(phim.getMaPhim());
-        if (existingPhim == null) {
-            throw new SQLException("Không tìm thấy phim với mã: " + phim.getMaPhim());
-        }
-
-        // Kiểm tra tên phim có bị trùng không (trừ phim hiện tại)
-        if (phimRepo.isMovieTitleExists(phim.getTenPhim(), phim.getMaPhim())) {
-            throw new SQLException("Tên phim đã tồn tại!");
-        }
-
-        // Thiết lập mã thể loại từ tên thể loại
-        int maTheLoai = phimRepo.getMaTheLoaiByTen(phim.getTenTheLoai());
-        phim.setMaTheLoai(maTheLoai);
-        
-        // Giữ nguyên trạng thái nếu không được cung cấp
-        if (phim.getTrangThai() == null || phim.getTrangThai().isEmpty()) {
-            phim.setTrangThai(existingPhim.getTrangThai());
-        }
-        
-        return phimRepo.update(phim);
+    
+    /**
+     * Cập nhật thông tin phim
+     * 
+     * @param phim Thông tin phim
+     * @throws SQLException Nếu có lỗi SQL
+     */
+    public void updatePhim(Phim phim) throws SQLException {
+        phimRepository.update(phim);
     }
-
-    public boolean deletePhim(int maPhim) throws SQLException {
-        // Kiểm tra xem phim có tồn tại không
-        Phim existingPhim = phimRepo.findById(maPhim);
-        if (existingPhim == null) {
-            throw new SQLException("Không tìm thấy phim với mã: " + maPhim);
-        }
-        
-        phimRepo.delete(maPhim);
-        return true;
+    
+    /**
+     * Xóa phim
+     * 
+     * @param maPhim Mã phim
+     * @throws SQLException Nếu có lỗi SQL
+     */
+    public void deletePhim(int maPhim) throws SQLException {
+        phimRepository.delete(maPhim);
     }
-
-    public boolean isMovieTitleExists(String tenPhim, int excludeMaPhim) throws SQLException {
-        return phimRepo.isMovieTitleExists(tenPhim, excludeMaPhim);
-    }
-
-    // Lấy danh sách thể loại duy nhất
+    
+    /**
+     * Lấy danh sách tất cả thể loại phim
+     * 
+     * @return Danh sách tên thể loại
+     * @throws SQLException Nếu có lỗi SQL
+     */
     public List<String> getAllTheLoai() throws SQLException {
-        return phimRepo.getAllTheLoai();
+        return phimRepository.getAllTheLoai();
     }
-
-    // Lấy danh sách định dạng duy nhất
+    
+    /**
+     * Lấy danh sách tất cả định dạng phim
+     * 
+     * @return Danh sách định dạng phim
+     * @throws SQLException Nếu có lỗi SQL
+     */
     public List<String> getAllDinhDang() throws SQLException {
-        return phimRepo.getAllDinhDang();
+        return phimRepository.getAllDinhDang();
     }
-
+    
+    /**
+     * Lấy mã thể loại từ tên thể loại
+     * 
+     * @param tenTheLoai Tên thể loại
+     * @return Mã thể loại
+     * @throws SQLException Nếu có lỗi SQL
+     */
+    public int getMaTheLoaiByTen(String tenTheLoai) throws SQLException {
+        return phimRepository.getMaTheLoaiByTen(tenTheLoai);
+    }
+    
+    /**
+     * Lấy danh sách tất cả thể loại phim với mã và tên
+     * 
+     * @return Map chứa mã thể loại và tên thể loại
+     * @throws SQLException Nếu có lỗi SQL
+     */
+    public Map<Integer, String> getAllTheLoaiMap() throws SQLException {
+        return theLoaiRepository.getAllTheLoaiMap();
+    }
+    
+    /**
+     * Lấy danh sách phim theo tên phòng
+     * 
+     * @param tenPhong Tên phòng
+     * @return Danh sách phim
+     * @throws SQLException Nếu có lỗi SQL
+     */
     public List<Phim> getPhimByTenPhong(String tenPhong) throws SQLException {
-        return phimRepo.getPhimByTenPhong(tenPhong);
+        return phimRepository.getPhimByTenPhong(tenPhong);
+    }
+    
+    /**
+     * Kiểm tra xem tên phim đã tồn tại chưa
+     * 
+     * @param tenPhim Tên phim
+     * @param excludeMaPhim Mã phim cần loại trừ
+     * @return true nếu tên phim đã tồn tại, false nếu chưa
+     * @throws SQLException Nếu có lỗi SQL
+     */
+    public boolean isMovieTitleExists(String tenPhim, int excludeMaPhim) throws SQLException {
+        return phimRepository.isMovieTitleExists(tenPhim, excludeMaPhim);
     }
 }

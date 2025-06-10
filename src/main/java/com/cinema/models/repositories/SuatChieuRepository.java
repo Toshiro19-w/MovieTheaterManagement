@@ -1,5 +1,6 @@
 package com.cinema.models.repositories;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,8 +15,8 @@ import com.cinema.utils.DatabaseConnection;
 public class SuatChieuRepository extends BaseRepository<SuatChieu> {
     public SuatChieuRepository(DatabaseConnection databaseConnection) {
         super(databaseConnection);
-    }
-
+    }    
+    
     @Override
     public List<SuatChieu> findAll() {
         List<SuatChieu> list = new ArrayList<>();
@@ -23,8 +24,11 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
                 "sc.ngayGioChieu, p.thoiLuong, p.kieuPhim " +
                 "FROM SuatChieu sc " +
                 "JOIN Phim p ON sc.maPhim = p.maPhim " +
-                "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong";
-        try (PreparedStatement stmt = conn.prepareStatement(sql);
+                "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong " +
+                "WHERE sc.ngayGioChieu >= NOW() " +
+                "ORDER BY sc.ngayGioChieu";
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 list.add(new SuatChieu(
@@ -52,7 +56,8 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
                 "JOIN Phim p ON sc.maPhim = p.maPhim " +
                 "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong " +
                 "WHERE sc.maPhim = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, maPhim);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
@@ -74,7 +79,8 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
     @Override
     public SuatChieu save(SuatChieu entity) throws SQLException {
         String sql = "INSERT INTO SuatChieu (maPhim, maPhong, ngayGioChieu) VALUES (?, ?, ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setInt(1, entity.getMaPhim());
             stmt.setInt(2, entity.getMaPhong());
             stmt.setTimestamp(3, Timestamp.valueOf(entity.getNgayGioChieu()));
@@ -96,7 +102,8 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
     @Override
     public SuatChieu update(SuatChieu entity) throws SQLException {
         String sql = "UPDATE SuatChieu SET maPhim = ?, maPhong = ?, ngayGioChieu = ? WHERE maSuatChieu = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, entity.getMaPhim());
             stmt.setInt(2, entity.getMaPhong());
             stmt.setTimestamp(3, Timestamp.valueOf(entity.getNgayGioChieu()));
@@ -113,7 +120,8 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
     @Override
     public void delete(int id) throws SQLException {
         String sql = "DELETE FROM SuatChieu WHERE maSuatChieu = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
@@ -130,7 +138,8 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
                 "WHERE pc.tenPhong = ? AND p.tenPhim = ? " +
                 "AND sc.ngayGioChieu >= NOW() " +
                 "ORDER BY sc.ngayGioChieu";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, tenPhong);
             stmt.setString(2, tenPhim);
             ResultSet rs = stmt.executeQuery();
@@ -152,7 +161,8 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
             WHERE maPhim = ? AND DATE(ngayGioChieu) < ?
             LIMIT 1
         """;
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, maPhim);
             stmt.setDate(2, java.sql.Date.valueOf(newReleaseDate));
             try (ResultSet rs = stmt.executeQuery()) {

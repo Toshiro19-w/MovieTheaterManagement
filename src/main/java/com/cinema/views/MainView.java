@@ -106,7 +106,7 @@ public class MainView extends JFrame implements ThemeableComponent {
     private void initUI() throws IOException, SQLException {
         setLayout(new BorderLayout());
 
-        // Sidebar with improved design - fixed size
+        // Sidebar with improved design - fixed size for admin users only
         sidebarPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -198,10 +198,7 @@ public class MainView extends JFrame implements ThemeableComponent {
         userLabelPanel.setOpaque(false);
         userLabelPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        // Use user icon
-        ImageIcon userIcon = IconManager.getInstance().getIcon("Người dùng", "/images/Icon/user.png", "👤", 20);
-        JLabel iconLabel = new JLabel(userIcon);
-        userLabelPanel.add(iconLabel);
+        
         
         usernameLabel = new JLabel(controller.getUsername());
         usernameLabel.setFont(UITheme.BODY_FONT.deriveFont(Font.BOLD));
@@ -234,7 +231,10 @@ public class MainView extends JFrame implements ThemeableComponent {
         sidebarPanel.add(menuPanel, BorderLayout.CENTER);
         sidebarPanel.add(userPanel, BorderLayout.SOUTH);
 
-        add(sidebarPanel, BorderLayout.WEST);
+        // Chỉ hiển thị sidebar cho nhân viên, không hiển thị cho khách hàng
+        if (!controller.getPermissionManager().isUser()) {
+            add(sidebarPanel, BorderLayout.WEST);
+        }
 
         // Create container with fixed horizontal size
         contentContainer = UIHelper.createFixedSizePanel(1024, 0);
@@ -301,6 +301,28 @@ public class MainView extends JFrame implements ThemeableComponent {
             }
         });
         actionPanel.add(themeToggleButton);
+        
+        // Thêm ảnh đại diện dạng tròn cho khách hàng
+        if (controller.getPermissionManager().isUser()) {
+            actionPanel.add(Box.createHorizontalStrut(10));
+            
+            // Tạo ảnh đại diện dạng tròn
+            ImageIcon userIcon = IconManager.getInstance().getIcon("Người dùng", "/images/Icon/user.png", "👤", 30);
+            JButton profileButton = new JButton(userIcon);
+            profileButton.setBorderPainted(false);
+            profileButton.setContentAreaFilled(false);
+            profileButton.setFocusPainted(false);
+            profileButton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+            profileButton.setToolTipText("Thông tin cá nhân");
+            
+            // Xử lý sự kiện khi nhấn vào ảnh đại diện
+            profileButton.addActionListener(e -> {
+                controller.handleMenuSelection("Thông tin cá nhân", null);
+            });
+            
+            actionPanel.add(profileButton);
+        }
+        
         actionPanel.add(Box.createHorizontalStrut(10));
         settingsButton.addActionListener(_ -> {
             // Show settings dialog
@@ -331,9 +353,13 @@ public class MainView extends JFrame implements ThemeableComponent {
             controller.setMainContentPanel(mainContentPanel, cardLayout);
             controller.initializeAdminPanels();
         } else {
-            mainContentPanel.setLayout(new BorderLayout());
+            // Khách hàng vẫn sử dụng CardLayout để chuyển đổi giữa các màn hình
+            cardLayout = new CardLayout();
+            mainContentPanel.setLayout(cardLayout);
             controller.setMainContentPanel(mainContentPanel, cardLayout);
-            controller.initializeAdminPanels();
+            
+            // Khởi tạo các panel cho khách hàng
+            controller.initializeCustomerPanels();
         }
         mainContentPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
         
@@ -392,16 +418,8 @@ public class MainView extends JFrame implements ThemeableComponent {
             if (controller.getPermissionManager().isAdmin()) {
                 addMenuItem(menuPanel, "Quản lý Người dùng", "Người dùng");
             }
-        } else if (controller.getPermissionManager().isUser()) {
-            // Menu for customers
-            addMenuItem(menuPanel, "Phim đang chiếu", "Phim");
-            
-            if (controller.getPermissionManager().hasPermission("Đặt vé")) {
-                addMenuItem(menuPanel, "Đặt vé", "Đặt vé");
-            }
-            
-            addMenuItem(menuPanel, "Thông tin cá nhân", "Thông tin cá nhân");
-        }
+        } 
+        // Khách hàng không có menu sidebar nên không cần thêm menu items
     }
     
     private void addMenuItem(JPanel menuPanel, String text, String feature) {
@@ -523,8 +541,8 @@ public class MainView extends JFrame implements ThemeableComponent {
         super.dispose();
     }
 
-    public void openBookingViewForEmployee(int maPhim, int maKhachHang) {
-        controller.openBookingView(maPhim, maKhachHang);
+    public void openBookingViewForEmployee(int maPhim, int maKhachHang, int maNhanVien) {
+        controller.openBookingView(maPhim, maKhachHang, maNhanVien);
     }
 
     /**

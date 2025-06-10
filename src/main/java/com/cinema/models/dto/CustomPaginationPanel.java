@@ -1,5 +1,6 @@
 package com.cinema.models.dto;
 
+import com.cinema.components.ModernUIComponents;
 import com.cinema.components.PaginationPanel;
 import com.cinema.components.UIConstants;
 
@@ -25,24 +26,18 @@ public class CustomPaginationPanel extends PaginationPanel {
         // Tạo layout mới
         setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
         
-        // Tạo các nút phân trang
-        firstPageButton = new JButton("«");
-        prevPageButton = new JButton("‹");
+        // Tạo các nút phân trang với biểu tượng Unicode
+        firstPageButton = ModernUIComponents.createUnicodeButton("\u00AB", UIConstants.CARD_BACKGROUND, UIConstants.PRIMARY_COLOR);
+        prevPageButton = ModernUIComponents.createUnicodeButton("\u2039", UIConstants.CARD_BACKGROUND, UIConstants.PRIMARY_COLOR);
         pageInfoLabel = new JLabel("Trang 1 / 1");
-        nextPageButton = new JButton("›");
-        lastPageButton = new JButton("»");
+        nextPageButton = ModernUIComponents.createUnicodeButton("\u203A", UIConstants.CARD_BACKGROUND, UIConstants.PRIMARY_COLOR);
+        lastPageButton = ModernUIComponents.createUnicodeButton("\u00BB", UIConstants.CARD_BACKGROUND, UIConstants.PRIMARY_COLOR);
         
         // Thiết lập kích thước và kiểu dáng
         Dimension buttonSize = new Dimension(30, 30);
-        Font buttonFont = new Font("Segoe UI", Font.BOLD, 14);
         
         for (JButton button : new JButton[]{firstPageButton, prevPageButton, nextPageButton, lastPageButton}) {
             button.setPreferredSize(buttonSize);
-            button.setFont(buttonFont);
-            button.setFocusPainted(false);
-            button.setBorderPainted(false);
-            button.setBackground(UIConstants.CARD_BACKGROUND);
-            button.setForeground(UIConstants.PRIMARY_COLOR);
         }
         
         pageInfoLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));

@@ -33,8 +33,8 @@ public class SuatChieuValidation {
                 return false;
             }
             
-            // Kiểm tra thời gian quá xa trong tương lai (3 tháng)
-            if (showtime.isAfter(LocalDateTime.now().plusMonths(3))) {
+            // Kiểm tra thời gian quá xa trong tương lai (10 ngày)
+            if (showtime.isAfter(LocalDateTime.now().plusDays(10))) {
                 ValidationUtils.showError(errorLabel, messages.getString("showtimeTooFar")); 
                 return false;
             }

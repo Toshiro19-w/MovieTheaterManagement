@@ -14,6 +14,7 @@ public class UIConstants {
     public static final Color ACCENT_COLOR = new Color(99, 102, 241);
     
     // Màu nền
+    public static final Color CONTENT_BACKGROUND_COLOR = new Color(252, 252, 247); // Pearl color
     public static final Color BACKGROUND_COLOR = new Color(245, 245, 245);
     public static final Color CARD_BACKGROUND = Color.WHITE;
     public static final Color SIDEBAR_COLOR = new Color(248, 249, 250);
@@ -47,6 +48,7 @@ public class UIConstants {
     public static final Font BUTTON_FONT = new Font("Segoe UI", Font.PLAIN, 14);
     public static final Font SMALL_FONT = new Font("Segoe UI", Font.PLAIN, 12);
     public static final Font LABEL_FONT = new Font("Segoe UI", Font.PLAIN, 14);
+    public static final Font ICON_FONT = new Font("Arial Unicode MS", Font.PLAIN, 18);
     
     // Kích thước và khoảng cách
     public static final int BORDER_RADIUS = 20;

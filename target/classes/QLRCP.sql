@@ -51,11 +51,19 @@ CREATE TABLE IF NOT EXISTS TheLoaiPhim (
     tenTheLoai NVARCHAR(50) UNIQUE NOT NULL
 );
 
+-- Tạo bảng PhimTheLoai để quản lý quan hệ nhiều-nhiều giữa Phim và TheLoaiPhim
+CREATE TABLE IF NOT EXISTS PhimTheLoai (
+    maPhim INT NOT NULL,
+    maTheLoai INT NOT NULL,
+    PRIMARY KEY (maPhim, maTheLoai),
+    FOREIGN KEY (maPhim) REFERENCES Phim(maPhim) ON DELETE CASCADE,
+    FOREIGN KEY (maTheLoai) REFERENCES TheLoaiPhim(maTheLoai) ON DELETE CASCADE
+);
+
 -- Tạo bảng Phim
 CREATE TABLE IF NOT EXISTS Phim (
     maPhim INT AUTO_INCREMENT PRIMARY KEY,
     tenPhim NVARCHAR(100) NOT NULL,
-    maTheLoai INT NOT NULL,
     thoiLuong INT CHECK (thoiLuong > 0) NOT NULL,
     ngayKhoiChieu DATE NOT NULL,
     nuocSanXuat NVARCHAR(50) NOT NULL,
@@ -63,7 +71,7 @@ CREATE TABLE IF NOT EXISTS Phim (
     moTa TEXT,
     daoDien NVARCHAR(100) NOT NULL,
     duongDanPoster TEXT,
-    trangThai ENUM('active', 'deleted') DEFAULT 'active',
+    trangThai ENUM('active', 'deleted', 'upcoming') DEFAULT 'active',
     FOREIGN KEY (maTheLoai) REFERENCES TheLoaiPhim(maTheLoai) ON DELETE CASCADE
 );
 
@@ -102,6 +110,8 @@ BEGIN
 END //
 DELIMITER ;
 
+SET GLOBAL event_scheduler = ON;
+
 -- Tạo event để tự động cập nhật trạng thái phim hàng ngày
 DELIMITER //
 CREATE EVENT IF NOT EXISTS update_movie_status_daily
@@ -122,6 +132,8 @@ BEGIN
     AND ngayKhoiChieu < DATE_SUB(CURDATE(), INTERVAL 10 DAY);
 END //
 DELIMITER ;
+
+select * from phim;
 
 -- trigger kiểm tra trước khi xoá phim
 DELIMITER //
@@ -147,25 +159,31 @@ END //
 DELIMITER;
 
 -- Cập nhật procedure GetActiveMovies để bao gồm cả phim sắp chiếu
+DROP PROCEDURE IF EXISTS GetActiveMovies;
 DELIMITER //
 CREATE PROCEDURE GetActiveMovies()
 BEGIN
-    SELECT p.*, tl.tenTheLoai 
+    SELECT p.*, GROUP_CONCAT(tl.tenTheLoai SEPARATOR ', ') as tenTheLoai
     FROM Phim p
-    JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai
+    LEFT JOIN PhimTheLoai pt ON p.maPhim = pt.maPhim
+    LEFT JOIN TheLoaiPhim tl ON pt.maTheLoai = tl.maTheLoai
     WHERE p.trangThai IN ('active', 'upcoming')
+    GROUP BY p.maPhim
     ORDER BY p.ngayKhoiChieu;
 END //
-DELIMITER;
+DELIMITER ;
 
 -- Tạo procedure mới để lấy danh sách phim sắp chiếu
+DROP PROCEDURE IF EXISTS GetUpcomingMovies;
 DELIMITER //
 CREATE PROCEDURE GetUpcomingMovies()
 BEGIN
-    SELECT p.*, tl.tenTheLoai 
+    SELECT p.*, GROUP_CONCAT(tl.tenTheLoai SEPARATOR ', ') as tenTheLoai
     FROM Phim p
-    JOIN TheLoaiPhim tl ON p.maTheLoai = tl.maTheLoai
+    LEFT JOIN PhimTheLoai pt ON p.maPhim = pt.maPhim
+    LEFT JOIN TheLoaiPhim tl ON pt.maTheLoai = tl.maTheLoai
     WHERE p.trangThai = 'upcoming'
+    GROUP BY p.maPhim
     ORDER BY p.ngayKhoiChieu;
 END //
 DELIMITER ;
@@ -394,6 +412,8 @@ END //
 DELIMITER ;
 
 -- View lịch chiếu phim
+-- Cập nhật view LichChieuPhim
+DROP VIEW IF EXISTS LichChieuPhim;
 CREATE VIEW LichChieuPhim AS
 SELECT 
     p.maPhim,
@@ -403,11 +423,14 @@ SELECT
     pc.tenPhong,
     pc.loaiPhong,
     COUNT(v.maVe) as SoVeDaBan,
-    pc.soLuongGhe - COUNT(v.maVe) as SoGheConLai
+    pc.soLuongGhe - COUNT(v.maVe) as SoGheConLai,
+    GROUP_CONCAT(tl.tenTheLoai SEPARATOR ', ') as tenTheLoai
 FROM Phim p
 JOIN SuatChieu sc ON p.maPhim = sc.maPhim
 JOIN PhongChieu pc ON sc.maPhong = pc.maPhong
 LEFT JOIN Ve v ON sc.maSuatChieu = v.maSuatChieu
+LEFT JOIN PhimTheLoai pt ON p.maPhim = pt.maPhim
+LEFT JOIN TheLoaiPhim tl ON pt.maTheLoai = tl.maTheLoai
 WHERE p.trangThai = 'active'
 GROUP BY p.maPhim, p.tenPhim, sc.maSuatChieu, sc.ngayGioChieu, pc.tenPhong;
 
@@ -429,15 +452,22 @@ SELECT
     h.maNhanVien,
     h.maKhachHang,
     h.ngayLap,
-    COALESCE(SUM(gv.giaVe), 0) as tongTien
+    COALESCE(SUM(CASE 
+        WHEN v.maKhuyenMai IS NOT NULL THEN
+            CASE 
+                WHEN km.loaiGiamGia = 'PhanTram' THEN gv.giaVe * (1 - km.giaTriGiam/100)
+                WHEN km.loaiGiamGia = 'CoDinh' THEN GREATEST(gv.giaVe - km.giaTriGiam, 0)
+                ELSE gv.giaVe
+            END
+        ELSE gv.giaVe
+    END), 0) as tongTien
 FROM HoaDon h
 LEFT JOIN ChiTietHoaDon cthd ON h.maHoaDon = cthd.maHoaDon
 LEFT JOIN Ve v ON cthd.maVe = v.maVe
 LEFT JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
+LEFT JOIN KhuyenMai km ON v.maKhuyenMai = km.maKhuyenMai
 WHERE v.trangThai = 'paid'
 GROUP BY h.maHoaDon, h.maNhanVien, h.maKhachHang, h.ngayLap;
-
-SELECT * FROM ThongKeHoaDon;
 
 -- Thêm dữ liệu mẫu cho bảng KhuyenMai
 CREATE TABLE IF NOT EXISTS KhuyenMai (
@@ -506,10 +536,12 @@ END //
 DELIMITER ;
 
 -- View thống kê doanh thu theo phim
-CREATE OR REPLACE VIEW ThongKeDoanhThuPhim AS
+DROP VIEW IF EXISTS ThongKeDoanhThuPhim;
+CREATE VIEW ThongKeDoanhThuPhim AS
 SELECT 
     p.maPhim,
     p.tenPhim,
+    GROUP_CONCAT(DISTINCT tl.tenTheLoai SEPARATOR ', ') as tenTheLoai,
     COUNT(DISTINCT CASE WHEN v.trangThai = 'paid' THEN v.maVe END) as SoVeDaBan,
     COALESCE(SUM(CASE WHEN v.trangThai = 'paid' THEN gv.giaVe END), 0) as DoanhThuGoc,
     COALESCE(SUM(CASE 
@@ -528,14 +560,63 @@ SELECT
         WHERE dg.maPhim = p.maPhim
     ), 0) as DiemDanhGiaTrungBinh
 FROM Phim p
+LEFT JOIN PhimTheLoai pt ON p.maPhim = pt.maPhim
+LEFT JOIN TheLoaiPhim tl ON pt.maTheLoai = tl.maTheLoai
 LEFT JOIN SuatChieu sc ON p.maPhim = sc.maPhim
 LEFT JOIN Ve v ON sc.maSuatChieu = v.maSuatChieu
 LEFT JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
 LEFT JOIN KhuyenMai km ON v.maKhuyenMai = km.maKhuyenMai
 GROUP BY p.maPhim, p.tenPhim;
 
+select * from VeView;
 
-SELECT * FROM thongkedoanhthuphim;
+CREATE OR REPLACE VIEW VeView AS
+SELECT 
+    v.maVe AS MaVe,
+    v.trangThai AS TrangThai,
+    g.soGhe AS SoGhe,
+    gv.giaVe AS GiaVeGoc,
+    CASE 
+        WHEN v.maKhuyenMai IS NOT NULL THEN
+            CASE 
+                WHEN km.loaiGiamGia = 'PhanTram' THEN gv.giaVe * (km.giaTriGiam / 100)
+                WHEN km.loaiGiamGia = 'CoDinh' THEN km.giaTriGiam
+                ELSE 0
+            END
+        ELSE 0
+    END AS TienGiam,
+    CASE 
+        WHEN v.maKhuyenMai IS NOT NULL THEN
+            CASE 
+                WHEN km.loaiGiamGia = 'PhanTram' THEN gv.giaVe * (1 - km.giaTriGiam / 100)
+                WHEN km.loaiGiamGia = 'CoDinh' THEN GREATEST(gv.giaVe - km.giaTriGiam, 0)
+                ELSE gv.giaVe
+            END
+        ELSE gv.giaVe
+    END AS GiaVeSauGiam,
+    v.ngayDat AS NgayDat,
+    pc.tenPhong AS TenPhong,
+    sc.ngayGioChieu AS NgayGioChieu,
+    p.tenPhim AS TenPhim,
+    COALESCE(km.tenKhuyenMai, 'Không có') AS TenKhuyenMai
+FROM 
+    Ve v
+    INNER JOIN Ghe g ON v.maGhe = g.maGhe
+    INNER JOIN PhongChieu pc ON g.maPhong = pc.maPhong
+    INNER JOIN SuatChieu sc ON v.maSuatChieu = sc.maSuatChieu
+    INNER JOIN Phim p ON sc.maPhim = p.maPhim
+    INNER JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
+    LEFT JOIN KhuyenMai km ON v.maKhuyenMai = km.maKhuyenMai
+WHERE 
+    p.trangThai = 'active'
+ORDER BY 
+    v.maVe;
+
+SELECT DATE(v.ngayDat) as ngay, COUNT(*) as soVe, SUM(v.giaVeSauGiam) as doanhThu 
+FROM Ve v
+WHERE v.trangThai = 'PAID' AND DATE(v.ngayDat) BETWEEN 01/01/2025 AND 12/31/2025 
+GROUP BY DATE(v.ngayDat)
+ORDER BY ngay
 
 -- Tạo các chỉ mục để tối ưu hóa truy vấn
 CREATE INDEX idx_phim_maTheLoai ON Phim(maTheLoai);
@@ -548,6 +629,10 @@ CREATE INDEX idx_suatchieu_ngaygiochieu ON SuatChieu(ngayGioChieu);
 CREATE INDEX idx_ve_trangthai ON Ve(trangThai);
 CREATE INDEX idx_phim_trangthai_ngaykhoichieu ON Phim(trangThai, ngayKhoiChieu);
 CREATE INDEX idx_danhgia_maphim ON DanhGia(maPhim);
+
+-- Tạo chỉ mục mới
+CREATE INDEX idx_phimtheloai_maphim ON PhimTheLoai(maPhim);
+CREATE INDEX idx_phimtheloai_matheloai ON PhimTheLoai(maTheLoai);
 
 INSERT INTO NguoiDung (hoTen, soDienThoai, email, loaiNguoiDung) VALUES
 ('Lê Trần Minh Khôi', '0565321247', 'letranminhkhoi2506@gmail.com', 'KhachHang'),
@@ -574,26 +659,25 @@ select * from khachhang;
 
 -- Dữ liệu cho bảng NhanVien
 INSERT INTO NhanVien (maNguoiDung, luong, vaiTro) VALUES
-(3, 15000000.00, 'QuanLyPhim'),
-(4, 8000000.00, 'ThuNgan'),
-(6, 7000000.00, 'BanVe'),
-(8, 20000000.00, 'Admin'),
-(10, 7000000.00, 'BanVe');
+(4, 15000000.00, 'QuanLyPhim'),
+(5, 8000000.00, 'ThuNgan'),
+(7, 7000000.00, 'BanVe'),
+(9, 20000000.00, 'Admin'),
+(11, 7000000.00, 'BanVe');
 
 -- Dữ liệu cho bảng TaiKhoan
 INSERT INTO TaiKhoan (tenDangNhap, matKhau, loaiTaiKhoan, maNguoiDung) VALUES
-('nguyenvana', 'pass123', 'User', 1),
-('tranthib', 'pass456', 'User', 2),
-('levanc', 'pass789', 'QuanLyPhim', 3),
-('phamthid', 'pass101', 'ThuNgan', 4),
-('hoangvane', 'pass112', 'User', 5),
-('dothif', 'pass131', 'BanVe', 6),
-('buivang', 'pass415', 'User', 7),
-('vuthih', 'pass161', 'Admin', 8),
-('ngovani', 'pass718', 'user', 9),
-('maithik', 'pass192', 'BanVe', 10);
-
-select * from taikhoan;
+('letranminhkhoi', 'pass123', 'User', 1),
+('nguyenvana', 'pass123', 'User', 2),
+('tranthib', 'pass456', 'User', 3),
+('levanc', 'pass789', 'QuanLyPhim', 4),
+('phamthid', 'pass101', 'ThuNgan', 5),
+('hoangvane', 'pass112', 'User', 6),
+('dothif', 'pass131', 'BanVe', 7),
+('buivang', 'pass415', 'User', 8),
+('vuthih', 'pass161', 'Admin', 9),
+('ngovani', 'pass718', 'User', 10),
+('maithik', 'pass192', 'BanVe', 11);
 
 -- Dữ liệu cho bảng TheLoaiPhim
 INSERT INTO TheLoaiPhim (tenTheLoai) VALUES
@@ -609,19 +693,35 @@ INSERT INTO TheLoaiPhim (tenTheLoai) VALUES
 ('Cổ trang');
 
 -- Dữ liệu cho bảng Phim
-INSERT INTO Phim (tenPhim, maTheLoai, thoiLuong, ngayKhoiChieu, nuocSanXuat, kieuPhim, moTa, daoDien, duongDanPoster) VALUES
-('Avatar 3', 8, 180, '2025-01-20', 'Mỹ', '3D IMAX', 'Phần tiếp theo của Avatar', 'James Cameron', 'Avatar3.jpg'),
-('Mission: Impossible 8', 1, 150, '2025-05-23', 'Mỹ', 'IMAX', 'Nhiệm vụ bất khả thi mới', 'Christopher McQuarrie', 'MI8.jpg'),
-('The Batman 2', 1, 165, '2025-10-03', 'Mỹ', 'IMAX', 'Phần tiếp theo của Batman', 'Matt Reeves', 'Batman2.jpg'),
-('Fantastic Beasts 4', 8, 140, '2025-07-15', 'Mỹ', '3D', 'Phần mới của Sinh vật huyền bí', 'David Yates', 'FB4.jpg'),
-('Captain America 4', 1, 155, '2025-03-14', 'Mỹ', 'IMAX', 'Cuộc phiêu lưu mới của Captain America', 'Julius Onah', 'Cap4.jpg'),
-('Deadpool 3', 1, 130, '2025-07-26', 'Mỹ', 'IMAX', 'Deadpool trở lại với Wolverine', 'Shawn Levy', 'Deadpool3.jpg'),
-('Joker 2', 7, 138, '2025-10-04', 'Mỹ', 'IMAX', 'Phần tiếp theo của Joker', 'Todd Phillips', 'Joker2.jpg'),
-('Spider-Man 4', 1, 145, '2025-06-27', 'Mỹ', 'IMAX', 'Cuộc phiêu lưu mới của Spider-Man', 'Jon Watts', 'SpiderMan4.jpg'),
-('The Matrix 5', 5, 160, '2025-08-22', 'Mỹ', 'IMAX', 'Phần tiếp theo của The Matrix', 'Lana Wachowski', 'Matrix5.jpg'),
-('Black Panther 3', 1, 150, '2025-11-07', 'Mỹ', 'IMAX', 'Phần tiếp theo của Black Panther', 'Ryan Coogler', 'BP3.jpg');
+INSERT INTO Phim (tenPhim, thoiLuong, ngayKhoiChieu, nuocSanXuat, kieuPhim, moTa, daoDien, duongDanPoster) VALUES
+('Avatar 3', 180, '2025-01-20', 'Mỹ', '3D IMAX', 'Phần tiếp theo của Avatar', 'James Cameron', 'Avatar3.jpg'),
+('Mission: Impossible 8', 150, '2025-05-23', 'Mỹ', 'IMAX', 'Nhiệm vụ bất khả thi mới', 'Christopher McQuarrie', 'MI8.jpg'),
+('The Batman 2', 165, '2025-10-03', 'Mỹ', 'IMAX', 'Phần tiếp theo của Batman', 'Matt Reeves', 'Batman2.jpg'),
+('Fantastic Beasts 4', 140, '2025-07-15', 'Mỹ', '3D', 'Phần mới của Sinh vật huyền bí', 'David Yates', 'FB4.jpg'),
+('Captain America 4', 155, '2025-03-14', 'Mỹ', 'IMAX', 'Cuộc phiêu lưu mới của Captain America', 'Julius Onah', 'Cap4.jpg'),
+('Deadpool 3', 130, '2025-07-26', 'Mỹ', 'IMAX', 'Deadpool trở lại với Wolverine', 'Shawn Levy', 'Deadpool3.jpg'),
+('Joker 2', 138, '2025-10-04', 'Mỹ', 'IMAX', 'Phần tiếp theo của Joker', 'Todd Phillips', 'Joker2.jpg'),
+('Spider-Man 4', 145, '2025-06-27', 'Mỹ', 'IMAX', 'Cuộc phiêu lưu mới của Spider-Man', 'Jon Watts', 'SpiderMan4.jpg'),
+('The Matrix 5', 160, '2025-08-22', 'Mỹ', 'IMAX', 'Phần tiếp theo của The Matrix', 'Lana Wachowski', 'Matrix5.jpg'),
+('Black Panther 3', 150, '2025-11-07', 'Mỹ', 'IMAX', 'Phần tiếp theo của Black Panther', 'Ryan Coogler', 'BP3.jpg');
+INSERT INTO Phim (tenPhim, thoiLuong, ngayKhoiChieu, nuocSanXuat, kieuPhim, moTa, daoDien, duongDanPoster) VALUES
+('Dune: Part Three', 165, '2025-06-09', 'Mỹ', 'IMAX', 'Phần cuối của series Dune', 'Denis Villeneuve', 'Dune3.jpg'),
+('Fast & Furious 11', 140, '2025-06-24', 'Mỹ', 'IMAX', 'Phần mới nhất của Fast Saga', 'Louis Leterrier', 'FF11.jpg'),
+('Blade', 135, '2025-06-24', 'Mỹ', 'IMAX', 'Phiên bản reboot của Marvel', 'Yann Demange', 'Blade.jpg'),
+('Planet of the Apes 4', 155, '2025-06-24', 'Mỹ', '3D', 'Phần tiếp theo của Planet of the Apes', 'Wes Ball', 'Apes4.jpg'),
+('John Wick 5', 130, '2025-06-24', 'Mỹ', 'IMAX', 'Chapter cuối của John Wick', 'Chad Stahelski', 'JW5.jpg'),
+('Godzilla vs Kong 2', 145, '2025-06-24', 'Mỹ', 'IMAX', 'Cuộc chiến tiếp theo của hai quái vật', 'Adam Wingard', 'GvK2.jpg'),
+('Indiana Jones 6', 140, '2025-06-24', 'Mỹ', 'IMAX', 'Cuộc phiêu lưu mới của Indiana Jones', 'James Mangold', 'IJ6.jpg'),
+('Mad Max: The Wasteland', 150, '2025-06-24', 'Úc', 'IMAX', 'Phần tiếp theo của series Mad Max', 'George Miller', 'MM5.jpg'),
+('The Flash 2', 135, '2025-06-24', 'Mỹ', 'IMAX', 'Phần tiếp theo của The Flash', 'Andy Muschietti', 'Flash2.jpg');
 
-select * from phim;
+INSERT INTO Phim (tenPhim, thoiLuong, ngayKhoiChieu, nuocSanXuat, kieuPhim, moTa, daoDien, duongDanPoster) VALUES
+('Fast & Furious 11', 140, '2025-06-24', 'Mỹ', 'IMAX', 'Phần mới nhất của Fast Saga', 'Louis Leterrier', 'FF11.jpg'),
+('Blade', 135, '2025-06-24', 'Mỹ', 'IMAX', 'Phiên bản reboot của Marvel', 'Yann Demange', 'Blade.jpg');
+
+INSERT INTO SuatChieu (maPhim, maPhong, ngayGioChieu) VALUES
+(13, 1, '2025-06-10 18:00:00'),
+(14, 1, '2025-06-10 18:00:00');
 
 -- Dữ liệu cho bảng PhongChieu
 INSERT INTO PhongChieu (tenPhong, soLuongGhe, loaiPhong) VALUES
@@ -630,6 +730,8 @@ INSERT INTO PhongChieu (tenPhong, soLuongGhe, loaiPhong) VALUES
 ('Phòng 3', 120, 'Thường'),
 ('Phòng 4', 60, 'VIP'),
 ('Phòng 5', 150, 'Thường');
+
+select * from ve;
 
 -- Dữ liệu cho bảng Ghe
 INSERT INTO Ghe (maPhong, loaiGhe, soGhe) VALUES
@@ -701,7 +803,70 @@ INSERT INTO SuatChieu (maPhim, maPhong, ngayGioChieu) VALUES
 (9, 2, '2025-08-22 10:00:00'), -- The Matrix 5
 (9, 3, '2025-08-22 14:00:00'), -- The Matrix 5
 (10, 4, '2025-11-07 10:00:00'), -- Black Panther 3
-(10, 5, '2025-11-07 14:00:00'); -- Black Panther 3
+(10, 5, '2025-11-07 14:00:00'), -- Black Panther 3
+-- Thêm suất chiếu cho Dune: Part Three (ID: 11)
+(11, 1, '2025-06-24 10:00:00'),
+(11, 2, '2025-06-25 14:00:00'),
+(11, 3, '2025-06-26 18:00:00'),
+(11, 4, '2025-06-27 10:00:00'),
+(11, 5, '2025-06-28 14:00:00'),
+(11, 1, '2025-06-29 18:00:00'),
+-- Fast & Furious 11 (ID: 12)
+(12, 2, '2025-06-24 14:00:00'),
+(12, 3, '2025-06-25 18:00:00'),
+(12, 4, '2025-06-26 10:00:00'),
+(12, 5, '2025-06-27 14:00:00'),
+(12, 1, '2025-06-28 18:00:00'),
+(12, 2, '2025-06-29 10:00:00'),
+-- Blade (ID: 13)
+(13, 3, '2025-06-24 18:00:00'),
+(13, 4, '2025-06-25 10:00:00'),
+(13, 5, '2025-06-26 14:00:00'),
+(13, 1, '2025-06-27 18:00:00'),
+(13, 2, '2025-06-28 10:00:00'),
+(13, 3, '2025-06-29 14:00:00'),
+-- Planet of the Apes 4 (ID: 14)
+(14, 4, '2025-06-24 10:00:00'),
+(14, 5, '2025-06-25 14:00:00'),
+(14, 1, '2025-06-26 18:00:00'),
+(14, 2, '2025-06-27 10:00:00'),
+(14, 3, '2025-06-28 14:00:00'),
+(14, 4, '2025-06-29 18:00:00'),
+-- John Wick 5 (ID: 15)
+(15, 5, '2025-06-24 14:00:00'),
+(15, 1, '2025-06-25 18:00:00'),
+(15, 2, '2025-06-26 10:00:00'),
+(15, 3, '2025-06-27 14:00:00'),
+(15, 4, '2025-06-28 18:00:00'),
+(15, 5, '2025-06-29 10:00:00'),
+-- Godzilla vs Kong 2 (ID: 16)
+(16, 1, '2025-06-24 18:00:00'),
+(16, 2, '2025-06-25 10:00:00'),
+(16, 3, '2025-06-26 14:00:00'),
+(16, 4, '2025-06-27 18:00:00'),
+(16, 5, '2025-06-28 10:00:00'),
+(16, 1, '2025-06-29 14:00:00'),
+-- Indiana Jones 6 (ID: 17)
+(17, 2, '2025-06-24 10:00:00'),
+(17, 3, '2025-06-25 14:00:00'),
+(17, 4, '2025-06-26 18:00:00'),
+(17, 5, '2025-06-27 10:00:00'),
+(17, 1, '2025-06-28 14:00:00'),
+(17, 2, '2025-06-29 18:00:00'),
+-- Mad Max: The Wasteland (ID: 18)
+(18, 3, '2025-06-24 14:00:00'),
+(18, 4, '2025-06-25 18:00:00'),
+(18, 5, '2025-06-26 10:00:00'),
+(18, 1, '2025-06-27 14:00:00'),
+(18, 2, '2025-06-28 18:00:00'),
+(18, 3, '2025-06-29 10:00:00'),
+-- The Flash 2 (ID: 19)
+(19, 4, '2025-06-24 18:00:00'),
+(19, 5, '2025-06-25 10:00:00'),
+(19, 1, '2025-06-26 14:00:00'),
+(19, 2, '2025-06-27 18:00:00'),
+(19, 3, '2025-06-28 10:00:00'),
+(19, 4, '2025-06-29 14:00:00');
 
 -- Dữ liệu cho bảng HoaDon
 INSERT INTO HoaDon (maNhanVien, maKhachHang, ngayLap) VALUES
@@ -779,52 +944,3 @@ INSERT INTO PhienLamViec (maNhanVien, thoiGianBatDau, thoiGianKetThuc, tongDoanh
 (10, '2025-01-15 16:00:00', '2025-01-15 23:59:00', 3000000.00, 12),
 (8, '2025-01-16 08:00:00', '2025-01-16 16:00:00', 2500000.00, 10);
 
-select * from VeView;
-
-CREATE OR REPLACE VIEW VeView AS
-SELECT 
-    v.maVe AS MaVe,
-    v.trangThai AS TrangThai,
-    g.soGhe AS SoGhe,
-    gv.giaVe AS GiaVeGoc,
-    CASE 
-        WHEN v.maKhuyenMai IS NOT NULL THEN
-            CASE 
-                WHEN km.loaiGiamGia = 'PhanTram' THEN gv.giaVe * (km.giaTriGiam / 100)
-                WHEN km.loaiGiamGia = 'CoDinh' THEN km.giaTriGiam
-                ELSE 0
-            END
-        ELSE 0
-    END AS TienGiam,
-    CASE 
-        WHEN v.maKhuyenMai IS NOT NULL THEN
-            CASE 
-                WHEN km.loaiGiamGia = 'PhanTram' THEN gv.giaVe * (1 - km.giaTriGiam / 100)
-                WHEN km.loaiGiamGia = 'CoDinh' THEN GREATEST(gv.giaVe - km.giaTriGiam, 0)
-                ELSE gv.giaVe
-            END
-        ELSE gv.giaVe
-    END AS GiaVeSauGiam,
-    v.ngayDat AS NgayDat,
-    pc.tenPhong AS TenPhong,
-    sc.ngayGioChieu AS NgayGioChieu,
-    p.tenPhim AS TenPhim,
-    COALESCE(km.tenKhuyenMai, 'Không có') AS TenKhuyenMai
-FROM 
-    Ve v
-    INNER JOIN Ghe g ON v.maGhe = g.maGhe
-    INNER JOIN PhongChieu pc ON g.maPhong = pc.maPhong
-    INNER JOIN SuatChieu sc ON v.maSuatChieu = sc.maSuatChieu
-    INNER JOIN Phim p ON sc.maPhim = p.maPhim
-    INNER JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
-    LEFT JOIN KhuyenMai km ON v.maKhuyenMai = km.maKhuyenMai
-WHERE 
-    p.trangThai = 'active'
-ORDER BY 
-    v.maVe;
-
-SELECT DATE(v.ngayDat) as ngay, COUNT(*) as soVe, SUM(v.giaVeSauGiam) as doanhThu 
-FROM Ve v
-WHERE v.trangThai = 'PAID' AND DATE(v.ngayDat) BETWEEN 01/01/2025 AND 12/31/2025 
-GROUP BY DATE(v.ngayDat)
-ORDER BY ngay

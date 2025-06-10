@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BaoCaoRepository implements IBaoCaoRepository {
-    protected Connection conn;
     protected DatabaseConnection dbConnection;
 
     public BaoCaoRepository(DatabaseConnection dbConnection) {
@@ -21,11 +20,6 @@ public class BaoCaoRepository implements IBaoCaoRepository {
             throw new IllegalArgumentException("DatabaseConnection cannot be null");
         }
         this.dbConnection = dbConnection;
-        try {
-            this.conn = dbConnection.getConnection();
-        } catch (SQLException e) {
-            throw new RuntimeException("Không thể lấy kết nối cơ sở dữ liệu", e);
-        }
     }
 
     @Override
@@ -41,17 +35,19 @@ public class BaoCaoRepository implements IBaoCaoRepository {
                      "    AND v.ngayDat BETWEEN ? AND ? " +
                      ") " +
                      "ORDER BY DoanhThuThucTe DESC";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setTimestamp(1, java.sql.Timestamp.valueOf(tuNgay));
             stmt.setTimestamp(2, java.sql.Timestamp.valueOf(denNgay));
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                list.add(new BaoCao(
-                        rs.getString("tenPhim"),
-                        rs.getInt("soVeBanRa"),
-                        rs.getDouble("tongDoanhThu"),
-                        rs.getDouble("DiemDanhGiaTrungBinh")
-                ));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    list.add(new BaoCao(
+                            rs.getString("tenPhim"),
+                            rs.getInt("soVeBanRa"),
+                            rs.getDouble("tongDoanhThu"),
+                            rs.getDouble("DiemDanhGiaTrungBinh")
+                    ));
+                }
             }
         }
         return list;
@@ -60,8 +56,9 @@ public class BaoCaoRepository implements IBaoCaoRepository {
     // Phương thức kiểm tra view có tồn tại
     public boolean isViewExists() throws SQLException {
         String sql = "SELECT COUNT(*) FROM information_schema.views WHERE table_name = 'ThongKeDoanhThuPhim'";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            ResultSet rs = stmt.executeQuery();
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
             if (rs.next()) {
                 return rs.getInt(1) > 0;
             }

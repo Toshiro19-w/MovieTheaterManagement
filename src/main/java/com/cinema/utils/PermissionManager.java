@@ -14,7 +14,7 @@ public class PermissionManager {
 
     static {
         rolePermissions.put(LoaiTaiKhoan.ADMIN, Arrays.asList(
-                "Phim", "Suất chiếu", "Vé", "Nhân viên", "Hoá đơn", "Báo cáo", "Bán vé", "Người dùng"
+                "Phim", "Suất chiếu", "Vé", "Hoá đơn", "Báo cáo", "Bán vé", "Người dùng"
         ));
         rolePermissions.put(LoaiTaiKhoan.QUANLYPHIM, Arrays.asList(
                 "Phim", "Suất chiếu", "Nhân viên"

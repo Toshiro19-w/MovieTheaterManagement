@@ -45,6 +45,7 @@ import com.cinema.controllers.KhachHangController;
 import com.cinema.controllers.PaymentController;
 import com.cinema.controllers.SimplePhimController;
 import com.cinema.models.KhachHang;
+import com.cinema.models.NhanVien;
 import com.cinema.models.Phim;
 import com.cinema.services.GheService;
 import com.cinema.services.KhachHangService;
@@ -82,13 +83,16 @@ public class SellTicketView extends JPanel {
     private JPanel searchPanel;
 
     // Data
+    private NhanVien currentNhanVien;
     private List<KhachHang> customers;
     private List<Phim> movies;
     private ResourceBundle messages;
     private EventList<String> customerNameList;
-    private final Timer searchTimer;
-
-    public SellTicketView() throws IOException, SQLException {
+    private final Timer searchTimer;    public SellTicketView(NhanVien nhanVien) throws IOException, SQLException {
+        if (nhanVien == null) {
+            throw new IllegalArgumentException("NhanVien không thể là null");
+        }
+        
         // Initialize controllers
         databaseConnection = new DatabaseConnection();
         KhachHangService khachHangService = new KhachHangService(databaseConnection);
@@ -103,6 +107,7 @@ public class SellTicketView extends JPanel {
         paymentController = new PaymentController();
 
         // Initialize data
+        this.currentNhanVien = nhanVien;
         customers = new ArrayList<>();
         movies = new ArrayList<>();
         messages = ResourceBundle.getBundle("Messages");
@@ -529,6 +534,7 @@ public class SellTicketView extends JPanel {
             }
         } catch (SQLException e) {
             showSnackbar(messages.getString("dbError") + e.getMessage(), false);
+            e.printStackTrace();
         }
     }
 
@@ -576,11 +582,10 @@ public class SellTicketView extends JPanel {
         if (selectedCustomer == null) {
             showSnackbar("Khách hàng không tồn tại! Vui lòng kiểm tra lại.", false);
             return;
-        }
-
-        int maPhim = (int) tableModel.getValueAt(selectedRow, 0);
+        }        int maPhim = (int) tableModel.getValueAt(selectedRow, 0);
         int maKhachHang = selectedCustomer.getMaNguoiDung();
-
+        int maNhanVien = currentNhanVien.getMaNguoiDung();
+        
         try {
             BookingView bookingView = new BookingView(
                 (JFrame) SwingUtilities.getWindowAncestor(this),
@@ -588,6 +593,7 @@ public class SellTicketView extends JPanel {
                 paymentController,
                 maPhim,
                 maKhachHang,
+                maNhanVien,
                 _ -> {
                     loadMovies();
                     showSnackbar(messages.getString("success"), true);
@@ -596,6 +602,7 @@ public class SellTicketView extends JPanel {
             bookingView.setVisible(true);
         } catch (Exception e) {
             showSnackbar(messages.getString("dbError") + e.getMessage(), false);
+            e.printStackTrace();
         }
     }
 
@@ -724,4 +731,11 @@ public class SellTicketView extends JPanel {
 
         return panel;
     }
+    public void setCurrentNhanVien(NhanVien nhanVien) {
+        this.currentNhanVien = nhanVien;
+    }
+    public NhanVien getCurrentNhanVien() {
+        return currentNhanVien;
+    }
 }
+

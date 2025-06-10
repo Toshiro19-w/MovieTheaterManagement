@@ -1,14 +1,19 @@
 package com.cinema.models.repositories;
 
-import com.cinema.models.GiaVe;
-import com.cinema.models.repositories.Interface.IGiaVeRepository;
-import com.cinema.utils.DatabaseConnection;
-
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.cinema.models.GiaVe;
+import com.cinema.models.repositories.Interface.IGiaVeRepository;
+import com.cinema.utils.DatabaseConnection;
 
 public class GiaVeRepository extends BaseRepository<GiaVe> implements IGiaVeRepository {
 
@@ -21,7 +26,8 @@ public class GiaVeRepository extends BaseRepository<GiaVe> implements IGiaVeRepo
         List<GiaVe> giaVeList = new ArrayList<>();
         String query = "SELECT * FROM GiaVe ORDER BY ngayApDung DESC";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query);
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
             
             while (rs.next()) {
@@ -36,7 +42,8 @@ public class GiaVeRepository extends BaseRepository<GiaVe> implements IGiaVeRepo
     public GiaVe findById(int id) throws SQLException {
         String query = "SELECT * FROM GiaVe WHERE maGiaVe = ?";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, id);
             
             try (ResultSet rs = stmt.executeQuery()) {
@@ -53,7 +60,8 @@ public class GiaVeRepository extends BaseRepository<GiaVe> implements IGiaVeRepo
     public GiaVe save(GiaVe entity) throws SQLException {
         String query = "INSERT INTO GiaVe (loaiGhe, ngayApDung, giaVe, ghiChu) VALUES (?, ?, ?, ?)";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, entity.getLoaiGhe());
             stmt.setDate(2, Date.valueOf(entity.getNgayApDung()));
             stmt.setBigDecimal(3, entity.getGiaVe());
@@ -81,7 +89,8 @@ public class GiaVeRepository extends BaseRepository<GiaVe> implements IGiaVeRepo
     public GiaVe update(GiaVe entity) throws SQLException {
         String query = "UPDATE GiaVe SET loaiGhe = ?, ngayApDung = ?, giaVe = ?, ghiChu = ? WHERE maGiaVe = ?";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, entity.getLoaiGhe());
             stmt.setDate(2, Date.valueOf(entity.getNgayApDung()));
             stmt.setBigDecimal(3, entity.getGiaVe());
@@ -102,7 +111,8 @@ public class GiaVeRepository extends BaseRepository<GiaVe> implements IGiaVeRepo
     public void delete(int id) throws SQLException {
         String query = "DELETE FROM GiaVe WHERE maGiaVe = ?";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, id);
             stmt.executeUpdate();
         }
@@ -112,7 +122,8 @@ public class GiaVeRepository extends BaseRepository<GiaVe> implements IGiaVeRepo
     public GiaVe findCurrentByLoaiGhe(String loaiGhe) throws SQLException {
         String query = "SELECT * FROM GiaVe WHERE loaiGhe = ? ORDER BY ngayApDung DESC LIMIT 1";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, loaiGhe);
             
             try (ResultSet rs = stmt.executeQuery()) {
@@ -130,7 +141,8 @@ public class GiaVeRepository extends BaseRepository<GiaVe> implements IGiaVeRepo
         List<GiaVe> giaVeList = new ArrayList<>();
         String query = "SELECT * FROM GiaVe WHERE ngayApDung <= ? ORDER BY ngayApDung DESC";
         
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setDate(1, Date.valueOf(date));
             
             try (ResultSet rs = stmt.executeQuery()) {

@@ -81,21 +81,33 @@ public class ModernUIComponents {
     }
     
     /**
-     * Tạo nút với biểu tượng
+     * Tạo nút chỉ chứa biểu tượng Unicode
      */
-    public static JButton createIconButton(String text, String iconPath, Color bgColor, Color textColor) {
-        JButton button = createButton(text, bgColor, textColor);
+    public static JButton createUnicodeButton(String unicodeIcon, Color bgColor, Color textColor) {
+        JButton button = new JButton();
+        button.setFont(UIConstants.ICON_FONT);
+        button.setBackground(bgColor);
+        button.setForeground(textColor);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        button.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         
-        try {
-            // Lấy icon từ cache hoặc tạo mới
-            ImageIcon icon = getIcon(iconPath, 20, 20);
-            if (icon != null) {
-                button.setIcon(icon);
-                button.setIconTextGap(10);
+        // Đặt văn bản Unicode trực tiếp
+        button.setText(unicodeIcon);
+        
+        // Hiệu ứng hover
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(brighten(bgColor, 0.1f));
             }
-        } catch (Exception e) {
-            // Ignore if icon can't be loaded
-        }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(bgColor);
+            }
+        });
         
         return button;
     }

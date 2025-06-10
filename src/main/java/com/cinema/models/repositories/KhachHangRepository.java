@@ -13,7 +13,6 @@ import com.cinema.models.repositories.Interface.IKhachHangRepository;
 import com.cinema.utils.DatabaseConnection;
 
 public class KhachHangRepository implements IKhachHangRepository {
-    protected Connection conn;
     protected DatabaseConnection dbConnection;
 
     public KhachHangRepository(DatabaseConnection dbConnection) {
@@ -21,23 +20,22 @@ public class KhachHangRepository implements IKhachHangRepository {
             throw new IllegalArgumentException("DatabaseConnection cannot be null");
         }
         this.dbConnection = dbConnection;
-        try {
-            this.conn = dbConnection.getConnection();
-        } catch (SQLException e) {
-            throw new RuntimeException("Không thể lấy kết nối cơ sở dữ liệu", e);
-        }
     }
 
-    // Lấy thông tin khách hàng qua maHoaDon
+    // Lấy thông tin khách hàng qua maVe
     @Override
     public KhachHang getKhachHangByMaVe(int maVe) throws SQLException {
+        // Truy vấn trực tiếp từ bảng Ve thay vì dựa vào view
         String sql = """
-                SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email\s
-                FROM NguoiDung nd\s
-                JOIN HoaDon hd ON nd.maNguoiDung = hd.maKhachHang
-                JOIN Ve v ON v.maHoaDon = hd.maHoaDon
-                WHERE v.maVe = ?;""";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email, kh.diemTichLuy
+                FROM Ve v
+                JOIN HoaDon hd ON v.maHoaDon = hd.maHoaDon
+                JOIN NguoiDung nd ON hd.maKhachHang = nd.maNguoiDung
+                JOIN KhachHang kh ON nd.maNguoiDung = kh.maNguoiDung
+                WHERE v.maVe = ?""";
+        
+        try (Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, maVe);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -46,11 +44,14 @@ public class KhachHangRepository implements IKhachHangRepository {
                     khachHang.setHoTen(rs.getString("hoTen"));
                     khachHang.setSoDienThoai(rs.getString("soDienThoai"));
                     khachHang.setEmail(rs.getString("email"));
+                    khachHang.setDiemTichLuy(rs.getInt("diemTichLuy"));
+                    System.out.println("Tìm thấy khách hàng: " + khachHang.getHoTen() + ", Điểm tích lũy: " + khachHang.getDiemTichLuy());
                     return khachHang;
                 }
             }
         }
-        return null; // Nếu không tìm thấy khách hàng
+        System.out.println("Không tìm thấy khách hàng cho vé: " + maVe);
+        return null;
     }
 
     @Override
@@ -60,7 +61,8 @@ public class KhachHangRepository implements IKhachHangRepository {
             FROM NguoiDung nd
             JOIN TaiKhoan tk ON nd.maNguoiDung = tk.maNguoiDung
             WHERE tk.tenDangNhap = ?""";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, username);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -78,13 +80,15 @@ public class KhachHangRepository implements IKhachHangRepository {
 
     @Override
     public int getMaKhachHangFromSession(String username) throws SQLException {
-        try (PreparedStatement stmt = conn.prepareStatement(
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
                      "SELECT nd.maNguoiDung FROM NguoiDung nd JOIN TaiKhoan tk ON nd.maNguoiDung = tk.maNguoiDung " +
                              "WHERE tk.tenDangNhap = ? AND nd.loaiNguoiDung = 'KhachHang'")) {
             stmt.setString(1, username);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt("maNguoiDung");
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("maNguoiDung");
+                }
             }
         }
         return -1;
@@ -98,7 +102,9 @@ public class KhachHangRepository implements IKhachHangRepository {
                 SELECT nd.maNguoiDung, nd.hoTen, nd.soDienThoai, nd.email, kh.diemTichLuy
                 FROM NguoiDung nd
                 JOIN KhachHang kh ON nd.maNguoiDung = kh.maNguoiDung""";
-        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+             Statement stmt = conn.createStatement(); 
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 KhachHang khachHang = new KhachHang();
                 khachHang.setMaNguoiDung(rs.getInt("maNguoiDung"));
@@ -123,7 +129,8 @@ public class KhachHangRepository implements IKhachHangRepository {
                 OR nd.soDienThoai LIKE ?
                 OR LOWER(nd.email) LIKE LOWER(?)
                 LIMIT 10""";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             String searchPattern = "%" + keyword + "%";
             stmt.setString(1, searchPattern);
             stmt.setString(2, searchPattern);
@@ -151,7 +158,8 @@ public class KhachHangRepository implements IKhachHangRepository {
                 JOIN KhachHang kh ON nd.maNguoiDung = kh.maNguoiDung
                 ORDER BY nd.maNguoiDung DESC
                 LIMIT ?""";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, limit);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {

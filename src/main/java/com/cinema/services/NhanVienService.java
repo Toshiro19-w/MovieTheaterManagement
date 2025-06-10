@@ -29,4 +29,8 @@ public class NhanVienService {
     public void deleteNhanVien(int maNguoiDung) throws SQLException {
         nhanVienRepository.delete(maNguoiDung);
     }
+
+    public NhanVien findByUsername(String username) throws SQLException {
+        return nhanVienRepository.findByUsername(username);
+    }
 }
