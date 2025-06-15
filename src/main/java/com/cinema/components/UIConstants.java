@@ -29,6 +29,7 @@ public class UIConstants {
     public static final Color SUCCESS_COLOR = new Color(46, 204, 113);
     public static final Color ERROR_COLOR = new Color(231, 76, 60);
     public static final Color WARNING_COLOR = new Color(241, 196, 15);
+    public static final Color INFO_COLOR = new Color(66, 165, 245);
     
     // Màu tương tác
     public static final Color HOVER_COLOR = new Color(224, 231, 255); // Light indigo
@@ -38,6 +39,10 @@ public class UIConstants {
     // Màu bảng
     public static final Color TABLE_GRID_COLOR = new Color(230, 230, 230);
     public static final Color TABLE_SELECTION_BG = new Color(232, 241, 249);
+
+    // Màu nút
+    public static final Color BUTTON_COLOR = PRIMARY_COLOR;
+    public static final Color BUTTON_TEXT_COLOR = Color.WHITE;
     
     // Font
     public static final Font PRIMARY_FONT = new Font("Segoe UI", Font.PLAIN, 14);

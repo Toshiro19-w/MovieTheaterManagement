@@ -114,23 +114,20 @@ SET GLOBAL event_scheduler = ON;
 
 -- Tạo event để tự động cập nhật trạng thái phim hàng ngày
 DELIMITER //
-CREATE EVENT IF NOT EXISTS update_movie_status_daily
+DROP EVENT IF EXISTS update_movie_status_daily//
+CREATE EVENT update_movie_status_daily 
 ON SCHEDULE EVERY 1 DAY
-STARTS CURRENT_DATE
+STARTS CURRENT_TIMESTAMP
 DO
 BEGIN
-    -- Cập nhật phim từ upcoming sang active khi đến ngày khởi chiếu
-    UPDATE Phim
-    SET trangThai = 'active'
+    UPDATE Phim SET trangThai = 'active'
     WHERE trangThai = 'upcoming'
     AND ngayKhoiChieu <= CURDATE();
-    
-    -- Cập nhật phim từ active sang deleted khi quá 10 ngày sau ngày khởi chiếu
-    UPDATE Phim
-    SET trangThai = 'deleted'
+
+    UPDATE Phim SET trangThai = 'deleted'
     WHERE trangThai = 'active'
     AND ngayKhoiChieu < DATE_SUB(CURDATE(), INTERVAL 10 DAY);
-END //
+END//
 DELIMITER ;
 
 select * from phim;
@@ -612,11 +609,46 @@ WHERE
 ORDER BY 
     v.maVe;
 
-SELECT DATE(v.ngayDat) as ngay, COUNT(*) as soVe, SUM(v.giaVeSauGiam) as doanhThu 
-FROM Ve v
-WHERE v.trangThai = 'PAID' AND DATE(v.ngayDat) BETWEEN 01/01/2025 AND 12/31/2025 
-GROUP BY DATE(v.ngayDat)
-ORDER BY ngay
+-- Tạo bảng ActivityLog để lưu trữ hoạt động của người dùng
+CREATE TABLE IF NOT EXISTS ActivityLog (
+    maLog INT AUTO_INCREMENT PRIMARY KEY,
+    loaiHoatDong NVARCHAR(50) NOT NULL,
+    moTa NVARCHAR(255) NOT NULL,
+    thoiGian DATETIME DEFAULT NOW(),
+    maNguoiDung INT NOT NULL,
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung) ON DELETE CASCADE
+);
+
+-- Tạo stored procedure để thêm log
+DELIMITER //
+CREATE PROCEDURE AddActivityLog(
+    IN p_loaiHoatDong NVARCHAR(50),
+    IN p_moTa NVARCHAR(255),
+    IN p_maNguoiDung INT
+)
+BEGIN
+    INSERT INTO ActivityLog (loaiHoatDong, moTa, thoiGian, maNguoiDung)
+    VALUES (p_loaiHoatDong, p_moTa, NOW(), p_maNguoiDung);
+END //
+DELIMITER ;
+
+-- Tạo stored procedure để lấy log gần đây
+DELIMITER //
+CREATE PROCEDURE GetRecentLogs(
+    IN p_limit INT
+)
+BEGIN
+    SELECT l.*, nd.hoTen 
+    FROM ActivityLog l
+    JOIN NguoiDung nd ON l.maNguoiDung = nd.maNguoiDung
+    ORDER BY l.thoiGian DESC
+    LIMIT p_limit;
+END //
+DELIMITER ;
+
+-- Tạo index để tối ưu truy vấn
+CREATE INDEX idx_activitylog_thoigian ON ActivityLog(thoiGian);
+CREATE INDEX idx_activitylog_manguoidung ON ActivityLog(maNguoiDung);
 
 -- Tạo các chỉ mục để tối ưu hóa truy vấn
 CREATE INDEX idx_phim_maTheLoai ON Phim(maTheLoai);
@@ -731,7 +763,7 @@ INSERT INTO PhongChieu (tenPhong, soLuongGhe, loaiPhong) VALUES
 ('Phòng 4', 60, 'VIP'),
 ('Phòng 5', 150, 'Thường');
 
-select * from ve;
+select * from phim;
 
 -- Dữ liệu cho bảng Ghe
 INSERT INTO Ghe (maPhong, loaiGhe, soGhe) VALUES
@@ -944,3 +976,12 @@ INSERT INTO PhienLamViec (maNhanVien, thoiGianBatDau, thoiGianKetThuc, tongDoanh
 (10, '2025-01-15 16:00:00', '2025-01-15 23:59:00', 3000000.00, 12),
 (8, '2025-01-16 08:00:00', '2025-01-16 16:00:00', 2500000.00, 10);
 
+-- Thêm một số dữ liệu mẫu
+INSERT INTO ActivityLog (loaiHoatDong, moTa, thoiGian, maNguoiDung) VALUES
+('Đăng nhập', 'Đăng nhập vào hệ thống', NOW() - INTERVAL 1 HOUR, 9),
+('Thêm phim', 'Thêm phim mới: Avatar 3', NOW() - INTERVAL 2 HOUR, 4),
+('Sửa phim', 'Cập nhật thông tin phim: The Batman 2', NOW() - INTERVAL 3 HOUR, 4),
+('Bán vé', 'Bán vé cho khách hàng: Nguyễn Văn A', NOW() - INTERVAL 4 HOUR, 5),
+('Xóa suất chiếu', 'Xóa suất chiếu ngày 25/06/2025', NOW() - INTERVAL 5 HOUR, 4),
+('Thêm khuyến mãi', 'Thêm khuyến mãi mới: Giảm giá hè 2025', NOW() - INTERVAL 6 HOUR, 9),
+('Đăng xuất', 'Đăng xuất khỏi hệ thống', NOW() - INTERVAL 7 HOUR, 9);

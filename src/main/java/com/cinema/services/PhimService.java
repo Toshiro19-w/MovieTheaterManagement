@@ -138,6 +138,16 @@ public class PhimService {
     }
     
     /**
+     * Lấy danh sách phim đang chiếu
+     * 
+     * @return Danh sách phim đang chiếu
+     * @throws SQLException Nếu có lỗi SQL
+     */
+    public List<Phim> getPhimDangChieu() throws SQLException {
+        return phimRepository.findPhimDangChieu();
+    }
+    
+    /**
      * Kiểm tra xem tên phim đã tồn tại chưa
      * 
      * @param tenPhim Tên phim

@@ -1,4 +1,4 @@
-package com.cinema.views;
+package com.cinema.views.booking;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -38,6 +38,7 @@ import com.cinema.controllers.PaymentController;
 import com.cinema.models.Ghe;
 import com.cinema.models.SuatChieu;
 import com.cinema.models.dto.BookingResultDTO;
+import com.cinema.utils.SnackbarUtil;
 
 public class BookingView extends JDialog {
     // Màu sắc và font chữ giống với MainView
@@ -318,9 +319,8 @@ public class BookingView extends JDialog {
                             maKhachHang
                     );
                     
-                    if (maVe != null) {
-                        maVeList.add(maVe);
-                    }
+                    if(maVe != null) maVeList.add(maVe);
+                    
                 }
                 
                 if (maVeList.isEmpty()) {
@@ -333,12 +333,12 @@ public class BookingView extends JDialog {
                 JOptionPane.showMessageDialog(this, "Đã tạo vé chờ thanh toán! Vui lòng tiến hành thanh toán.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
 
                 // Mở PaymentView ngay sau khi tạo vé chờ thanh toán thành công
-                PaymentView paymentView = new PaymentView((JFrame) getParent(), paymentController, datVeController, selectedSuatChieu, selectedGheList.get(0), totalPrice, maVe, maKhachHang, maNhanVien, paymentResult -> {
-                    if (paymentResult != null) {
+                PaymentView paymentView = new PaymentView((JFrame) getParent(), paymentController, datVeController, selectedSuatChieu, selectedGheList.get(0), totalPrice, maVe, maKhachHang, maNhanVien, paymentResult -> {                    if (paymentResult != null) {
                         confirmCallback.accept(new BookingResultDTO(selectedSuatChieu,
                                 selectedGheList.get(0),
                                 totalPrice,
-                                paymentResult.transactionId));
+                                paymentResult.getTransactionId()));
+                        SnackbarUtil.showSnackbar(this, "Thanh toán thành công", true);
                         dispose();
                     } else {
                         JOptionPane.showMessageDialog(this, "Thanh toán đã bị hủy.", "Thông báo", JOptionPane.WARNING_MESSAGE);
@@ -347,7 +347,6 @@ public class BookingView extends JDialog {
                 paymentView.setVisible(true);
             } catch (SQLException e) {
                 JOptionPane.showMessageDialog(this, "Lỗi khi đặt vé: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-                e.printStackTrace();
             }
         });
         
@@ -448,6 +447,7 @@ public class BookingView extends JDialog {
             updateAppearance();
         }
         
+        @Override
         public void setSelected(boolean selected) {
             this.isSelected = selected;
             updateAppearance();

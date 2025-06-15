@@ -2,6 +2,7 @@ package com.cinema.views.admin;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.io.IOException;
@@ -26,8 +27,9 @@ import com.cinema.controllers.KhachHangController;
 import com.cinema.models.KhachHang;
 import com.cinema.services.KhachHangService;
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.views.common.ResizableView;
 
-public class KhachHangView extends JPanel {
+public class KhachHangView extends JPanel implements ResizableView {
     private JLabel maKHLabel;
     private JTextField hoTenField;
     private JTextField emailField;
@@ -178,4 +180,20 @@ public class KhachHangView extends JPanel {
     public JButton getEditButton() { return editButton; }
     public JButton getDeleteButton() { return deleteButton; }
     public JButton getClearButton() { return clearButton; }
+
+    @Override
+    public Dimension getPreferredViewSize() {
+        return new Dimension(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    }
+
+    @Override
+    public Dimension getMinimumViewSize() {
+        return new Dimension(MIN_WIDTH, MIN_HEIGHT);
+    }
+
+    @Override
+    public boolean needsScrolling() {
+        // Cần scroll vì có bảng danh sách khách hàng
+        return true;
+    }
 }

@@ -1,4 +1,4 @@
-package com.cinema.views;
+package com.cinema.views.common;
 
 import com.cinema.enums.LoaiTaiKhoan;
 import com.cinema.utils.PermissionManager;

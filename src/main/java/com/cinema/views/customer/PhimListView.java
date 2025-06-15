@@ -1,10 +1,9 @@
-package com.cinema.views;
+package com.cinema.views.customer;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Frame;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -22,14 +21,13 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 
+import com.cinema.components.DanhGiaPanel;
 import com.cinema.components.PhimCarouselPanel;
 import com.cinema.controllers.KhachHangController;
 import com.cinema.controllers.PhimController;
@@ -47,6 +45,10 @@ public class PhimListView extends JPanel {
     private PhimCarouselPanel dangChieuPanel;
     private PhimCarouselPanel sapChieuPanel;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    
+    private JPanel mainContentPanel;
+    private JPanel listPanel;
+    private JScrollPane mainScrollPane;
 
     public PhimListView(PhimController phimController, BiConsumer<Integer, Integer> bookTicketCallback, String username) throws IOException, SQLException {
         this.phimService = new PhimService(new DatabaseConnection());
@@ -62,26 +64,31 @@ public class PhimListView extends JPanel {
     }
 
     private void initializeComponents() {
-        // Content panel (chứa cả hai danh sách phim)
-        JPanel contentPanel = new JPanel();
-        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        contentPanel.setBackground(Color.WHITE);
+        // Panel chính chứa tất cả nội dung
+        mainContentPanel = new JPanel(new BorderLayout());
+        mainContentPanel.setBackground(Color.WHITE);
+        
+        // Panel danh sách phim
+        listPanel = new JPanel();
+        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
+        listPanel.setBackground(Color.WHITE);
 
         // Panel phim đang chiếu
         dangChieuPanel = new PhimCarouselPanel("Phim đang chiếu", bookTicketCallback, this::showPhimDetail, username);
-        contentPanel.add(dangChieuPanel);
+        listPanel.add(dangChieuPanel);
 
         // Panel phim sắp chiếu
         sapChieuPanel = new PhimCarouselPanel("Phim sắp chiếu", bookTicketCallback, this::showPhimDetail, username);
-        contentPanel.add(sapChieuPanel);
+        listPanel.add(sapChieuPanel);
 
         // Thêm vào scroll pane
-        JScrollPane scrollPane = new JScrollPane(contentPanel);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        mainScrollPane = new JScrollPane(listPanel);
+        mainScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        mainScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        mainScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         
-        add(scrollPane, BorderLayout.CENTER);
+        mainContentPanel.add(mainScrollPane, BorderLayout.CENTER);
+        add(mainContentPanel, BorderLayout.CENTER);
     }
 
     public void loadPhimList(String searchText) {
@@ -125,13 +132,47 @@ public class PhimListView extends JPanel {
     }
 
     private void showPhimDetail(Phim phim) {
-        JDialog detailDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Chi tiết phim: " + phim.getTenPhim(), true);
-        detailDialog.setSize(800, 500);
-        detailDialog.setLayout(new BorderLayout(10, 10));
-        detailDialog.setLocationRelativeTo(this);
-        detailDialog.setBackground(Color.WHITE);
-
-        // Panel chính chứa thông tin chi tiết
+        // Panel chính chứa thông tin chi tiết và đánh giá
+        JPanel detailPanel = new JPanel();
+        detailPanel.setLayout(new BorderLayout());
+        detailPanel.setBackground(Color.WHITE);
+        
+        // Panel header chứa tiêu đề và nút quay lại
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(Color.WHITE);
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        headerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.GRAY));
+        // Tiêu đề phim
+        JLabel titleLabel = new JLabel(phim.getTenPhim());
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        headerPanel.add(titleLabel, BorderLayout.CENTER);
+        
+        // Nút quay lại
+        JButton backButton = new JButton("←");
+        backButton.setBackground(new Color(0, 48, 135));
+        backButton.setForeground(Color.WHITE);
+        backButton.addActionListener(e -> showPhimList());
+        backButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                backButton.setBackground(new Color(0, 72, 202));
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                backButton.setBackground(new Color(0, 48, 135));
+            }
+        });
+        headerPanel.add(backButton, BorderLayout.WEST);
+        
+        // Thêm header vào panel chính
+        detailPanel.add(headerPanel, BorderLayout.NORTH);
+        
+        // Panel nội dung chứa thông tin chi tiết và đánh giá
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setBackground(Color.WHITE);
+        
+        // Panel chứa thông tin chi tiết phim
         JPanel mainPanel = new JPanel(new BorderLayout(20, 0));
         mainPanel.setBackground(Color.WHITE);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -193,12 +234,6 @@ public class PhimListView extends JPanel {
         rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
         rightPanel.setBackground(Color.WHITE);
 
-        // Tên phim
-        JLabel titleLabel = new JLabel(phim.getTenPhim());
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        titleLabel.setAlignmentX(LEFT_ALIGNMENT);
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
-
         // Thông tin chi tiết
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
@@ -257,57 +292,83 @@ public class PhimListView extends JPanel {
         infoPanel.add(descriptionTitle);
         infoPanel.add(descriptionLabel);
 
-        // Nút đặt vé hoặc đóng
+        // Nút đặt vé
         JPanel buttonPanel = new JPanel(new BorderLayout());
         buttonPanel.setBackground(Color.WHITE);
         buttonPanel.setAlignmentX(LEFT_ALIGNMENT);
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0));
 
-        JButton actionButton;
         if ("active".equals(phim.getTrangThai())) {
-            actionButton = new JButton("Đặt vé");
-            actionButton.addActionListener(e -> {
+            JButton bookButton = new JButton("Đặt vé");
+            bookButton.setBackground(new Color(0, 48, 135));
+            bookButton.setForeground(Color.WHITE);
+            bookButton.setFont(new Font("Arial", Font.BOLD, 16));
+            bookButton.setPreferredSize(new Dimension(150, 40));
+            bookButton.addActionListener(e -> {
                 try {
                     int maKhachHang = khachHangController.getMaKhachHangFromSession(username);
                     bookTicketCallback.accept(phim.getMaPhim(), maKhachHang);
-                    detailDialog.dispose();
                 } catch (SQLException ex) {
-                    JOptionPane.showMessageDialog(detailDialog, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             });
-        } else {
-            actionButton = new JButton("Đóng");
-            actionButton.addActionListener(e -> detailDialog.dispose());
+            bookButton.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    bookButton.setBackground(new Color(0, 72, 202));
+                }
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    bookButton.setBackground(new Color(0, 48, 135));
+                }
+            });
+            buttonPanel.add(bookButton, BorderLayout.WEST);
         }
 
-        actionButton.setBackground(new Color(0, 48, 135));
-        actionButton.setForeground(Color.WHITE);
-        actionButton.setFont(new Font("Arial", Font.BOLD, 16));
-        actionButton.setPreferredSize(new Dimension(150, 40));
-        actionButton.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                actionButton.setBackground(new Color(0, 72, 202));
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                actionButton.setBackground(new Color(0, 48, 135));
-            }
-        });
-
-        buttonPanel.add(actionButton, BorderLayout.WEST);
-
         // Thêm các thành phần vào panel bên phải
-        rightPanel.add(titleLabel);
         rightPanel.add(infoPanel);
         rightPanel.add(buttonPanel);
 
         // Thêm các panel vào panel chính
         mainPanel.add(leftPanel, BorderLayout.WEST);
         mainPanel.add(rightPanel, BorderLayout.CENTER);
-
-        // Thêm panel chính vào dialog
-        detailDialog.add(mainPanel, BorderLayout.CENTER);
-        detailDialog.setVisible(true);
+        
+        // Thêm panel thông tin phim vào content panel
+        contentPanel.add(mainPanel);
+        
+        // Thêm panel đánh giá
+        try {
+            // Tạo panel đánh giá và thêm vào content panel
+            DanhGiaPanel danhGiaPanel = new DanhGiaPanel(phim.getMaPhim(), username);
+            danhGiaPanel.setAlignmentX(LEFT_ALIGNMENT);
+            contentPanel.add(danhGiaPanel);
+        } catch (Exception e) {
+            e.printStackTrace();
+            JLabel errorLabel = new JLabel("Không thể tải đánh giá: " + e.getMessage());
+            errorLabel.setAlignmentX(LEFT_ALIGNMENT);
+            contentPanel.add(errorLabel);
+        }
+        
+        // Tạo scroll pane để có thể cuộn nếu nội dung quá dài
+        JScrollPane scrollPane = new JScrollPane(contentPanel);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16); // Tăng tốc độ cuộn
+        
+        // Thêm nội dung vào panel chi tiết
+        detailPanel.add(scrollPane, BorderLayout.CENTER);
+        
+        // Hiển thị panel chi tiết
+        mainContentPanel.removeAll();
+        mainContentPanel.add(detailPanel, BorderLayout.CENTER);
+        mainContentPanel.revalidate();
+        mainContentPanel.repaint();
+    }
+    
+    // Phương thức để quay lại danh sách phim
+    private void showPhimList() {
+        mainContentPanel.removeAll();
+        mainContentPanel.add(mainScrollPane, BorderLayout.CENTER);
+        mainContentPanel.revalidate();
+        mainContentPanel.repaint();
     }
 }

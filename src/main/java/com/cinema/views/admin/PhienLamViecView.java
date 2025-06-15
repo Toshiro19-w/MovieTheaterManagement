@@ -26,8 +26,9 @@ import com.cinema.controllers.PhienLamViecController;
 import com.cinema.models.PhienLamViec;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.DateTimeFormatter;
+import com.cinema.views.common.ResizableView;
 
-public class PhienLamViecView extends JPanel {
+public class PhienLamViecView extends JPanel implements ResizableView {
     private static final Color CINESTAR_BLUE = new Color(0, 51, 102);
     private static final Color CINESTAR_YELLOW = new Color(255, 204, 0);
     private static final Color BACKGROUND_COLOR = new Color(245, 245, 245);
@@ -207,4 +208,20 @@ public class PhienLamViecView extends JPanel {
     public JDateChooser getToDateChooser() { return toDateChooser; }
     public JButton getSearchButton() { return searchButton; }
     public JButton getRefreshButton() { return refreshButton; }
+
+    @Override
+    public Dimension getPreferredViewSize() {
+        return new Dimension(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    }
+
+    @Override
+    public Dimension getMinimumViewSize() {
+        return new Dimension(MIN_WIDTH, MIN_HEIGHT);
+    }
+
+    @Override
+    public boolean needsScrolling() {
+        // Cần scroll vì có bảng danh sách phiên làm việc
+        return true;
+    }
 }

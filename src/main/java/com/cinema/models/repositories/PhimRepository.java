@@ -10,9 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.cinema.models.Phim;
+import com.cinema.models.dto.PaginationResult;
 import com.cinema.services.PhimTheLoaiService;
 import com.cinema.utils.DatabaseConnection;
-import com.cinema.models.dto.PaginationResult;
 
 public class PhimRepository extends BaseRepository<Phim> {
     private final PhimTheLoaiService phimTheLoaiService;
@@ -165,6 +165,51 @@ public class PhimRepository extends BaseRepository<Phim> {
             }
         }
         return entity;
+    }
+
+    public List<Phim> findPhimDangChieu() throws SQLException {
+        List<Phim> list = new ArrayList<>();
+        
+        String sql = """
+                SELECT DISTINCT p.maPhim, p.tenPhim, p.thoiLuong, p.ngayKhoiChieu, 
+                p.nuocSanXuat, p.kieuPhim, p.moTa, p.daoDien, p.duongDanPoster, p.trangThai
+                FROM Phim p
+                WHERE p.trangThai = 'active'
+                ORDER BY p.ngayKhoiChieu DESC, p.tenPhim
+                """;
+                
+        try (Connection conn = getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery()) {
+            
+            while (rs.next()) {
+                Phim phim = new Phim();
+                phim.setMaPhim(rs.getInt("maPhim"));
+                phim.setTenPhim(rs.getString("tenPhim"));
+                phim.setThoiLuong(rs.getInt("thoiLuong"));
+                phim.setNgayKhoiChieu(rs.getDate("ngayKhoiChieu") != null
+                        ? rs.getDate("ngayKhoiChieu").toLocalDate()
+                        : null);
+                phim.setNuocSanXuat(rs.getString("nuocSanXuat"));
+                phim.setKieuPhim(rs.getString("kieuPhim"));
+                phim.setMoTa(rs.getString("moTa"));
+                phim.setDaoDien(rs.getString("daoDien"));
+                phim.setDuongDanPoster(rs.getString("duongDanPoster"));
+                phim.setTrangThai(rs.getString("trangThai"));
+                
+                // Lấy danh sách thể loại cho phim
+                String tenTheLoai = phimTheLoaiService.getTheLoaiNamesStringByPhimId(phim.getMaPhim());
+                phim.setTenTheLoai(tenTheLoai);
+                
+                // Lấy danh sách mã thể loại
+                List<Integer> maTheLoaiList = phimTheLoaiService.getTheLoaiIdsByPhimId(phim.getMaPhim());
+                phim.setMaTheLoaiList(maTheLoaiList);
+                
+                list.add(phim);
+            }
+        }
+        
+        return list;
     }
 
     @Override

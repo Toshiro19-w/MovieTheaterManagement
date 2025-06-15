@@ -1,6 +1,7 @@
 package com.cinema.views.admin;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.KeyAdapter;
@@ -28,12 +29,13 @@ import com.cinema.components.ModernUIApplier;
 import com.cinema.components.UIConstants;
 import com.cinema.controllers.NhanVienController;
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.views.common.ResizableView;
 
 /**
  * NhanVienView is a JPanel that provides a GUI for managing employee information
  * and creating accounts for employees.
  */
-public class NhanVienView extends JPanel {
+public class NhanVienView extends JPanel implements ResizableView {
     private DatabaseConnection databaseConnection;
     private JTextField searchField, txtTenDangNhap, txtHoTen, txtSDT, txtEmail, txtLuong;
     private JComboBox<String> vaiTroCombo, cmbLoaiTaiKhoan;
@@ -238,6 +240,22 @@ public class NhanVienView extends JPanel {
      */
     private void showError(String message) {
         JOptionPane.showMessageDialog(this, message, "Lỗi", JOptionPane.ERROR_MESSAGE);
+    }
+
+    @Override
+    public Dimension getPreferredViewSize() {
+        return new Dimension(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    }
+
+    @Override
+    public Dimension getMinimumViewSize() {
+        return new Dimension(MIN_WIDTH, MIN_HEIGHT);
+    }
+
+    @Override
+    public boolean needsScrolling() {
+        // Cần scroll vì có bảng danh sách nhân viên
+        return true;
     }
 
     // Getters

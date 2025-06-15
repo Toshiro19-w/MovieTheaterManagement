@@ -1,4 +1,4 @@
-package com.cinema.views;
+package com.cinema.views.customer;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -21,6 +21,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 
 import com.cinema.controllers.KhachHangController;
@@ -65,13 +66,13 @@ public class UserInfoView extends JDialog {
 
         try {
             KhachHang khachHang = khachHangController.getKhachHangByUsername(username);
-            infoPanel.add(new JLabel("Tên đăng nhập:"));
+            infoPanel.add(createBoldLabel("Tên đăng nhập:"));
             infoPanel.add(new JLabel(username));
-            infoPanel.add(new JLabel("Họ tên:"));
+            infoPanel.add(createBoldLabel("Họ tên:"));
             infoPanel.add(new JLabel(khachHang.getHoTen()));
-            infoPanel.add(new JLabel("Email:"));
+            infoPanel.add(createBoldLabel("Email:"));
             infoPanel.add(new JLabel(khachHang.getEmail()));
-            infoPanel.add(new JLabel("Số điện thoại:"));
+            infoPanel.add(createBoldLabel("Số điện thoại:"));
             infoPanel.add(new JLabel(khachHang.getSoDienThoai()));
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Lỗi khi lấy thông tin người dùng: " + e.getMessage(),
@@ -83,6 +84,14 @@ public class UserInfoView extends JDialog {
         add(infoPanel, BorderLayout.NORTH);
 
         // Lịch sử vé
+        JPanel historyPanel = new JPanel(new BorderLayout());
+        historyPanel.setBorder(BorderFactory.createEmptyBorder(0, 20, 20, 20));
+        
+        JLabel historyTitle = new JLabel("Lịch sử đặt vé");
+        historyTitle.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 16));
+        historyTitle.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        historyPanel.add(historyTitle, BorderLayout.NORTH);
+        
         String[] columns = {"Mã vé", "Tên phim", "Suất chiếu", "Ghế", "Loại ghế", "Số tiền", "Trạng thái", "Hành động"};
         DefaultTableModel tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -104,9 +113,32 @@ public class UserInfoView extends JDialog {
         bookingTable.getColumnModel().getColumn(6).setPreferredWidth(100); // Trạng thái
         bookingTable.getColumnModel().getColumn(7).setPreferredWidth(100); // Hành động
 
+        // Tùy chỉnh giao diện bảng
+        bookingTable.setRowHeight(25);
+        bookingTable.setShowGrid(true);
+        bookingTable.setGridColor(new Color(230, 230, 230));
+        bookingTable.getTableHeader().setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 12));
+        
         JScrollPane tableScrollPane = new JScrollPane(bookingTable);
-        tableScrollPane.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        add(tableScrollPane, BorderLayout.CENTER);
+        historyPanel.add(tableScrollPane, BorderLayout.CENTER);
+        
+        // Thêm nút làm mới
+        JButton refreshButton = new JButton("Làm mới dữ liệu");
+        refreshButton.addActionListener(e -> loadBookingHistory(tableModel));
+        JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT));
+        buttonPanel.add(refreshButton);
+        historyPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        add(historyPanel, BorderLayout.CENTER);
+        
+        // Tải dữ liệu lịch sử đặt vé
+        loadBookingHistory(tableModel);
+    }
+    
+    private JLabel createBoldLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new java.awt.Font(label.getFont().getName(), java.awt.Font.BOLD, label.getFont().getSize()));
+        return label;
     }
 
     private void loadBookingHistory(DefaultTableModel tableModel) {
@@ -114,7 +146,8 @@ public class UserInfoView extends JDialog {
         try {
             List<ChiTietHoaDon> chiTietHoaDons = hoaDonRepository.findChiTietByUsername(username);
             for (ChiTietHoaDon chiTiet : chiTietHoaDons) {
-                String trangThai = veRepository.findVeByMaVe(chiTiet.getMaVe()).getTrangThai().toString();
+                var ve = veRepository.findVeByMaVe(chiTiet.getMaVe());
+                String trangThai = ve != null ? ve.getTrangThai().toString() : "UNKNOWN";
                 String action = "BOOKED".equals(trangThai) ? "Hủy vé" : "-";
                 Object[] row = {
                     chiTiet.getMaVe(),
@@ -135,16 +168,20 @@ public class UserInfoView extends JDialog {
     }
 
     private String getTrangThaiDisplay(String trangThai) {
-        switch (trangThai) {
-            case "BOOKED": return "Chờ thanh toán";
-            case "PAID": return "Đã thanh toán";
-            case "CANCELLED": return "Đã hủy";
-            default: return trangThai;
-        }
+        return switch (trangThai) {
+            case "BOOKED" -> "Chờ thanh toán";
+            case "PAID" -> "Đã thanh toán";
+            case "CANCELLED" -> "Đã hủy";
+            default -> trangThai;
+        };
     }
 
     private void handleDatabaseError(SQLException e) {
         String errorMessage = e.getMessage();
+        if (errorMessage == null) {
+            errorMessage = "Không xác định";
+        }
+        
         if (errorMessage.toLowerCase().contains("closed") || errorMessage.toLowerCase().contains("connection")) {
             int option = JOptionPane.showConfirmDialog(this,
                     "Lỗi kết nối cơ sở dữ liệu: Không thể tải lịch sử đặt vé. Vui lòng kiểm tra lại hệ thống.\nBạn có muốn thử lại không?",
@@ -165,7 +202,16 @@ public class UserInfoView extends JDialog {
 
     private void cancelVe(int maVe) {
         try {
-            String trangThai = veRepository.findVeByMaVe(maVe).getTrangThai().toString();
+            var ve = veRepository.findVeByMaVe(maVe);
+            if (ve == null) {
+                JOptionPane.showMessageDialog(this,
+                        "Không tìm thấy thông tin vé.",
+                        "Lỗi",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            String trangThai = ve.getTrangThai().toString();
             if (!"BOOKED".equals(trangThai)) {
                 JOptionPane.showMessageDialog(this,
                         "Chỉ có thể hủy vé chưa thanh toán (trạng thái BOOKED).",
@@ -220,7 +266,7 @@ public class UserInfoView extends JDialog {
             button = new JButton();
             button.setOpaque(true);
             button.addActionListener(_ -> fireEditingStopped());
-        }
+        } 
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {

@@ -197,12 +197,15 @@ public class DatVeRepository implements IDatVeRepository {
             conn = dbConnection.getConnection();
             conn.setAutoCommit(false);
             
-            BigDecimal giaVe = getGiaVeFromVe(maVe, conn);
-
+            BigDecimal giaVe = getGiaVeFromVe(maVe, conn);         
             String hoaDonSql = "INSERT INTO HoaDon (maKhachHang, maNhanVien, ngayLap) VALUES (?, ?, NOW())";
             hoaDonStmt = conn.prepareStatement(hoaDonSql, PreparedStatement.RETURN_GENERATED_KEYS);
             hoaDonStmt.setInt(1, maKhachHang);
-            hoaDonStmt.setInt(2, maNhanVien);
+            if (maNhanVien > 0) {
+                hoaDonStmt.setInt(2, maNhanVien);
+            } else {
+                hoaDonStmt.setNull(2, java.sql.Types.INTEGER);
+            }
             hoaDonStmt.executeUpdate();
 
             generatedKeys = hoaDonStmt.getGeneratedKeys();
@@ -314,7 +317,6 @@ public class DatVeRepository implements IDatVeRepository {
 
     @Override
     public int getMaVeFromBooking(int maSuatChieu, String soGhe, int maKhachHang) throws SQLException {
-        // Sửa lại để sử dụng maGhe thay vì soGhe
         String sql = """
             SELECT v.maVe 
             FROM Ve v
@@ -382,17 +384,17 @@ public class DatVeRepository implements IDatVeRepository {
             if (conn != null) try { conn.close(); } catch (SQLException e) {}
         }
     }
-
+    
     @Override
     public BigDecimal getGiaVeFromVe(int maVe, Connection conn) throws SQLException {
-        // Sửa lại để lấy giá vé từ bảng GiaVe thông qua maGiaVe
+        
         String sql = """
             SELECT gv.giaVe 
             FROM Ve v
             JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
             WHERE v.maVe = ?""";
             
-        try ( // Không đóng PreparedStatement và ResultSet khi Connection được truyền từ bên ngoài
+        try (
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, maVe);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -407,7 +409,7 @@ public class DatVeRepository implements IDatVeRepository {
         throw new SQLException("Không tìm thấy giá vé cho mã vé: " + maVe);
     }
 
-    // Sửa lại phương thức isSeatTaken để sử dụng maGhe thay vì soGhe
+    // Phương thức isSeatTaken trong interface
     @Override
     public boolean isSeatTaken(int maSuatChieu, String soGhe, Connection conn) throws SQLException {
         String sql = """
