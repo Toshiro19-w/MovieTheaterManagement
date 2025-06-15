@@ -15,17 +15,23 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
+
+import com.cinema.components.ThemeToggleButton;
 
 import com.cinema.components.IconManager;
 import com.cinema.components.ModernUIApplier;
@@ -40,6 +46,7 @@ import com.cinema.controllers.MainViewController;
 import com.cinema.enums.LoaiTaiKhoan;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.views.admin.ResponsiveScrollPane;
+import com.cinema.views.common.ResizableView;
 import com.cinema.views.sidebar.SidebarMenuItem;
 import com.formdev.flatlaf.FlatLightLaf;
 
@@ -50,6 +57,7 @@ public class MainView extends JFrame implements ThemeableComponent {
     private JPanel sidebarPanel;
     private List<SidebarMenuItem> menuItems = new ArrayList<>();
     private SidebarMenuItem selectedMenuItem;
+    private JScrollPane contentScrollPane;
     
     // Các biến UI cần thiết cho updateTheme
     private JPanel userPanel;
@@ -198,8 +206,6 @@ public class MainView extends JFrame implements ThemeableComponent {
         userLabelPanel.setOpaque(false);
         userLabelPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        
-        
         usernameLabel = new JLabel(controller.getUsername());
         usernameLabel.setFont(UITheme.BODY_FONT.deriveFont(Font.BOLD));
         usernameLabel.setForeground(UITheme.TEXT_COLOR);
@@ -216,18 +222,7 @@ public class MainView extends JFrame implements ThemeableComponent {
         userPanel.add(userInfoPanel);
         userPanel.add(Box.createVerticalStrut(10));
 
-        // Logout button with icon
-        JButton logoutButton = ModernUIApplier.createModernButton("Đăng xuất", UITheme.ERROR_COLOR, Color.WHITE);
-        
-        // Get logout icon
-        ImageIcon logoutIcon = IconManager.getInstance().getIcon("Đăng xuất", "/images/Icon/logout.png", "🚪", 20);
-        logoutButton.setIcon(logoutIcon);
-        logoutButton.setIconTextGap(10);
-        logoutButton.setAlignmentX(Component.LEFT_ALIGNMENT);
-        logoutButton.addActionListener(_ -> controller.logout());
-        
-        userPanel.add(logoutButton);
-
+        // Add sidebar panels
         sidebarPanel.add(menuPanel, BorderLayout.CENTER);
         sidebarPanel.add(userPanel, BorderLayout.SOUTH);
 
@@ -236,8 +231,8 @@ public class MainView extends JFrame implements ThemeableComponent {
             add(sidebarPanel, BorderLayout.WEST);
         }
 
-        // Create container with fixed horizontal size
-        contentContainer = UIHelper.createFixedSizePanel(1024, 0);
+        // Create container that can adapt to different view sizes
+        contentContainer = new JPanel();
         contentContainer.setLayout(new BorderLayout());
         contentContainer.setBackground(UITheme.BACKGROUND_COLOR);
 
@@ -279,14 +274,36 @@ public class MainView extends JFrame implements ThemeableComponent {
         JPanel actionPanel = UIHelper.createFlowPanel(FlowLayout.RIGHT, 0, 0);
         actionPanel.setOpaque(false);
         
-        // Improved settings button
-        JButton settingsButton = ModernUIApplier.createModernButton("Cài đặt", UITheme.ACCENT_COLOR, Color.WHITE);
+        // Tạo nút cài đặt với menu popup
+        ImageIcon settingsIcon = IconManager.getInstance().getIcon("Cài đặt", "/images/Icon/setting.png", "⚙️", 20);
+        JButton settingsButton = new JButton(settingsIcon);
+        settingsButton.setBorderPainted(false);
+        settingsButton.setContentAreaFilled(false);
+        settingsButton.setFocusPainted(false);
+        settingsButton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        settingsButton.setToolTipText("Cài đặt");
         
-        // Thêm nút chuyển đổi theme
-        ThemeToggleButton themeToggleButton = new ThemeToggleButton();
-        themeToggleButton.setThemeChangeListener(isDarkMode -> {
-            // Cập nhật lại UI ngay lập tức
-            updateTheme(ThemeManager.getInstance().getCurrentTheme());
+        // Tạo popup menu cho nút cài đặt
+        JPopupMenu settingsMenu = new JPopupMenu();
+        settingsMenu.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(226, 232, 240)),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        settingsMenu.setPreferredSize(new Dimension(200, 100));
+        
+        // Thêm các mục menu
+        // 1. Chuyển đổi theme với toggle button
+        JPanel themePanel = new JPanel(new BorderLayout(10, 0));
+        themePanel.setOpaque(false);
+        
+        JLabel themeLabel = new JLabel("Chế độ tối");
+        themeLabel.setIcon(IconManager.getInstance().getIcon("Theme", "/images/Icon/theme.png", "🌓", 16));
+        themePanel.add(themeLabel, BorderLayout.WEST);
+        
+        ThemeToggleButton themeToggle = new ThemeToggleButton();
+        themeToggle.setThemeChangeListener(isDarkMode -> {
+            // Cập nhật ThemeManager trước
+            ThemeManager.getInstance().setDarkMode(isDarkMode);
             
             // Cập nhật lại FlatLaf theme
             try {
@@ -295,12 +312,42 @@ public class MainView extends JFrame implements ThemeableComponent {
                 } else {
                     UIManager.setLookAndFeel(new com.formdev.flatlaf.FlatLightLaf());
                 }
+                
+                // Cập nhật theme cho tất cả các thành phần
+                updateTheme(ThemeManager.getInstance().getCurrentTheme());
+                
+                // Cập nhật lại toàn bộ UI
                 SwingUtilities.updateComponentTreeUI(this);
+                
+                // Đảm bảo các thành phần được vẽ lại
+                revalidate();
+                repaint();
             } catch (Exception ex) {
                 System.err.println("Failed to update FlatLaf theme: " + ex.getMessage());
             }
         });
-        actionPanel.add(themeToggleButton);
+        themePanel.add(themeToggle, BorderLayout.EAST);
+        
+        JMenuItem themeMenuItem = new JMenuItem();
+        themeMenuItem.setLayout(new BorderLayout());
+        themeMenuItem.add(themePanel);
+        themeMenuItem.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        settingsMenu.add(themeMenuItem);
+        
+        // 3. Thêm separator
+        settingsMenu.addSeparator();
+        
+        // 4. Đăng xuất
+        JMenuItem logoutMenuItem = new JMenuItem("Đăng xuất");
+        logoutMenuItem.setIcon(IconManager.getInstance().getIcon("Đăng xuất", "/images/Icon/logout.png", "🚪", 16));
+        logoutMenuItem.addActionListener(e -> controller.logout());
+        logoutMenuItem.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        settingsMenu.add(logoutMenuItem);
+        
+        // Xử lý sự kiện khi nhấn vào nút cài đặt
+        settingsButton.addActionListener(e -> {
+            settingsMenu.show(settingsButton, 0, settingsButton.getHeight());
+        });
         
         // Thêm ảnh đại diện dạng tròn cho khách hàng
         if (controller.getPermissionManager().isUser()) {
@@ -324,14 +371,6 @@ public class MainView extends JFrame implements ThemeableComponent {
         }
         
         actionPanel.add(Box.createHorizontalStrut(10));
-        settingsButton.addActionListener(_ -> {
-            // Show settings dialog
-            JOptionPane.showMessageDialog(this, 
-                "Tính năng cài đặt đang được phát triển", 
-                "Thông báo", 
-                JOptionPane.INFORMATION_MESSAGE);
-        });
-        
         actionPanel.add(settingsButton);
         headerPanel.add(actionPanel, BorderLayout.EAST);
 
@@ -362,6 +401,9 @@ public class MainView extends JFrame implements ThemeableComponent {
             controller.initializeCustomerPanels();
         }
         mainContentPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        
+        // Lưu lại contentScrollPane để có thể thay đổi kích thước sau này
+        contentScrollPane = scrollPane;
         
         // Add mainContentPanel to ResponsiveScrollPane
         scrollPane.setViewportView(mainContentPanel);
@@ -543,6 +585,68 @@ public class MainView extends JFrame implements ThemeableComponent {
 
     public void openBookingViewForEmployee(int maPhim, int maKhachHang, int maNhanVien) {
         controller.openBookingView(maPhim, maKhachHang, maNhanVien);
+    }
+    
+    /**
+     * Cập nhật layout cho view được hiển thị
+     * @param view View cần cập nhật layout
+     */
+    public void updateViewLayout(JPanel view) {
+        if (view instanceof ResizableView resizableView) {
+            // Reset kích thước các container
+            contentContainer.setPreferredSize(null);
+            centeringPanel.setPreferredSize(null);
+            mainContentPanel.setPreferredSize(null);
+
+            // Lấy kích thước mong muốn và tối thiểu từ view
+            Dimension preferredSize = resizableView.getPreferredViewSize();
+            Dimension minimumSize = resizableView.getMinimumViewSize();
+            
+            // Kiểm tra xem view có cần responsive không
+            if (resizableView.isResponsive()) {
+                // Nếu responsive, sử dụng kích thước của container cha
+                Dimension parentSize = contentContainer.getParent().getSize();
+                if (parentSize.width > 0 && parentSize.height > 0) {
+                    preferredSize = new Dimension(
+                        Math.max(minimumSize.width, parentSize.width - 40),
+                        Math.max(minimumSize.height, parentSize.height - 40)
+                    );
+                }
+            }
+            
+            // Cập nhật kích thước cho view
+            view.setPreferredSize(preferredSize);
+            view.setMinimumSize(minimumSize);
+            
+            // Cập nhật kích thước cho contentContainer
+            contentContainer.setPreferredSize(preferredSize);
+            contentContainer.setMinimumSize(minimumSize);
+
+            // Cấu hình scroll pane
+            if (contentScrollPane != null) {
+                contentScrollPane.setVerticalScrollBarPolicy(
+                    resizableView.needsScrolling() ? 
+                    JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED : 
+                    JScrollPane.VERTICAL_SCROLLBAR_NEVER
+                );
+                
+                contentScrollPane.revalidate();
+                contentScrollPane.repaint();
+            }
+
+            // Thông báo cho view rằng nó đã được hiển thị
+            resizableView.onViewShown();
+
+            // Revalidate và repaint các container
+            view.revalidate();
+            contentContainer.revalidate();
+            centeringPanel.revalidate();
+            mainContentPanel.revalidate();
+            
+            contentContainer.repaint();
+            centeringPanel.repaint();
+            mainContentPanel.repaint();
+        }
     }
 
     /**

@@ -206,6 +206,47 @@ public class TaiKhoanRepository implements ITaiKhoanRepository {
         }
     }
 
+    public String findUsernameByEmailOrPhone(String emailOrPhone) throws SQLException {
+        String query = "SELECT tk.tenDangNhap FROM TaiKhoan tk " +
+                      "JOIN NguoiDung nd ON tk.maNguoiDung = nd.maNguoiDung " +
+                      "WHERE nd.email = ? OR nd.soDienThoai = ?";
+
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            
+            stmt.setString(1, emailOrPhone);
+            stmt.setString(2, emailOrPhone);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("tenDangNhap");
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public String getEmailByUsername(String username) throws SQLException {
+        String query = "SELECT nd.email FROM TaiKhoan tk " +
+                        "JOIN NguoiDung nd ON tk.maNguoiDung = nd.maNguoiDung " +
+                        "WHERE tk.tenDangNhap = ?";
+
+        try (Connection conn = dbConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            
+            stmt.setString(1, username);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("email");
+                }
+            }
+        }
+
+        return null;
+    }
+
     public boolean authenticateUser(String username, String password) throws SQLException {
         TaiKhoan taiKhoan = findByUsername(username);
         if (taiKhoan != null) {

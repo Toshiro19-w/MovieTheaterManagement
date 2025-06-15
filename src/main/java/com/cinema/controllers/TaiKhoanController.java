@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 import com.cinema.services.TaiKhoanService;
 
 public class TaiKhoanController extends Component {
+    private static final Logger LOGGER = Logger.getLogger(TaiKhoanController.class.getName());
     private final TaiKhoanService taiKhoanService;
 
     public TaiKhoanController(TaiKhoanService taiKhoanService) {
@@ -19,6 +20,14 @@ public class TaiKhoanController extends Component {
 
     public boolean updatePassword(String username, String hashedPassword) throws SQLException {
         return taiKhoanService.updatePassword(username, hashedPassword);
+    }
+
+    public String getEmailByUsername(String username) throws SQLException {
+        return taiKhoanService.getEmailByUsername(username);
+    }
+    
+    public String findUsernameByEmailOrPhone(String emailOrPhone) throws SQLException {
+        return taiKhoanService.findUsernameByEmailOrPhone(emailOrPhone);
     }
 
     public boolean authenticateLogin(String username, String password) {
@@ -41,6 +50,4 @@ public class TaiKhoanController extends Component {
             return -2;
         }
     }
-
-    private static final Logger LOGGER = Logger.getLogger(TaiKhoanController.class.getName());
 }

@@ -1,7 +1,5 @@
 package com.cinema.views.admin;
 
-import static com.cinema.components.ModernUIComponents.getIcon;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -39,6 +37,7 @@ import javax.swing.table.DefaultTableModel;
 
 import com.cinema.components.ModernUIApplier;
 import com.cinema.components.ModernUIComponents.PlaceholderTextField;
+import static com.cinema.components.ModernUIComponents.getIcon;
 import com.cinema.components.UIConstants;
 import com.cinema.controllers.DatVeController;
 import com.cinema.controllers.KhachHangController;
@@ -54,13 +53,13 @@ import com.cinema.services.SuatChieuService;
 import com.cinema.services.VeService;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.ValidationUtils;
-import com.cinema.views.BookingView;
+import com.cinema.views.booking.BookingView;
 
 import ca.odell.glazedlists.BasicEventList;
 import ca.odell.glazedlists.EventList;
 import ca.odell.glazedlists.swing.AutoCompleteSupport;
 
-public class SellTicketView extends JPanel {
+public class SellTicketView extends JPanel implements com.cinema.views.common.ResizableView {
     // Constants
     private static final int SEARCH_DELAY = 300; // milliseconds
 
@@ -88,7 +87,9 @@ public class SellTicketView extends JPanel {
     private List<Phim> movies;
     private ResourceBundle messages;
     private EventList<String> customerNameList;
-    private final Timer searchTimer;    public SellTicketView(NhanVien nhanVien) throws IOException, SQLException {
+    private final Timer searchTimer;
+        
+    public SellTicketView(NhanVien nhanVien) throws IOException, SQLException {
         if (nhanVien == null) {
             throw new IllegalArgumentException("NhanVien không thể là null");
         }
@@ -119,6 +120,9 @@ public class SellTicketView extends JPanel {
         setLayout(new BorderLayout(15, 15));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         setBackground(UIConstants.BACKGROUND_COLOR);
+        
+        // Thiết lập kích thước cố định cho SellTicketView
+        setPreferredSize(new Dimension(1024, 768));
 
         SwingUtilities.invokeLater(() -> {
             try {
@@ -540,7 +544,8 @@ public class SellTicketView extends JPanel {
 
     private void loadMovies() {
         try {
-            movies = phimController.getAllPhim();
+            // Chỉ lấy phim đang chiếu thay vì tất cả phim
+            movies = phimController.getPhimDangChieu();
             tableModel.setRowCount(0);
             if (movies.isEmpty()) {
                 showSnackbar("Không có phim nào đang chiếu!", false);
@@ -582,9 +587,12 @@ public class SellTicketView extends JPanel {
         if (selectedCustomer == null) {
             showSnackbar("Khách hàng không tồn tại! Vui lòng kiểm tra lại.", false);
             return;
-        }        int maPhim = (int) tableModel.getValueAt(selectedRow, 0);
+        }          int maPhim = (int) tableModel.getValueAt(selectedRow, 0);
         int maKhachHang = selectedCustomer.getMaNguoiDung();
-        int maNhanVien = currentNhanVien.getMaNguoiDung();
+        // Không cho phép đặt null cho mã nhân viên, sử dụng mã khách hàng khi tự đặt vé
+        int maNhanVien = (currentNhanVien != null && currentNhanVien.getMaNguoiDung() > 0) 
+                        ? currentNhanVien.getMaNguoiDung() 
+                        : maKhachHang; // Sử dụng chính mã của khách hàng khi họ tự đặt vé
         
         try {
             BookingView bookingView = new BookingView(
@@ -736,6 +744,13 @@ public class SellTicketView extends JPanel {
     }
     public NhanVien getCurrentNhanVien() {
         return currentNhanVien;
+    }
+    
+    // Sử dụng kích thước mặc định từ ResizableView
+    
+    @Override
+    public boolean needsScrolling() {
+        return false;
     }
 }
 

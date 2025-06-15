@@ -17,8 +17,6 @@ import java.util.stream.Collectors;
 
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 
@@ -34,7 +32,6 @@ import com.cinema.views.admin.PhimView;
 public class PhimController {
     private PhimView view;
     private PhimService service;
-    private PhimTheLoaiService phimTheLoaiService;
     private Map<Integer, String> theLoaiMap;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -42,7 +39,6 @@ public class PhimController {
     public PhimController(PhimView view) throws SQLException {
         this.view = view;
         this.service = new PhimService(view.getDatabaseConnection());
-        this.phimTheLoaiService = new PhimTheLoaiService(view.getDatabaseConnection());
         
         try {
             loadComboBoxData();

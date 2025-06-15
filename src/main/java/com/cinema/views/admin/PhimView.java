@@ -53,8 +53,9 @@ import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.SimpleDocumentListener;
 import com.cinema.utils.TimeFormatter;
 import com.cinema.utils.ValidationUtils;
+import com.cinema.views.common.ResizableView;
 
-public class PhimView extends JPanel {
+public class PhimView extends JPanel implements ResizableView {
     private UnderlineTextField txtMaPhim, txtTenPhim, txtThoiLuong, txtNgayKhoiChieu, txtMoTa, txtDaoDien, txtSearch, txtTrangThai;
     private CountryComboBox cbNuocSanXuat;
     private MultiSelectComboBox cbTenTheLoai;
@@ -849,4 +850,14 @@ public class PhimView extends JPanel {
     public String getSelectedPosterPath() { return selectedPosterPath; }
     public void setSelectedPosterPath(String path) { this.selectedPosterPath = path; }
     public void clearSelectedPosterPath() { this.selectedPosterPath = null; }
+    
+    @Override
+    public Dimension getPreferredViewSize() {
+        return new Dimension(1024, 900);
+    }
+    
+    @Override
+    public boolean needsScrolling() {
+        return true;
+    }
 }
