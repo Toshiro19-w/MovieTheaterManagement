@@ -8,7 +8,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +26,7 @@ import com.cinema.controllers.ActivityLogController;
 import com.cinema.models.ActivityLog;
 
 public class ActivityLogPanel extends JPanel {
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
     private JPanel logsContainer;
     private List<ActivityLog> activityLogs = new ArrayList<>();
     private final int MAX_LOGS = 10;
@@ -94,8 +95,10 @@ public class ActivityLogPanel extends JPanel {
     
     public void addLog(String action, String description, int maNguoiDung) {
         try {
-            activityLogController.addLog(action, description, maNguoiDung);
-            loadLogs(); // Tải lại danh sách log sau khi thêm
+            int logId = activityLogController.addLog(action, description, maNguoiDung);
+            if (logId > 0) {
+                loadLogs(); // Chỉ tải lại danh sách log khi thêm thành công
+            }
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, 
                     "Lỗi khi thêm hoạt động: " + e.getMessage(), 
@@ -144,8 +147,9 @@ public class ActivityLogPanel extends JPanel {
         descLabel.setForeground(UIConstants.TEXT_SECONDARY);
         
         // User and Timestamp
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss dd/MM/yyyy");
-        JLabel timeLabel = new JLabel(log.getTenNguoiDung() + " - " + sdf.format(log.getThoiGian()));
+        String timeStr = log.getFormattedTime() != null ? log.getFormattedTime() : "N/A";
+        String userName = log.getTenNguoiDung() != null ? log.getTenNguoiDung() : "User " + log.getMaNguoiDung();
+        JLabel timeLabel = new JLabel(userName + " - " + timeStr);
         timeLabel.setFont(new Font("Segoe UI", Font.ITALIC, 10));
         timeLabel.setForeground(UIConstants.LIGHT_TEXT_COLOR);
         

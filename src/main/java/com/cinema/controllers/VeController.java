@@ -22,7 +22,6 @@ import com.cinema.enums.TrangThaiVe;
 import com.cinema.models.KhachHang;
 import com.cinema.models.PhongChieu;
 import com.cinema.models.Ve;
-import com.cinema.models.dto.CustomPaginationPanel;
 import com.cinema.models.dto.PaginationResult;
 import com.cinema.services.PhimService;
 import com.cinema.services.PhongChieuService;
@@ -30,6 +29,7 @@ import com.cinema.services.SuatChieuService;
 import com.cinema.services.VeService;
 import com.cinema.utils.FormatUtils;
 import com.cinema.utils.ValidationUtils;
+import com.cinema.views.admin.GiaVeDialog;
 import com.cinema.views.admin.VeView;
 
 public class VeController {
@@ -60,6 +60,16 @@ public class VeController {
         addListeners();
         addValidationListeners();
         setupPagination();
+    }
+    
+    // Mở dialog quản lý giá vé
+    public void openGiaVeDialog() {
+        try {
+            GiaVeDialog dialog = new GiaVeDialog(view.getParentFrame());
+            dialog.setVisible(true);
+        } catch (Exception e) {
+            handleException("Lỗi khi mở dialog quản lý giá vé", e);
+        }
     }
 
     private void initView() {
@@ -109,6 +119,7 @@ public class VeController {
         view.getBtnXoa().addActionListener(_ -> xoaVe());
         view.getBtnClear().addActionListener(_ -> clearForm());
         view.getBtnRefresh().addActionListener(_ -> refreshData());
+        view.getBtnSuaGiaVe().addActionListener(_ -> openGiaVeDialog());
     }
     
     private void setupPagination() {
@@ -230,7 +241,7 @@ public class VeController {
             DefaultTableModel model = view.getTableModel();
             model.setRowCount(0);
             
-            // Sử dụng batch processing để thêm dữ liệu vào bảng
+            // Thêm dữ liệu vào bảng
             for (Ve ve : result.getData()) {
                 model.addRow(new Object[]{
                     ve.getMaVe(),
@@ -247,17 +258,13 @@ public class VeController {
                 });
             }
             
-            // Cập nhật trực tiếp pagination panel
-            CustomPaginationPanel paginationPanel = view.getPaginationPanel();
-            if (paginationPanel != null) {
-                paginationPanel.updatePagination(result.getCurrentPage(), result.getTotalPages());
-            }
+            // Cập nhật pagination panel
+            view.getPaginationPanel().updatePagination(result.getCurrentPage(), result.getTotalPages());
             
-            // Đảm bảo TableRowSorter được cập nhật
+            // Cập nhật TableRowSorter
             if (view.getTable().getRowSorter() instanceof TableRowSorter) {
                 ((TableRowSorter<?>) view.getTable().getRowSorter()).sort();
             }
-            
         } catch (SQLException e) {
             handleException("Lỗi khi tải dữ liệu vé", e);
             throw e;
@@ -270,8 +277,6 @@ public class VeController {
         try {
             DefaultTableModel model = view.getTableModel();
             int modelRow = view.getTable().convertRowIndexToModel(selectedRow);
-            
-            // Đặt timeout cho các thao tác CSDL
             String maVe = model.getValueAt(modelRow, 0).toString();
             
             // Sử dụng SwingWorker để tải thông tin vé trong background
@@ -281,7 +286,6 @@ public class VeController {
                     try {
                         return service.findVeByMaVe(Integer.parseInt(maVe));
                     } catch (Exception e) {
-                        System.err.println("Lỗi khi tải thông tin vé: " + e.getMessage());
                         return null;
                     }
                 }
@@ -293,22 +297,16 @@ public class VeController {
                         if (ve != null) {
                             displayVeInfo(ve);
                         } else {
-                            // Fallback nếu không lấy được từ service
                             displayVeInfoFromTable(selectedRow);
                         }
                     } catch (Exception e) {
-                        System.err.println("Lỗi khi hiển thị thông tin vé: " + e.getMessage());
-                        // Fallback nếu có lỗi
                         displayVeInfoFromTable(selectedRow);
                     }
                 }
             }.execute();
-            
         } catch (Exception e) {
-            // Bắt tất cả các ngoại lệ để tránh treo ứng dụng
-            System.err.println("Lỗi không xác định khi hiển thị thông tin vé: " + e.getMessage());
-            e.printStackTrace(System.err);
-            clearForm(); // Xóa form nếu có lỗi
+            handleException("Lỗi khi hiển thị thông tin vé", e);
+            clearForm();
         }
     }
 
@@ -332,31 +330,23 @@ public class VeController {
             view.getCbNgayGioChieu().setSelectedItem(model.getValueAt(modelRow, 8).toString());
             view.getCbTenPhim().setSelectedItem(model.getValueAt(modelRow, 9).toString());
             
-            // Không tải thông tin khuyến mãi và khách hàng để tránh lỗi
+            // Thiết lập khuyến mãi
             view.getCbKhuyenMai().setEnabled(true);
             view.getCbKhuyenMai().removeAllItems();
             view.getCbKhuyenMai().addItem(tenKhuyenMai);
             view.getCbKhuyenMai().setSelectedItem(tenKhuyenMai);
             
-            // Xóa thông tin khách hàng
             clearCustomerFields();
         } catch (Exception e) {
-            System.err.println("Lỗi khi hiển thị thông tin vé từ bảng: " + e.getMessage());
+            handleException("Lỗi khi hiển thị thông tin vé từ bảng", e);
             clearForm();
         }
     }
 
     private void displayVeInfo(Ve ve) {
         if (ve == null) {
-            System.out.println("displayVeInfo: ve là null");
             return;
         }
-        
-        System.out.println("\n=== Bắt đầu displayVeInfo ===");
-        System.out.println("Thông tin vé:");
-        System.out.println("- Mã vé: " + ve.getMaVe());
-        System.out.println("- Mã hóa đơn: " + ve.getMaHoaDon());
-        System.out.println("- Trạng thái: " + ve.getTrangThai());
         
         view.getTxtMaVe().setText(String.valueOf(ve.getMaVe()));
         view.getCbTrangThai().setSelectedItem(ve.getTrangThai().toString());
@@ -389,71 +379,34 @@ public class VeController {
         }
 
         if (ve.getMaHoaDon() != 0) {
-            System.out.println("Vé có mã hóa đơn: " + ve.getMaHoaDon() + ", gọi loadKhachHangInfo");
             try {
                 loadKhachHangInfo(ve.getMaVe());
             } catch (Exception e) {
-                System.err.println("Lỗi khi tải thông tin khách hàng: " + e.getMessage());
-                e.printStackTrace();
+                handleException("Lỗi khi tải thông tin khách hàng", e);
                 clearCustomerFields();
             }
         } else {
-            System.out.println("Vé không có mã hóa đơn, xóa thông tin khách hàng");
             clearCustomerFields();
         }
-        System.out.println("=== Kết thúc displayVeInfo ===\n");
-    }    private void loadKhachHangInfo(int maVe) {
+    }    private void loadKhachHangInfo(int maVe) throws SQLException {
         // Xóa thông tin khách hàng cũ trước khi tải thông tin mới
         clearCustomerFields();
         
-        try {
-            System.out.println("\n=== Bắt đầu loadKhachHangInfo ===");
-            System.out.println("Đang tải thông tin khách hàng cho vé: " + maVe);
-            
-            // Kiểm tra vé
-            Ve ve = service.findVeByMaVe(maVe);
-            if (ve == null) {
-                System.out.println("Không tìm thấy vé với mã: " + maVe);
-                return;
-            }
-            System.out.println("Tìm thấy vé - MaHoaDon: " + ve.getMaHoaDon());
-            
-            // Chỉ tải thông tin khách hàng nếu vé có hóa đơn
-            if (ve.getMaHoaDon() == 0) {
-                System.out.println("Vé chưa có hóa đơn, bỏ qua tìm khách hàng");
-                return;
-            }
-            
-            // Tải thông tin khách hàng
-            KhachHang khachHang = service.getKhachHangByMaVe(maVe);
-            System.out.println("Kết quả tìm khách hàng: " + (khachHang != null ? "Tìm thấy" : "Không tìm thấy"));
-            
-            if (khachHang != null) {
-                System.out.println("Đã tìm thấy khách hàng: " + khachHang.getHoTen());
-                // Cập nhật UI
-                view.getTxtTenKhachHang().setText(khachHang.getHoTen());
-                view.getTxtSoDienThoai().setText(khachHang.getSoDienThoai());
-                view.getTxtEmail().setText(khachHang.getEmail());
-                view.getTxtDiemTichLuy().setText(String.valueOf(khachHang.getDiemTichLuy()));
-                
-                // Kiểm tra xem các trường đã được set đúng chưa
-                System.out.println("Giá trị các trường sau khi set:");
-                System.out.println("- Tên: " + view.getTxtTenKhachHang().getText());
-                System.out.println("- SĐT: " + view.getTxtSoDienThoai().getText());
-                System.out.println("- Email: " + view.getTxtEmail().getText());
-                System.out.println("- Điểm: " + view.getTxtDiemTichLuy().getText());
-                
-                disableCustomerFields();
-            } else {
-                System.out.println("Không tìm thấy thông tin khách hàng cho vé: " + maVe);
-            }
-            System.out.println("=== Kết thúc loadKhachHangInfo ===\n");
-        } catch (SQLException e) {
-            System.err.println("Lỗi SQL khi tải thông tin khách hàng:");
-            e.printStackTrace();
-        } catch (Exception e) {
-            System.err.println("Lỗi không xác định khi tải thông tin khách hàng:");
-            e.printStackTrace();
+        // Kiểm tra vé
+        Ve ve = service.findVeByMaVe(maVe);
+        if (ve == null || ve.getMaHoaDon() == 0) {
+            return;
+        }
+        
+        // Tải thông tin khách hàng
+        KhachHang khachHang = service.getKhachHangByMaVe(maVe);
+        if (khachHang != null) {
+            // Cập nhật UI
+            view.getTxtTenKhachHang().setText(khachHang.getHoTen());
+            view.getTxtSoDienThoai().setText(khachHang.getSoDienThoai());
+            view.getTxtEmail().setText(khachHang.getEmail());
+            view.getTxtDiemTichLuy().setText(String.valueOf(khachHang.getDiemTichLuy()));
+            disableCustomerFields();
         }
     }
 
@@ -594,6 +547,13 @@ public class VeController {
             }
         }
     }
+    
+    // Xử lý ngoại lệ
+    private void handleException(String message, Exception e) {
+        System.err.println(message);
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(view, message + ": " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+    }
 
     private void refreshData() {
         try {
@@ -683,35 +643,6 @@ public class VeController {
 
     private void showError(String message) {
         JOptionPane.showMessageDialog(view, message, "Lỗi", JOptionPane.ERROR_MESSAGE);
-    }
-
-    private void handleException(String message, Exception e) {
-        System.err.println(message);
-        System.err.println("Chi tiết lỗi:");
-        e.printStackTrace(System.err);
-        
-        // Kiểm tra xem lỗi có phải là lỗi kết nối CSDL không
-        if (e instanceof SQLException) {
-            SQLException sqlEx = (SQLException) e;
-            if (sqlEx.getErrorCode() == 0 || // Lỗi kết nối
-                sqlEx.getMessage().contains("Connection") || 
-                sqlEx.getMessage().contains("connect") ||
-                sqlEx.getMessage().contains("timeout")) {
-                showError("Lỗi kết nối đến cơ sở dữ liệu. Vui lòng kiểm tra kết nối và thử lại sau.");
-                return;
-            }
-            
-            // Xử lý lỗi dữ liệu không tìm thấy
-            if (sqlEx.getMessage().contains("not found") || 
-                sqlEx.getMessage().contains("không tìm thấy") ||
-                sqlEx.getMessage().contains("không tồn tại")) {
-                showError("Dữ liệu yêu cầu không tồn tại trong cơ sở dữ liệu.");
-                return;
-            }
-        }
-        
-        // Hiển thị thông báo lỗi chung nếu không phải các trường hợp đặc biệt
-        showError(message);
     }
 
     public void refreshView() {

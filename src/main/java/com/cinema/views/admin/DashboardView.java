@@ -32,9 +32,12 @@ import com.cinema.models.repositories.DashboardRepository;
 import com.cinema.models.repositories.Interface.IDashboardRepository;
 import com.cinema.services.BaoCaoService;
 import com.cinema.utils.DatabaseConnection;
-import com.cinema.views.common.ResizableView;
 
-public class DashboardView extends JPanel implements ResizableView {
+public class DashboardView extends JPanel {
+    private final int PREFERRED_WIDTH = 1024;
+    private final int PREFERRED_HEIGHT = 768;
+    private final int MIN_WIDTH = 800;
+    private final int MIN_HEIGHT = 600;
     private DatabaseConnection databaseConnection;
     private final BaoCaoService baoCaoService;
     private final Random random = new Random();
@@ -321,10 +324,4 @@ public class DashboardView extends JPanel implements ResizableView {
     private String formatCurrency(double amount) {
         return new DecimalFormat("#,###").format(amount) + "đ";
     }    
-    
-    // Sử dụng kích thước mặc định từ ResizableView
-    @Override
-    public boolean needsScrolling() {
-        return false;
-    }
 }

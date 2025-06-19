@@ -37,6 +37,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableRowSorter;
 
+import com.cinema.components.DateTimePicker;
 import com.cinema.components.UnderlineTextField;
 import com.cinema.controllers.PhongChieuController;
 import com.cinema.controllers.SuatChieuController;
@@ -212,7 +213,22 @@ public class SuatChieuView extends JPanel {
         gbc.gridy++;
         addFormField(fieldsPanel, "Phòng chiếu:", cbMaPhong, lblPhongError, gbc);
         gbc.gridy++;
-        addFormField(fieldsPanel, "Ngày giờ chiếu:", txtNgayGioChieu, lblNgayGioChieuError, gbc);
+        
+        // Tạo panel cho ngày giờ chiếu với DateTimePicker
+        JPanel ngayGioChieuPanel = new JPanel(new BorderLayout(5, 0));
+        ngayGioChieuPanel.setOpaque(false);
+        ngayGioChieuPanel.add(txtNgayGioChieu, BorderLayout.CENTER);
+        
+        JButton btnDateTimePicker = new JButton("...");
+        btnDateTimePicker.setPreferredSize(new Dimension(30, 30));
+        btnDateTimePicker.addActionListener(e -> {
+            DateTimePicker picker = new DateTimePicker(txtNgayGioChieu);
+            picker.setLocationRelativeTo(SuatChieuView.this);
+            picker.setVisible(true);
+        });
+        ngayGioChieuPanel.add(btnDateTimePicker, BorderLayout.EAST);
+        
+        addFormField(fieldsPanel, "Ngày giờ chiếu:", ngayGioChieuPanel, lblNgayGioChieuError, gbc);
         gbc.gridy++;
         addFormField(fieldsPanel, "Tìm kiếm:", suatChieuSearchField, null, gbc);
 

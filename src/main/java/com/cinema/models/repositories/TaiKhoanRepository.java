@@ -185,6 +185,24 @@ public class TaiKhoanRepository implements ITaiKhoanRepository {
         }
     }
 
+    public int getUserIdFromUsername(String username) {
+        String sql = "SELECT nd.maNguoiDung FROM NguoiDung nd " +
+                     "JOIN TaiKhoan tk ON nd.maNguoiDung = tk.maNguoiDung " +
+                     "WHERE tk.tenDangNhap = ?";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("maNguoiDung");
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.severe("Lỗi khi lấy mã người dùng: " + ex.getMessage());
+        }
+        return -1;
+    }
+
     public TaiKhoan findByUsername(String username) throws SQLException {
         String sql = "SELECT t.*, n.hoTen, n.email, n.soDienThoai FROM TaiKhoan t " +
                 "JOIN NguoiDung n ON t.maNguoiDung = n.maNguoiDung " +

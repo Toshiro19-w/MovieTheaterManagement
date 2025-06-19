@@ -70,6 +70,10 @@ public class TaiKhoanService {
         return taiKhoanRepository.findByUsername(username);
     }
 
+    public int getUserIdFromUsername(String username) throws SQLException {
+        return taiKhoanRepository.getUserIdFromUsername(username);
+    }
+
     public int handleRegistration(String username, String fullName, String phone, String email, String password) throws SQLException {
         // Validate input
         if (!ValidationUtils.isValidString(username) || !ValidationUtils.isValidString(fullName) ||

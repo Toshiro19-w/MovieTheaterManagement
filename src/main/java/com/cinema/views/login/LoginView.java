@@ -33,7 +33,11 @@ import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 
+import com.cinema.components.UIConstants;
+import com.cinema.controllers.ActivityLogController;
+import com.cinema.controllers.TaiKhoanController;
 import com.cinema.enums.LoaiTaiKhoan;
+import com.cinema.services.TaiKhoanService;
 import com.cinema.utils.AppIconUtils;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.PasswordHasher;
@@ -46,12 +50,13 @@ public class LoginView extends JFrame {
     private final Connection conn;
     private JTextField usernameField;
     private JPasswordField passwordField;
-    private JLabel errorLabel;
+    private JLabel errorLabel, titleLabel;
     private ResourceBundle messages;
     private JButton loginBtn;
     private static final int MAX_LOGIN_ATTEMPTS = 3;
     private int loginAttempts = 0;
     private static final Logger LOGGER = Logger.getLogger(LoginView.class.getName());
+    private final TaiKhoanController taiKhoanController;
 
     @SuppressWarnings("UseSpecificCatch")
     public LoginView() {
@@ -65,6 +70,7 @@ public class LoginView extends JFrame {
         try {
             DatabaseConnection databaseConnection = new DatabaseConnection();
             conn = databaseConnection.getConnection();
+            taiKhoanController = new TaiKhoanController(new TaiKhoanService(databaseConnection));
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Lỗi khi khởi tạo kết nối cơ sở dữ liệu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             throw new RuntimeException(e);
@@ -88,7 +94,7 @@ public class LoginView extends JFrame {
 
         // Main panel with solid color background
         JPanel mainPanel = new JPanel();
-        mainPanel.setBackground(new Color(245, 245, 245));
+        mainPanel.setBackground(UIConstants.BACKGROUND_COLOR);
         mainPanel.setLayout(new BorderLayout());
         setContentPane(mainPanel);
 
@@ -103,16 +109,13 @@ public class LoginView extends JFrame {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
+                Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                // Draw shadow
-                g2d.setColor(new Color(0, 0, 0, 20));
-                g2d.fillRoundRect(5, 5, getWidth() - 6, getHeight() - 6, 20, 20);
-
-                // Draw panel background
-                g2d.setColor(Color.WHITE);
-                g2d.fillRoundRect(0, 0, getWidth() - 5, getHeight() - 5, 20, 20);
+                g2d.setColor(UIConstants.CARD_BACKGROUND);
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, UIConstants.BORDER_RADIUS, UIConstants.BORDER_RADIUS);
+                g2d.setColor(UIConstants.SHADOW_COLOR);
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, UIConstants.BORDER_RADIUS, UIConstants.BORDER_RADIUS);
+                g2d.dispose();
             }
         };
         contentPanel.setOpaque(false);
@@ -136,21 +139,21 @@ public class LoginView extends JFrame {
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.CENTER;
         JLabel logoLabel = AppIconUtils.getAppLogo(60, 60);
-        contentPanel.add(logoLabel, gbc);
+        contentPanel.add(logoLabel, gbc);       
 
         // Title
         gbc.gridy++;
-        JLabel titleLabel = new JLabel("Đăng nhập", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Inter", Font.BOLD, 32));
-        titleLabel.setForeground(new Color(51, 51, 51));
+        titleLabel = new JLabel(messages.getString("loginTitle"), SwingConstants.CENTER);
+        titleLabel.setFont(UIConstants.TITLE_FONT);
+        titleLabel.setForeground(UIConstants.TEXT_COLOR);
         contentPanel.add(titleLabel, gbc);
 
         // Username
         gbc.gridwidth = 1;
         gbc.gridy++;
         gbc.anchor = GridBagConstraints.WEST;
-        JLabel usernameLabel = new JLabel("Tài khoản:");
-        usernameLabel.setFont(new Font("Inter", Font.PLAIN, 14));
+        JLabel usernameLabel = new JLabel(messages.getString("usernameLabel"));
+        usernameLabel.setFont(UIConstants.LABEL_FONT);
         contentPanel.add(usernameLabel, gbc);
 
         gbc.gridx = 1;
@@ -161,16 +164,20 @@ public class LoginView extends JFrame {
         gbc.gridx = 0;
         gbc.gridy++;
         JLabel passwordLabel = new JLabel("Mật khẩu:");
-        passwordLabel.setFont(new Font("Inter", Font.PLAIN, 14));
+        passwordLabel.setFont(UIConstants.LABEL_FONT);
         contentPanel.add(passwordLabel, gbc);
 
         gbc.gridx = 1;
         passwordField = new JPasswordField(20);
-        passwordField.setFont(new Font("Inter", Font.PLAIN, 14));
+        passwordField.setFont(UIConstants.LABEL_FONT);
         passwordField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            BorderFactory.createLineBorder(UIConstants.BORDER_COLOR),
             BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
+        // Thiết lập kích thước tối thiểu và ưu tiên giống với TextField
+        Dimension size = new Dimension(300, 40);
+        passwordField.setPreferredSize(size);
+        passwordField.setMinimumSize(size);
         contentPanel.add(passwordField, gbc);
 
         // Error label
@@ -236,9 +243,9 @@ public class LoginView extends JFrame {
 
     private JButton createStyledButton(String text) {
         JButton button = new JButton(text);
-        button.setFont(new Font("Inter", Font.BOLD, 16));
-        button.setBackground(new Color(0, 102, 204));
-        button.setForeground(Color.WHITE);
+        button.setFont(UIConstants.BUTTON_FONT);
+        button.setBackground(UIConstants.BUTTON_COLOR);
+        button.setForeground(UIConstants.BUTTON_TEXT_COLOR);
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createEmptyBorder(15, 30, 15, 30));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -247,11 +254,17 @@ public class LoginView extends JFrame {
 
     private JTextField createStyledTextField() {
         JTextField field = new JTextField(20);
-        field.setFont(new Font("Inter", Font.PLAIN, 14));
+        field.setFont(UIConstants.LABEL_FONT);
         field.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            BorderFactory.createLineBorder(UIConstants.BORDER_COLOR),
             BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
+        
+        // Thiết lập kích thước tối thiểu và ưu tiên
+        Dimension size = new Dimension(300, 40);
+        field.setPreferredSize(size);
+        field.setMinimumSize(size);
+        
         return field;
     }
 
@@ -279,7 +292,7 @@ public class LoginView extends JFrame {
 
                     // Sử dụng PasswordHasher thay vì BCrypt trực tiếp
                     if (PasswordHasher.verifyPassword(plainPassword, storedHash)) {
-                        JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
+                        LOGGER.info("Đăng nhập thành công cho người dùng: " + username);
                         handleSuccessfulLogin(username, role);
                     } else {
                         handleFailedLogin();
@@ -295,6 +308,23 @@ public class LoginView extends JFrame {
     }
 
     private void handleSuccessfulLogin(String username, String role) throws IOException, SQLException {
+        // Lấy mã người dùng từ tên đăng nhập
+        int maNguoiDung = taiKhoanController.getUserIdFromUsername(username);
+        
+        // Khởi tạo phiên làm việc đồng bộ
+        if (maNguoiDung > 0) {
+            boolean isNhanVien = !role.equalsIgnoreCase("user");
+            com.cinema.App.getSyncController().initializeSession(maNguoiDung, isNhanVien);
+            
+            // Thêm log đăng nhập
+            try {
+                ActivityLogController activityLogController = new ActivityLogController();
+                activityLogController.addLog("Đăng nhập", "Đăng nhập vào hệ thống", maNguoiDung);
+            } catch (Exception e) {
+                LOGGER.warning("Không thể ghi log đăng nhập: " + e.getMessage());
+            }
+        }
+        
         switch (role.toLowerCase()) {
             case "admin":
                 openMainView(username, LoaiTaiKhoan.ADMIN);

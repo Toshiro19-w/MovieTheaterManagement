@@ -29,6 +29,7 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.EmptyBorder;
 
+import com.cinema.components.UIConstants;
 import com.cinema.models.repositories.TaiKhoanRepository;
 import com.cinema.utils.AppIconUtils;
 import com.cinema.utils.DatabaseConnection;
@@ -43,12 +44,6 @@ public class RegisterView extends JFrame {
     private JButton registerBtn;
     private TaiKhoanRepository taiKhoanRepository;
     private ResourceBundle messages;
-
-    // Hằng số giao diện
-    private static final Color PRIMARY_COLOR = new Color(59, 130, 246); // Xanh dương
-    private static final Font LABEL_FONT = new Font("Inter", Font.PLAIN, 14);
-    private static final Font TITLE_FONT = new Font("Inter", Font.BOLD, 24);
-    private static final Font BUTTON_FONT = new Font("Inter", Font.BOLD, 14);
 
     public RegisterView() {
         try {
@@ -84,7 +79,7 @@ public class RegisterView extends JFrame {
 
         // Main panel with solid color background (not gradient)
         JPanel mainPanel = new JPanel();
-        mainPanel.setBackground(new Color(245, 245, 245));
+        mainPanel.setBackground(UIConstants.BACKGROUND_COLOR);
         mainPanel.setLayout(new BorderLayout());
         setContentPane(mainPanel);
 
@@ -93,16 +88,13 @@ public class RegisterView extends JFrame {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
+                Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                // Draw shadow
-                g2d.setColor(new Color(0, 0, 0, 20));
-                g2d.fillRoundRect(5, 5, getWidth() - 6, getHeight() - 6, 20, 20);
-
-                // Draw panel background
-                g2d.setColor(Color.WHITE);
-                g2d.fillRoundRect(0, 0, getWidth() - 5, getHeight() - 5, 20, 20);
+                g2d.setColor(UIConstants.CARD_BACKGROUND);
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, UIConstants.BORDER_RADIUS, UIConstants.BORDER_RADIUS);
+                g2d.setColor(UIConstants.SHADOW_COLOR);
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, UIConstants.BORDER_RADIUS, UIConstants.BORDER_RADIUS);
+                g2d.dispose();
             }
         };
         contentPanel.setOpaque(false);
@@ -126,7 +118,8 @@ public class RegisterView extends JFrame {
         // Tiêu đề
         gbc.gridy++;
         JLabel titleLabel = new JLabel(messages.getString("registerTitle"), SwingConstants.CENTER);
-        titleLabel.setFont(TITLE_FONT);
+        titleLabel.setFont(UIConstants.TITLE_FONT);
+        titleLabel.setForeground(UIConstants.TEXT_COLOR);
         contentPanel.add(titleLabel, gbc);
 
         // Username
@@ -134,7 +127,7 @@ public class RegisterView extends JFrame {
         gbc.gridwidth = 1;
         gbc.anchor = GridBagConstraints.WEST;
         JLabel usernameLabel = new JLabel(messages.getString("usernameLabel"));
-        usernameLabel.setFont(LABEL_FONT);
+        usernameLabel.setFont(UIConstants.LABEL_FONT);
         contentPanel.add(usernameLabel, gbc);
 
         gbc.gridx = 1;
@@ -153,7 +146,7 @@ public class RegisterView extends JFrame {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         JLabel fullNameLabel = new JLabel(messages.getString("fullNameLabel"));
-        fullNameLabel.setFont(LABEL_FONT);
+        fullNameLabel.setFont(UIConstants.LABEL_FONT);
         contentPanel.add(fullNameLabel, gbc);
 
         gbc.gridx = 1;
@@ -172,7 +165,7 @@ public class RegisterView extends JFrame {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         JLabel phoneLabel = new JLabel(messages.getString("phoneLabel"));
-        phoneLabel.setFont(LABEL_FONT);
+        phoneLabel.setFont(UIConstants.LABEL_FONT);
         contentPanel.add(phoneLabel, gbc);
 
         gbc.gridx = 1;
@@ -191,7 +184,7 @@ public class RegisterView extends JFrame {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         JLabel emailLabel = new JLabel(messages.getString("emailLabel"));
-        emailLabel.setFont(LABEL_FONT);
+        emailLabel.setFont(UIConstants.LABEL_FONT);
         contentPanel.add(emailLabel, gbc);
 
         gbc.gridx = 1;
@@ -210,7 +203,7 @@ public class RegisterView extends JFrame {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         JLabel passwordLabel = new JLabel(messages.getString("passwordLabel"));
-        passwordLabel.setFont(LABEL_FONT);
+        passwordLabel.setFont(UIConstants.LABEL_FONT);
         contentPanel.add(passwordLabel, gbc);
 
         gbc.gridx = 1;
@@ -229,7 +222,7 @@ public class RegisterView extends JFrame {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         JLabel confirmPasswordLabel = new JLabel(messages.getString("confirmPasswordLabel"));
-        confirmPasswordLabel.setFont(LABEL_FONT);
+        confirmPasswordLabel.setFont(UIConstants.LABEL_FONT);
         contentPanel.add(confirmPasswordLabel, gbc);
 
         gbc.gridx = 1;
@@ -256,7 +249,7 @@ public class RegisterView extends JFrame {
         gbc.gridy++;
         JLabel loginLabel = new JLabel(messages.getString("loginLink"), SwingConstants.CENTER);
         loginLabel.setFont(new Font("Inter", Font.PLAIN, 12));
-        loginLabel.setForeground(PRIMARY_COLOR);
+        loginLabel.setForeground(UIConstants.PRIMARY_COLOR);
         loginLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         loginLabel.addMouseListener(new MouseAdapter() {
             @Override
@@ -284,9 +277,9 @@ public class RegisterView extends JFrame {
 
     private JTextField createStyledTextField() {
         JTextField field = new JTextField(20);
-        field.setFont(LABEL_FONT);
+        field.setFont(UIConstants.LABEL_FONT);
         field.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            BorderFactory.createLineBorder(UIConstants.BORDER_COLOR),
             BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
         return field;
@@ -294,9 +287,9 @@ public class RegisterView extends JFrame {
 
     private JPasswordField createStyledPasswordField() {
         JPasswordField field = new JPasswordField(20);
-        field.setFont(LABEL_FONT);
+        field.setFont(UIConstants.LABEL_FONT);
         field.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            BorderFactory.createLineBorder(UIConstants.BORDER_COLOR),
             BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
         return field;
@@ -304,9 +297,9 @@ public class RegisterView extends JFrame {
 
     private JButton createStyledButton(String text) {
         JButton button = new JButton(text);
-        button.setFont(new Font("Inter", Font.BOLD, 16));
-        button.setBackground(new Color(0, 102, 204));
-        button.setForeground(Color.WHITE);
+        button.setFont(UIConstants.BUTTON_FONT);
+        button.setBackground(UIConstants.BUTTON_COLOR);
+        button.setForeground(UIConstants.BUTTON_TEXT_COLOR);
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createEmptyBorder(15, 30, 15, 30));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));

@@ -25,6 +25,10 @@ public class TaiKhoanController extends Component {
     public String getEmailByUsername(String username) throws SQLException {
         return taiKhoanService.getEmailByUsername(username);
     }
+
+    public int getUserIdFromUsername(String username) throws SQLException {
+        return taiKhoanService.getUserIdFromUsername(username);
+    }
     
     public String findUsernameByEmailOrPhone(String emailOrPhone) throws SQLException {
         return taiKhoanService.findUsernameByEmailOrPhone(emailOrPhone);

@@ -47,7 +47,6 @@ public class VeView extends JPanel {
     private JTable tableVe;
     private DefaultTableModel tableVeModel;
     private JButton btnThem, btnSua, btnXoa, btnClear, btnRefresh, btnSuaGiaVe;
-    private JCheckBox chkApDungTatCa;
     private JTextField searchField;
     private JLabel soGheErrorLabel, tenPhongErrorLabel,
             ngayGioChieuErrorLabel, tenPhimErrorLabel,
@@ -58,6 +57,10 @@ public class VeView extends JPanel {
         initializeDatabase();
         initializeUI();
         new VeController(this);
+    }
+    
+    public javax.swing.JFrame getParentFrame() {
+        return (javax.swing.JFrame) javax.swing.SwingUtilities.getWindowAncestor(this);
     }
 
     private void initializeDatabase() {
@@ -345,11 +348,7 @@ public class VeView extends JPanel {
         btnXoa = createButton("XÓA", new Color(220, 53, 69));
         btnClear = createButton("LÀM MỚI", new Color(108, 117, 125));
         btnRefresh = createButton("CẬP NHẬT", new Color(255, 193, 7));
-        btnSuaGiaVe = createButton("SỬA GIÁ VÉ", new Color(0, 123, 255));
-        
-        chkApDungTatCa = new JCheckBox("Áp dụng cho tất cả vé liên quan");
-        chkApDungTatCa.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        chkApDungTatCa.setBackground(new Color(245, 247, 250));
+        btnSuaGiaVe = createButton("QUẢN LÝ GIÁ VÉ", new Color(0, 123, 255));
 
         leftButtonPanel.add(btnThem);
         leftButtonPanel.add(btnSua);
@@ -357,7 +356,6 @@ public class VeView extends JPanel {
         leftButtonPanel.add(btnClear);
         leftButtonPanel.add(btnRefresh);
         
-        rightButtonPanel.add(chkApDungTatCa);
         rightButtonPanel.add(btnSuaGiaVe);
 
         buttonPanel.add(leftButtonPanel, BorderLayout.WEST);
@@ -428,7 +426,6 @@ public class VeView extends JPanel {
     public JButton getBtnClear() { return btnClear; }
     public JButton getBtnRefresh() { return btnRefresh; }
     public JButton getBtnSuaGiaVe() { return btnSuaGiaVe; }
-    public JCheckBox getChkApDungTatCa() { return chkApDungTatCa; }
     public JComboBox<String> getCbKhuyenMai() { return cbKhuyenMai; }
     public JLabel getSoGheErrorLabel() { return soGheErrorLabel; }
     public JLabel getTenPhongErrorLabel() { return tenPhongErrorLabel; }
@@ -471,7 +468,6 @@ public class VeView extends JPanel {
         txtSoDienThoai.setText("");
         txtEmail.setText("");
         txtDiemTichLuy.setText("");
-        chkApDungTatCa.setSelected(false);
     }
 
     private void showError(String message) {

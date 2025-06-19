@@ -345,9 +345,26 @@ CREATE TABLE IF NOT EXISTS GiaVe (
     maGiaVe INT AUTO_INCREMENT PRIMARY KEY,
     loaiGhe ENUM('Thuong', 'VIP') NOT NULL,
     ngayApDung DATE NOT NULL,
+    ngayKetThuc DATE NOT NULL,
     giaVe DECIMAL(10,2) NOT NULL,
     ghiChu TEXT
 );
+
+select * from giave;
+
+DELIMITER //
+CREATE TRIGGER before_giave_insert
+BEFORE INSERT ON GiaVe
+FOR EACH ROW
+BEGIN
+    -- Cập nhật ngayKetThuc cho giá vé cũ của cùng loại ghế
+    UPDATE GiaVe
+    SET ngayKetThuc = DATE_SUB(NEW.ngayApDung, INTERVAL 1 DAY)
+    WHERE loaiGhe = NEW.loaiGhe
+    AND (ngayKetThuc IS NULL OR ngayKetThuc > NEW.ngayApDung)
+    AND ngayApDung < NEW.ngayApDung;
+END //
+DELIMITER ;
 
 -- Tạo bảng Ve
 CREATE TABLE IF NOT EXISTS Ve (
@@ -609,47 +626,6 @@ WHERE
 ORDER BY 
     v.maVe;
 
--- Tạo bảng ActivityLog để lưu trữ hoạt động của người dùng
-CREATE TABLE IF NOT EXISTS ActivityLog (
-    maLog INT AUTO_INCREMENT PRIMARY KEY,
-    loaiHoatDong NVARCHAR(50) NOT NULL,
-    moTa NVARCHAR(255) NOT NULL,
-    thoiGian DATETIME DEFAULT NOW(),
-    maNguoiDung INT NOT NULL,
-    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung) ON DELETE CASCADE
-);
-
--- Tạo stored procedure để thêm log
-DELIMITER //
-CREATE PROCEDURE AddActivityLog(
-    IN p_loaiHoatDong NVARCHAR(50),
-    IN p_moTa NVARCHAR(255),
-    IN p_maNguoiDung INT
-)
-BEGIN
-    INSERT INTO ActivityLog (loaiHoatDong, moTa, thoiGian, maNguoiDung)
-    VALUES (p_loaiHoatDong, p_moTa, NOW(), p_maNguoiDung);
-END //
-DELIMITER ;
-
--- Tạo stored procedure để lấy log gần đây
-DELIMITER //
-CREATE PROCEDURE GetRecentLogs(
-    IN p_limit INT
-)
-BEGIN
-    SELECT l.*, nd.hoTen 
-    FROM ActivityLog l
-    JOIN NguoiDung nd ON l.maNguoiDung = nd.maNguoiDung
-    ORDER BY l.thoiGian DESC
-    LIMIT p_limit;
-END //
-DELIMITER ;
-
--- Tạo index để tối ưu truy vấn
-CREATE INDEX idx_activitylog_thoigian ON ActivityLog(thoiGian);
-CREATE INDEX idx_activitylog_manguoidung ON ActivityLog(maNguoiDung);
-
 -- Tạo các chỉ mục để tối ưu hóa truy vấn
 CREATE INDEX idx_phim_maTheLoai ON Phim(maTheLoai);
 CREATE INDEX idx_ve_maSuatChieu ON Ve(maSuatChieu);
@@ -665,6 +641,12 @@ CREATE INDEX idx_danhgia_maphim ON DanhGia(maPhim);
 -- Tạo chỉ mục mới
 CREATE INDEX idx_phimtheloai_maphim ON PhimTheLoai(maPhim);
 CREATE INDEX idx_phimtheloai_matheloai ON PhimTheLoai(maTheLoai);
+
+-- Thêm cột phiên bản cho các bảng quan trọng để hỗ trợ khóa lạc quan (optimistic locking)
+ALTER TABLE Ve ADD COLUMN phienBan INT DEFAULT 1;
+ALTER TABLE HoaDon ADD COLUMN phienBan INT DEFAULT 1;
+ALTER TABLE SuatChieu ADD COLUMN phienBan INT DEFAULT 1;
+ALTER TABLE Ghe ADD COLUMN phienBan INT DEFAULT 1;
 
 INSERT INTO NguoiDung (hoTen, soDienThoai, email, loaiNguoiDung) VALUES
 ('Lê Trần Minh Khôi', '0565321247', 'letranminhkhoi2506@gmail.com', 'KhachHang'),

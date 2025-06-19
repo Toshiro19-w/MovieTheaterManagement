@@ -15,13 +15,10 @@ import java.awt.RenderingHints;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Objects;
-import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -34,6 +31,7 @@ import javax.swing.Timer;
 
 import org.mindrot.jbcrypt.BCrypt;
 
+import com.cinema.components.UIConstants;
 import com.cinema.controllers.TaiKhoanController;
 import com.cinema.services.TaiKhoanService;
 import com.cinema.utils.DatabaseConnection;
@@ -118,10 +116,10 @@ public class ForgotPasswordView extends JFrame {
         
         // Email hoặc số điện thoại
         JLabel emailOrPhoneLabel = new JLabel("Email hoặc số điện thoại:");
-        emailOrPhoneLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        emailOrPhoneLabel.setFont(UIConstants.LABEL_FONT);
         step1Panel.add(emailOrPhoneLabel, updateGBC(gbc, 0, 0, 1, GridBagConstraints.WEST, 0.0));
         
-        emailOrPhoneField.setFont(new Font("Arial", Font.PLAIN, 14));
+        emailOrPhoneField.setFont(UIConstants.LABEL_FONT);
         step1Panel.add(emailOrPhoneField, updateGBC(gbc, 0, 1, 1, GridBagConstraints.HORIZONTAL, 1.0));
         
         emailOrPhoneErrorLabel = ValidationUtils.createErrorLabel();
@@ -129,9 +127,9 @@ public class ForgotPasswordView extends JFrame {
         
         // Nút tiếp tục
         JButton continueButton = new JButton("Tiếp tục");
-        continueButton.setFont(new Font("Arial", Font.BOLD, 14));
-        continueButton.setBackground(new Color(0, 102, 204));
-        continueButton.setForeground(Color.WHITE);
+        continueButton.setFont(UIConstants.BUTTON_FONT);
+        continueButton.setBackground(UIConstants.BUTTON_COLOR);
+        continueButton.setForeground(UIConstants.BUTTON_TEXT_COLOR);
         continueButton.setFocusPainted(false);
         continueButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         continueButton.addActionListener(_ -> verifyEmailOrPhone());
@@ -151,55 +149,32 @@ public class ForgotPasswordView extends JFrame {
         
         // Thông báo
         JLabel infoLabel = new JLabel("Mã xác nhận đã được gửi đến email của bạn");
-        infoLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        infoLabel.setFont(UIConstants.LABEL_FONT);
         step2Panel.add(infoLabel, updateGBC(gbc, 0, 0, 2, GridBagConstraints.WEST, 0.0));
         
         // Mã xác nhận
         JLabel verificationCodeLabel = new JLabel("Mã xác nhận:");
-        verificationCodeLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        verificationCodeLabel.setFont(UIConstants.LABEL_FONT);
         step2Panel.add(verificationCodeLabel, updateGBC(gbc, 0, 1, 1, GridBagConstraints.WEST, 0.0));
         
-        JPanel codePanel = new JPanel(new GridBagLayout());
-        codePanel.setOpaque(false);
-        GridBagConstraints codeGbc = new GridBagConstraints();
-        codeGbc.gridx = 0;
-        codeGbc.gridy = 0;
-        codeGbc.fill = GridBagConstraints.HORIZONTAL;
-        codeGbc.weightx = 0.7;
-        verificationCodeField.setFont(new Font("Arial", Font.PLAIN, 14));
-        codePanel.add(verificationCodeField, codeGbc);
+        verificationCodeField.setFont(UIConstants.LABEL_FONT);
+        step2Panel.add(verificationCodeField, updateGBC(gbc, 0, 2, 1, GridBagConstraints.HORIZONTAL, 1.0));
         
-        codeGbc.gridx = 1;
-        codeGbc.weightx = 0.3;
-        codeGbc.insets = new Insets(0, 5, 0, 0);
+        // Nút gửi lại
         sendCodeButton = new JButton("Gửi lại");
-        sendCodeButton.setFont(new Font("Arial", Font.BOLD, 12));
-        sendCodeButton.setBackground(new Color(0, 102, 204));
-        sendCodeButton.setForeground(Color.WHITE);
+        sendCodeButton.setFont(UIConstants.BUTTON_FONT);
+        sendCodeButton.setBackground(UIConstants.BUTTON_COLOR);
+        sendCodeButton.setForeground(UIConstants.BUTTON_TEXT_COLOR);
         sendCodeButton.setFocusPainted(false);
         sendCodeButton.addActionListener(_ -> sendVerificationCode());
-        codePanel.add(sendCodeButton, codeGbc);
-        
-        step2Panel.add(codePanel, updateGBC(gbc, 0, 2, 2, GridBagConstraints.HORIZONTAL, 1.0));
+        step2Panel.add(sendCodeButton, updateGBC(gbc, 1, 2, 1, GridBagConstraints.WEST, 0.0));
         
         verificationCodeErrorLabel = ValidationUtils.createErrorLabel();
         step2Panel.add(verificationCodeErrorLabel, updateGBC(gbc, 0, 3, 2, GridBagConstraints.HORIZONTAL, 1.0));
-        
-        // Nút xác nhận mã
-        JButton verifyCodeButton = new JButton("Xác nhận");
-        verifyCodeButton.setFont(new Font("Arial", Font.BOLD, 14));
-        verifyCodeButton.setBackground(new Color(0, 102, 204));
-        verifyCodeButton.setForeground(Color.WHITE);
-        verifyCodeButton.setFocusPainted(false);
-        verifyCodeButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        verifyCodeButton.addActionListener(_ -> verifyCode());
-        step2Panel.add(verifyCodeButton, updateGBC(gbc, 0, 4, 2, GridBagConstraints.CENTER, 0.0));
-        
-        // Thêm listener cho validation
-        verificationCodeField.getDocument().addDocumentListener(new SimpleDocumentListener(() -> {
-            validateVerificationCode();
-        }));
     }
+    
+    // Thêm biến instance để lưu trữ label hiển thị tên đăng nhập
+    private JLabel usernameValueLabel;
     
     private void createStep3Panel() {
         step3Panel = new JPanel(new GridBagLayout());
@@ -209,22 +184,22 @@ public class ForgotPasswordView extends JFrame {
         
         // Thông báo
         JLabel infoLabel = new JLabel("Đặt mật khẩu mới cho tài khoản");
-        infoLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        infoLabel.setFont(UIConstants.LABEL_FONT);
         step3Panel.add(infoLabel, updateGBC(gbc, 0, 0, 2, GridBagConstraints.WEST, 0.0));
         
         // Tên đăng nhập
         JLabel usernameLabel = new JLabel("Tên đăng nhập:");
-        usernameLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        usernameLabel.setFont(UIConstants.LABEL_FONT);
         step3Panel.add(usernameLabel, updateGBC(gbc, 0, 1, 1, GridBagConstraints.WEST, 0.0));
         
         // Label hiển thị tên đăng nhập - sẽ được cập nhật sau
-        JLabel usernameValueLabel = new JLabel("");
-        usernameValueLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        usernameValueLabel = new JLabel("");
+        usernameValueLabel.setFont(UIConstants.LABEL_FONT.deriveFont(Font.BOLD));
         step3Panel.add(usernameValueLabel, updateGBC(gbc, 1, 1, 1, GridBagConstraints.WEST, 1.0));
         
         // Mật khẩu mới
         JLabel passwordLabel = new JLabel("Mật khẩu mới:");
-        passwordLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        passwordLabel.setFont(UIConstants.LABEL_FONT);
         step3Panel.add(passwordLabel, updateGBC(gbc, 0, 2, 1, GridBagConstraints.WEST, 0.0));
         
         passwordField.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -235,7 +210,7 @@ public class ForgotPasswordView extends JFrame {
         
         // Xác nhận mật khẩu
         JLabel confirmPasswordLabel = new JLabel("Xác nhận mật khẩu:");
-        confirmPasswordLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        confirmPasswordLabel.setFont(UIConstants.LABEL_FONT);
         step3Panel.add(confirmPasswordLabel, updateGBC(gbc, 0, 4, 1, GridBagConstraints.WEST, 0.0));
         
         confirmPasswordField.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -246,9 +221,9 @@ public class ForgotPasswordView extends JFrame {
         
         // Nút đặt lại mật khẩu
         resetPasswordButton = new JButton("Đặt lại mật khẩu");
-        resetPasswordButton.setFont(new Font("Arial", Font.BOLD, 14));
-        resetPasswordButton.setBackground(new Color(0, 102, 204));
-        resetPasswordButton.setForeground(Color.WHITE);
+        resetPasswordButton.setFont(UIConstants.BUTTON_FONT);
+        resetPasswordButton.setBackground(UIConstants.BUTTON_COLOR);
+        resetPasswordButton.setForeground(UIConstants.BUTTON_TEXT_COLOR);
         resetPasswordButton.setFocusPainted(false);
         resetPasswordButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         resetPasswordButton.addActionListener(_ -> handlePasswordReset());
@@ -480,17 +455,13 @@ public class ForgotPasswordView extends JFrame {
             case 1 -> contentPanel.add(step1Panel, updateGBC(gbc, 0, 1, 3, GridBagConstraints.HORIZONTAL, 1.0));
             case 2 -> contentPanel.add(step2Panel, updateGBC(gbc, 0, 1, 3, GridBagConstraints.HORIZONTAL, 1.0));
             case 3 -> {
-                // Cập nhật tên đăng nhập trước khi thêm panel
-                for (Component comp : step3Panel.getComponents()) {
-                    if (comp instanceof JLabel) {
-                        JLabel label = (JLabel) comp;
-                        if (step3Panel.getComponentZOrder(label) == 3) {
-                            label.setText(foundUsername);
-                            break;
-                        }
-                    }
+                // Cập nhật tên đăng nhập trực tiếp thông qua biến instance
+                if (usernameValueLabel != null) {
+                    usernameValueLabel.setText(foundUsername);
+                    System.out.println("Đã cập nhật tên đăng nhập: " + foundUsername); // Debug
                 }
                 contentPanel.add(step3Panel, updateGBC(gbc, 0, 1, 3, GridBagConstraints.HORIZONTAL, 1.0));
+                break;
             }
         }
         

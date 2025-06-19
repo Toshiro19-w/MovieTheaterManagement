@@ -5,13 +5,24 @@ import java.time.LocalDate;
 
 public class GiaVe {
     private int maGiaVe;
-    private String loaiGhe; // ENUM('Thuong', 'VIP')
+    private String loaiGhe;
     private LocalDate ngayApDung;
+    private LocalDate ngayKetThuc;
     private BigDecimal giaVe;
     private String ghiChu;
-
-    private GiaVe() {}
-
+    
+    public GiaVe() {
+    }
+    
+    public GiaVe(int maGiaVe, String loaiGhe, LocalDate ngayApDung, LocalDate ngayKetThuc, BigDecimal giaVe, String ghiChu) {
+        this.maGiaVe = maGiaVe;
+        this.loaiGhe = loaiGhe;
+        this.ngayApDung = ngayApDung;
+        this.ngayKetThuc = ngayKetThuc;
+        this.giaVe = giaVe;
+        this.ghiChu = ghiChu;
+    }
+    
     public GiaVe(int maGiaVe, String loaiGhe, LocalDate ngayApDung, BigDecimal giaVe, String ghiChu) {
         this.maGiaVe = maGiaVe;
         this.loaiGhe = loaiGhe;
@@ -21,7 +32,7 @@ public class GiaVe {
     }
 
     public int getMaGiaVe() {
-        return this.maGiaVe;
+        return maGiaVe;
     }
 
     public void setMaGiaVe(int maGiaVe) {
@@ -29,7 +40,7 @@ public class GiaVe {
     }
 
     public String getLoaiGhe() {
-        return this.loaiGhe;
+        return loaiGhe;
     }
 
     public void setLoaiGhe(String loaiGhe) {
@@ -37,7 +48,7 @@ public class GiaVe {
     }
 
     public LocalDate getNgayApDung() {
-        return this.ngayApDung;
+        return ngayApDung;
     }
 
     public void setNgayApDung(LocalDate ngayApDung) {
@@ -45,7 +56,7 @@ public class GiaVe {
     }
 
     public BigDecimal getGiaVe() {
-        return this.giaVe;
+        return giaVe;
     }
 
     public void setGiaVe(BigDecimal giaVe) {
@@ -53,10 +64,18 @@ public class GiaVe {
     }
 
     public String getGhiChu() {
-        return this.ghiChu;
+        return ghiChu;
     }
 
     public void setGhiChu(String ghiChu) {
         this.ghiChu = ghiChu;
+    }
+    
+    public LocalDate getNgayKetThuc() {
+        return ngayKetThuc;
+    }
+
+    public void setNgayKetThuc(LocalDate ngayKetThuc) {
+        this.ngayKetThuc = ngayKetThuc;
     }
 }
