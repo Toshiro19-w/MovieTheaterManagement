@@ -24,7 +24,7 @@ public class GiaVeRepository extends BaseRepository<GiaVe> implements IGiaVeRepo
     @Override
     public List<GiaVe> findAll() throws SQLException {
         List<GiaVe> giaVeList = new ArrayList<>();
-        String query = "SELECT * FROM GiaVe ORDER BY ngayApDung DESC";
+        String query = "SELECT * FROM GiaVe ORDER BY ngayApDung DESC, loaiGhe";
         
         try (Connection conn = dbConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(query);
@@ -58,14 +58,25 @@ public class GiaVeRepository extends BaseRepository<GiaVe> implements IGiaVeRepo
 
     @Override
     public GiaVe save(GiaVe entity) throws SQLException {
-        String query = "INSERT INTO GiaVe (loaiGhe, ngayApDung, giaVe, ghiChu) VALUES (?, ?, ?, ?)";
+        String query = "INSERT INTO GiaVe (loaiGhe, ngayApDung, ngayKetThuc, giaVe, ghiChu) VALUES (?, ?, ?, ?, ?)";
+        
+        // Cập nhật ngày kết thúc cho giá vé cũ
+        updatePreviousPriceEndDate(entity.getLoaiGhe(), entity.getNgayApDung());
         
         try (Connection conn = dbConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, entity.getLoaiGhe());
             stmt.setDate(2, Date.valueOf(entity.getNgayApDung()));
-            stmt.setBigDecimal(3, entity.getGiaVe());
-            stmt.setString(4, entity.getGhiChu());
+            
+            // Xử lý ngayKetThuc có thể null
+            if (entity.getNgayKetThuc() != null) {
+                stmt.setDate(3, Date.valueOf(entity.getNgayKetThuc()));
+            } else {
+                stmt.setNull(3, java.sql.Types.DATE);
+            }
+            
+            stmt.setBigDecimal(4, entity.getGiaVe());
+            stmt.setString(5, entity.getGhiChu());
             
             int affectedRows = stmt.executeUpdate();
             
@@ -84,18 +95,42 @@ public class GiaVeRepository extends BaseRepository<GiaVe> implements IGiaVeRepo
         
         return entity;
     }
+    
+    private void updatePreviousPriceEndDate(String loaiGhe, LocalDate ngayApDung) throws SQLException {
+        String query = "UPDATE GiaVe SET ngayKetThuc = ? WHERE loaiGhe = ? AND (ngayKetThuc IS NULL OR ngayKetThuc > ?) AND ngayApDung < ?";
+        
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            // Ngày kết thúc của giá vé cũ là ngày trước ngày áp dụng của giá vé mới
+            LocalDate ngayKetThucCu = ngayApDung.minusDays(1);
+            stmt.setDate(1, Date.valueOf(ngayKetThucCu));
+            stmt.setString(2, loaiGhe);
+            stmt.setDate(3, Date.valueOf(ngayApDung));
+            stmt.setDate(4, Date.valueOf(ngayApDung));
+            
+            stmt.executeUpdate();
+        }
+    }
 
     @Override
     public GiaVe update(GiaVe entity) throws SQLException {
-        String query = "UPDATE GiaVe SET loaiGhe = ?, ngayApDung = ?, giaVe = ?, ghiChu = ? WHERE maGiaVe = ?";
+        String query = "UPDATE GiaVe SET loaiGhe = ?, ngayApDung = ?, ngayKetThuc = ?, giaVe = ?, ghiChu = ? WHERE maGiaVe = ?";
         
         try (Connection conn = dbConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, entity.getLoaiGhe());
             stmt.setDate(2, Date.valueOf(entity.getNgayApDung()));
-            stmt.setBigDecimal(3, entity.getGiaVe());
-            stmt.setString(4, entity.getGhiChu());
-            stmt.setInt(5, entity.getMaGiaVe());
+            
+            // Xử lý ngayKetThuc có thể null
+            if (entity.getNgayKetThuc() != null) {
+                stmt.setDate(3, Date.valueOf(entity.getNgayKetThuc()));
+            } else {
+                stmt.setNull(3, java.sql.Types.DATE);
+            }
+            
+            stmt.setBigDecimal(4, entity.getGiaVe());
+            stmt.setString(5, entity.getGhiChu());
+            stmt.setInt(6, entity.getMaGiaVe());
             
             int affectedRows = stmt.executeUpdate();
             
@@ -120,11 +155,20 @@ public class GiaVeRepository extends BaseRepository<GiaVe> implements IGiaVeRepo
 
     @Override
     public GiaVe findCurrentByLoaiGhe(String loaiGhe) throws SQLException {
-        String query = "SELECT * FROM GiaVe WHERE loaiGhe = ? ORDER BY ngayApDung DESC LIMIT 1";
+        // Tìm giá vé hiện tại dựa trên ngày hiện tại
+        LocalDate today = LocalDate.now();
+        return findActiveByLoaiGheAndDate(loaiGhe, today);
+    }
+    
+    @Override
+    public GiaVe findActiveByLoaiGheAndDate(String loaiGhe, LocalDate date) throws SQLException {
+        String query = "SELECT * FROM GiaVe WHERE loaiGhe = ? AND ngayApDung <= ? AND (ngayKetThuc IS NULL OR ngayKetThuc >= ?) ORDER BY ngayApDung DESC LIMIT 1";
         
         try (Connection conn = dbConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, loaiGhe);
+            stmt.setDate(2, Date.valueOf(date));
+            stmt.setDate(3, Date.valueOf(date));
             
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -139,11 +183,12 @@ public class GiaVeRepository extends BaseRepository<GiaVe> implements IGiaVeRepo
     @Override
     public List<GiaVe> findByDate(LocalDate date) throws SQLException {
         List<GiaVe> giaVeList = new ArrayList<>();
-        String query = "SELECT * FROM GiaVe WHERE ngayApDung <= ? ORDER BY ngayApDung DESC";
+        String query = "SELECT * FROM GiaVe WHERE ngayApDung <= ? AND (ngayKetThuc IS NULL OR ngayKetThuc >= ?) ORDER BY loaiGhe, ngayApDung DESC";
         
         try (Connection conn = dbConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setDate(1, Date.valueOf(date));
+            stmt.setDate(2, Date.valueOf(date));
             
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -159,9 +204,17 @@ public class GiaVeRepository extends BaseRepository<GiaVe> implements IGiaVeRepo
         int maGiaVe = rs.getInt("maGiaVe");
         String loaiGhe = rs.getString("loaiGhe");
         LocalDate ngayApDung = rs.getDate("ngayApDung").toLocalDate();
+        
+        // Xử lý ngayKetThuc có thể null
+        LocalDate ngayKetThuc = null;
+        Date sqlNgayKetThuc = rs.getDate("ngayKetThuc");
+        if (sqlNgayKetThuc != null) {
+            ngayKetThuc = sqlNgayKetThuc.toLocalDate();
+        }
+        
         BigDecimal giaVe = rs.getBigDecimal("giaVe");
         String ghiChu = rs.getString("ghiChu");
         
-        return new GiaVe(maGiaVe, loaiGhe, ngayApDung, giaVe, ghiChu);
+        return new GiaVe(maGiaVe, loaiGhe, ngayApDung, ngayKetThuc, giaVe, ghiChu);
     }
 }

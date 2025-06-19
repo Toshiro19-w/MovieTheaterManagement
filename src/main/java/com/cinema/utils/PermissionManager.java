@@ -14,19 +14,19 @@ public class PermissionManager {
 
     static {
         rolePermissions.put(LoaiTaiKhoan.ADMIN, Arrays.asList(
-                "Phim", "Suất chiếu", "Vé", "Hoá đơn", "Báo cáo", "Bán vé", "Người dùng"
+                "Dashboard", "Phim", "Suất chiếu", "Vé", "Hoá đơn", "Báo cáo", "Bán vé", "Người dùng"
         ));
         rolePermissions.put(LoaiTaiKhoan.QUANLYPHIM, Arrays.asList(
                 "Phim", "Suất chiếu", "Nhân viên"
         ));
         rolePermissions.put(LoaiTaiKhoan.USER, Arrays.asList(
-                "Phim đang chiếu", "Đặt vé", "Thông tin cá nhân"
+                "Phim đang chiếu"
         ));
         rolePermissions.put(LoaiTaiKhoan.THUNGAN, Arrays.asList(
                 "Hoá đơn", "Vé", "Bán vé"
         ));
         rolePermissions.put(LoaiTaiKhoan.BANVE, Arrays.asList(
-                "Phim đang chiếu", "Suất chiếu", "Đặt vé", "Bán vé"
+                "Phim", "Suất chiếu", "Bán vé", "Khách hàng"
         ));
     }
 

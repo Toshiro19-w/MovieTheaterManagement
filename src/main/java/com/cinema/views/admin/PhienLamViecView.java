@@ -120,62 +120,50 @@ public class PhienLamViecView extends JPanel implements ResizableView {
         add(scrollPane, BorderLayout.CENTER);
         
         // Add event listeners
-        searchButton.addActionListener(e -> searchPhienLamViec());
-        refreshButton.addActionListener(e -> loadData());
-        filterComboBox.addActionListener(e -> handleFilterChange());
+        searchButton.addActionListener(_ -> searchPhienLamViec());
+        refreshButton.addActionListener(_ -> loadData());
+        filterComboBox.addActionListener(_ -> handleFilterChange());
     }
     
     public void loadData() {
-        try {
-            List<PhienLamViec> phienLamViecs = controller.getAllPhienLamViec();
-            updateTable(phienLamViecs);
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Lỗi khi tải dữ liệu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
+        List<PhienLamViec> phienLamViecs = controller.getAllPhienLamViec();
+        updateTable(phienLamViecs);
     }
     
     private void searchPhienLamViec() {
-        try {
-            LocalDateTime fromDate = LocalDateTime.of(
-                    fromDateChooser.getDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate(),
-                    LocalTime.MIN);
-            LocalDateTime toDate = LocalDateTime.of(
-                    toDateChooser.getDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate(),
-                    LocalTime.MAX);
-            
-            List<PhienLamViec> phienLamViecs = controller.getPhienLamViecByTimeRange(fromDate, toDate);
-            updateTable(phienLamViecs);
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Lỗi khi tìm kiếm: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
+        LocalDateTime fromDate = LocalDateTime.of(
+                fromDateChooser.getDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate(),
+                LocalTime.MIN);
+        LocalDateTime toDate = LocalDateTime.of(
+                toDateChooser.getDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate(),
+                LocalTime.MAX);
+        
+        List<PhienLamViec> phienLamViecs = controller.getPhienLamViecByDateRange(fromDate, toDate);
+        updateTable(phienLamViecs);
     }
     
     private void handleFilterChange() {
-        try {
-            String selectedFilter = (String) filterComboBox.getSelectedItem();
-            LocalDateTime fromDate = null;
-            LocalDateTime toDate = LocalDateTime.now();
-            
-            switch (selectedFilter) {
-                case "Hôm nay":
-                    fromDate = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
-                    break;
-                case "Tuần này":
-                    fromDate = LocalDateTime.of(LocalDate.now().minusDays(7), LocalTime.MIN);
-                    break;
-                case "Tháng này":
-                    fromDate = LocalDateTime.of(LocalDate.now().minusMonths(1), LocalTime.MIN);
-                    break;
-                default:
-                    loadData();
-                    return;
-            }
-            
-            List<PhienLamViec> phienLamViecs = controller.getPhienLamViecByTimeRange(fromDate, toDate);
-            updateTable(phienLamViecs);
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Lỗi khi lọc dữ liệu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        String selectedFilter = (String) filterComboBox.getSelectedItem();
+        LocalDateTime fromDate = null;
+        LocalDateTime toDate = LocalDateTime.now();
+        
+        switch (selectedFilter) {
+            case "Hôm nay":
+                fromDate = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
+                break;
+            case "Tuần này":
+                fromDate = LocalDateTime.of(LocalDate.now().minusDays(7), LocalTime.MIN);
+                break;
+            case "Tháng này":
+                fromDate = LocalDateTime.of(LocalDate.now().minusMonths(1), LocalTime.MIN);
+                break;
+            default:
+                loadData();
+                return;
         }
+        
+        List<PhienLamViec> phienLamViecs = controller.getPhienLamViecByDateRange(fromDate, toDate);
+        updateTable(phienLamViecs);
     }
     
     private void updateTable(List<PhienLamViec> phienLamViecs) {

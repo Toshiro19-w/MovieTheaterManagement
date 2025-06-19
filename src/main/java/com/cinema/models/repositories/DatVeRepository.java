@@ -230,6 +230,37 @@ public class DatVeRepository implements IDatVeRepository {
             chiTietHoaDonStmt.setInt(1, maHoaDonGenerated);
             chiTietHoaDonStmt.setInt(2, maVe);
             chiTietHoaDonStmt.executeUpdate();
+            
+            // Cập nhật phiên làm việc sau khi bán vé
+            if (maNhanVien > 0) {
+                try {
+                    // Lấy phiên làm việc hiện tại của nhân viên
+                    String phienSql = "SELECT maPhien FROM PhienLamViec WHERE maNhanVien = ? AND thoiGianKetThuc IS NULL";
+                    PreparedStatement phienStmt = conn.prepareStatement(phienSql);
+                    phienStmt.setInt(1, maNhanVien);
+                    ResultSet phienRs = phienStmt.executeQuery();
+                    
+                    if (phienRs.next()) {
+                        int maPhien = phienRs.getInt("maPhien");
+                        System.out.println("KIỂM TRA: Cập nhật phiên làm việc " + maPhien + " với giá vé " + giaVe);
+                        
+                        // Cập nhật doanh thu và số vé bán
+                        String updatePhienSql = "UPDATE PhienLamViec SET tongDoanhThu = tongDoanhThu + ?, soVeDaBan = soVeDaBan + 1 WHERE maPhien = ?";
+                        PreparedStatement updatePhienStmt = conn.prepareStatement(updatePhienSql);
+                        updatePhienStmt.setBigDecimal(1, giaVe);
+                        updatePhienStmt.setInt(2, maPhien);
+                        int phienRows = updatePhienStmt.executeUpdate();
+                        
+                        System.out.println("KIỂM TRA: Số dòng phiên làm việc được cập nhật: " + phienRows);
+                        updatePhienStmt.close();
+                    }
+                    phienRs.close();
+                    phienStmt.close();
+                } catch (SQLException e) {
+                    System.out.println("KIỂM TRA LỖI: Không thể cập nhật phiên làm việc: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
 
             conn.commit();
             return maHoaDonGenerated;

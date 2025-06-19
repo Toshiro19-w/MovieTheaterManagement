@@ -9,13 +9,19 @@ import java.awt.Font;
  */
 public class UIConstants {
     // Màu sắc chính
-    public static final Color PRIMARY_COLOR = new Color(79, 70, 229); // Indigo
-    public static final Color SECONDARY_COLOR = new Color(255, 204, 0); // Yellow
-    public static final Color ACCENT_COLOR = new Color(99, 102, 241);
+    public static final Color BLUE_DARK = new Color(33, 113, 181);    // #2171B5
+    public static final Color BLUE_MEDIUM = new Color(106, 190, 214); // #6ABED6
+    public static final Color BLUE_LIGHT = new Color(189, 215, 231);  // #BDD7E7
+    public static final Color BLUE_LIGHTEST = new Color(239, 243, 255); // #EFF3FF
+
+    // Cập nhật các màu chính để sử dụng bảng màu mới
+    public static final Color PRIMARY_COLOR = BLUE_DARK;
+    public static final Color SECONDARY_COLOR = BLUE_MEDIUM;
+    public static final Color ACCENT_COLOR = BLUE_LIGHT;
+    public static final Color BACKGROUND_COLOR = BLUE_LIGHTEST;
     
     // Màu nền
     public static final Color CONTENT_BACKGROUND_COLOR = new Color(252, 252, 247); // Pearl color
-    public static final Color BACKGROUND_COLOR = new Color(245, 245, 245);
     public static final Color CARD_BACKGROUND = Color.WHITE;
     public static final Color SIDEBAR_COLOR = new Color(248, 249, 250);
     public static final Color HEADER_COLOR = Color.WHITE;

@@ -54,7 +54,7 @@ public class MainViewController {
         
         try {
             this.databaseConnection = new DatabaseConnection();
-            this.phimController = new PhimController(new com.cinema.views.admin.PhimView());
+            this.phimController = new PhimController(new com.cinema.views.admin.PhimView(currentNhanVien), currentNhanVien);
             
             if (!permissionManager.isUser()) {
                 NhanVienService nhanVienService = new NhanVienService(databaseConnection);

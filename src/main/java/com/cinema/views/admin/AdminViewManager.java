@@ -27,7 +27,7 @@ public class AdminViewManager {
 
     public void initializeAdminPanels() throws IOException, SQLException {
         if (permissionManager.hasPermission("Phim")) {
-            mainContentPanel.add(new PhimView(), "Phim");
+            mainContentPanel.add(new PhimView(currentNhanVien), "Phim");
         }
         if (permissionManager.hasPermission("Suất chiếu")) {
             mainContentPanel.add(new SuatChieuView(), "Suất chiếu");

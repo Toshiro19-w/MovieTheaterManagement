@@ -578,7 +578,7 @@ public class MainView extends JFrame implements ThemeableComponent {
     public void dispose() {
         DatabaseConnection databaseConnection = controller.getDatabaseConnection();
         if (databaseConnection != null) {
-            databaseConnection.closeConnection();
+            databaseConnection.close();
         }
         super.dispose();
     }

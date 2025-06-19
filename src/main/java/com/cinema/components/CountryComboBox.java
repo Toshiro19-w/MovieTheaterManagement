@@ -122,7 +122,12 @@ public class CountryComboBox extends JComboBox<String> {
     public void removeNotify() {
         // Cleanup GlazedLists resources
         if (autoCompleteSupport != null) {
-            autoCompleteSupport.uninstall();
+            try {
+                autoCompleteSupport.uninstall();
+            } catch (IllegalStateException ex) {
+                // Đã uninstall rồi thì bỏ qua, không crash
+            }
+            autoCompleteSupport = null;
         }
         if (filteredCountries != null) {
             filteredCountries.dispose();
