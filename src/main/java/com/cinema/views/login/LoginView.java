@@ -310,7 +310,9 @@ public class LoginView extends JFrame {
     private void handleSuccessfulLogin(String username, String role) throws IOException, SQLException {
         // Lấy mã người dùng từ tên đăng nhập
         int maNguoiDung = taiKhoanController.getUserIdFromUsername(username);
-        
+        // Hiển thị thông báo đăng nhập thành công
+        JOptionPane.showMessageDialog(this, messages.getString("loginSuccess"),
+                "Đăng nhập thành công", JOptionPane.INFORMATION_MESSAGE);
         // Khởi tạo phiên làm việc đồng bộ
         if (maNguoiDung > 0) {
             boolean isNhanVien = !role.equalsIgnoreCase("user");
