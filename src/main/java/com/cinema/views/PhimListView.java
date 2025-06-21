@@ -2,6 +2,7 @@ package com.cinema.views;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Frame;
@@ -14,26 +15,39 @@ import java.net.URL;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.JMenuItem;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.event.DocumentListener;
+import javax.swing.event.DocumentEvent;
 
 import com.cinema.components.PhimCarouselPanel;
 import com.cinema.controllers.KhachHangController;
 import com.cinema.controllers.PhimController;
 import com.cinema.models.Phim;
+import com.cinema.models.SuatChieu;
+import com.cinema.models.repositories.SuatChieuRepository;
 import com.cinema.services.KhachHangService;
 import com.cinema.services.PhimService;
 import com.cinema.utils.DatabaseConnection;
@@ -41,15 +55,24 @@ import com.cinema.utils.TimeFormatter;
 
 public class PhimListView extends JPanel {
     private final PhimService phimService;
+    private final SuatChieuRepository suatChieuRepository;
     private final KhachHangController khachHangController;
     private final BiConsumer<Integer, Integer> bookTicketCallback;
     private final String username;
     private PhimCarouselPanel dangChieuPanel;
     private PhimCarouselPanel sapChieuPanel;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private JTextField searchTextField;
+    private JComboBox<String> dateComboBox;
+    private JLabel noResultsLabel;
+    private JPanel contentPanel;
+    private JPanel searchPanel;
+    private JButton backButton;
+    private JPopupMenu suggestionPopup;
 
     public PhimListView(PhimController phimController, BiConsumer<Integer, Integer> bookTicketCallback, String username) throws IOException, SQLException {
         this.phimService = new PhimService(new DatabaseConnection());
+        this.suatChieuRepository = new SuatChieuRepository(new DatabaseConnection());
         this.khachHangController = new KhachHangController(new KhachHangService(new DatabaseConnection()));
         this.bookTicketCallback = bookTicketCallback;
         this.username = username;
@@ -58,14 +81,156 @@ public class PhimListView extends JPanel {
         setBackground(Color.WHITE);
 
         initializeComponents();
-        loadPhimList("");
+        loadPhimList("", null);
     }
 
     private void initializeComponents() {
-        // Content panel (chứa cả hai danh sách phim)
-        JPanel contentPanel = new JPanel();
+        // Search panel
+        searchPanel = new JPanel();
+        searchPanel.setLayout(new BoxLayout(searchPanel, BoxLayout.X_AXIS));
+        searchPanel.setBackground(Color.WHITE);
+        searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Search by name
+        JLabel searchLabel = new JLabel("Tìm theo tên: ");
+        searchLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        searchPanel.add(searchLabel);
+        searchPanel.add(Box.createHorizontalStrut(5));
+
+        searchTextField = new JTextField(20);
+        searchTextField.setFont(new Font("Arial", Font.PLAIN, 14));
+        suggestionPopup = new JPopupMenu();
+        
+        // Thêm gợi ý tìm kiếm
+        searchTextField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) { updateSuggestions(); }
+            @Override
+            public void removeUpdate(DocumentEvent e) { updateSuggestions(); }
+            @Override
+            public void changedUpdate(DocumentEvent e) { updateSuggestions(); }
+            
+            private void updateSuggestions() {
+                String text = searchTextField.getText().trim().toLowerCase();
+                suggestionPopup.removeAll();
+                
+                if (text.length() >= 2) {
+                    try {
+                        List<Phim> allPhims = phimService.getAllPhim();
+                        List<String> suggestions = allPhims.stream()
+                            .flatMap(phim -> Stream.of(phim.getTenPhim(), phim.getTenTheLoai()).filter(Objects::nonNull))
+                            .filter(s -> s.toLowerCase().contains(text))
+                            .distinct()
+                            .limit(5) // Giới hạn 5 gợi ý
+                            .collect(Collectors.toList());
+                        
+                        for (String suggestion : suggestions) {
+                            JMenuItem item = new JMenuItem(suggestion);
+                            item.addActionListener(e -> {
+                                searchTextField.setText(suggestion);
+                                suggestionPopup.setVisible(false);
+                                loadPhimList(suggestion, null);
+                            });
+                            suggestionPopup.add(item);
+                        }
+                        
+                        if (!suggestions.isEmpty()) {
+                            suggestionPopup.show(searchTextField, 0, searchTextField.getHeight());
+                        } else {
+                            suggestionPopup.setVisible(false);
+                        }
+                    } catch (SQLException ex) {
+                        JOptionPane.showMessageDialog(PhimListView.this, "Lỗi khi tải gợi ý: " + ex.getMessage(), 
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    }
+                } else {
+                    suggestionPopup.setVisible(false);
+                }
+            }
+        });
+        
+        // Ẩn gợi ý khi mất tiêu điểm
+        searchTextField.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                suggestionPopup.setVisible(false);
+            }
+        });
+        
+        searchPanel.add(searchTextField);
+        searchPanel.add(Box.createHorizontalStrut(10));
+
+        // Search by date
+        JLabel dateLabel = new JLabel("Ngày chiếu: ");
+        dateLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        searchPanel.add(dateLabel);
+        searchPanel.add(Box.createHorizontalStrut(5));
+
+        dateComboBox = new JComboBox<>();
+        dateComboBox.setFont(new Font("Arial", Font.PLAIN, 14));
+        dateComboBox.setEditable(true);
+        dateComboBox.setPreferredSize(new Dimension(120, 25));
+        dateComboBox.addItem(""); // Mục mặc định
+        updateDateComboBoxOptions();
+        
+        searchPanel.add(dateComboBox);
+        searchPanel.add(Box.createHorizontalStrut(10));
+
+        // Search button
+        JButton searchButton = new JButton("Tìm kiếm");
+        searchButton.setBackground(new Color(0, 48, 135));
+        searchButton.setForeground(Color.WHITE);
+        searchButton.setFont(new Font("Arial", Font.BOLD, 14));
+        searchButton.addActionListener(e -> {
+            String searchText = searchTextField.getText().trim();
+            LocalDate selectedDate = null;
+            String selectedDateStr = (String) dateComboBox.getSelectedItem();
+            if (selectedDateStr != null && !selectedDateStr.isEmpty()) {
+                try {
+                    selectedDate = LocalDate.parse(selectedDateStr, formatter);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Định dạng ngày không hợp lệ: " + selectedDateStr, 
+                        "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }
+            loadPhimList(searchText, selectedDate);
+            // Hiển thị nút Quay lại
+            if (backButton == null) {
+                backButton = new JButton("Quay lại");
+                backButton.setBackground(new Color(150, 150, 150));
+                backButton.setForeground(Color.WHITE);
+                backButton.setFont(new Font("Arial", Font.BOLD, 14));
+                backButton.addActionListener(ev -> {
+                    searchTextField.setText("");
+                    dateComboBox.setSelectedIndex(0);
+                    loadPhimList("", null);
+                    searchPanel.remove(backButton);
+                    backButton = null;
+                    searchPanel.revalidate();
+                    searchPanel.repaint();
+                });
+                searchPanel.add(Box.createHorizontalStrut(10));
+                searchPanel.add(backButton);
+                searchPanel.revalidate();
+                searchPanel.repaint();
+            }
+        });
+        searchPanel.add(searchButton);
+
+        add(searchPanel, BorderLayout.NORTH);
+
+        // Content panel (chứa danh sách phim hoặc thông báo)
+        contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setBackground(Color.WHITE);
+
+        // No results label
+        noResultsLabel = new JLabel("Không có phim phù hợp");
+        noResultsLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        noResultsLabel.setForeground(Color.RED);
+        noResultsLabel.setAlignmentX(CENTER_ALIGNMENT);
+        noResultsLabel.setVisible(false);
 
         // Panel phim đang chiếu
         dangChieuPanel = new PhimCarouselPanel("Phim đang chiếu", bookTicketCallback, this::showPhimDetail, username);
@@ -75,52 +240,103 @@ public class PhimListView extends JPanel {
         sapChieuPanel = new PhimCarouselPanel("Phim sắp chiếu", bookTicketCallback, this::showPhimDetail, username);
         contentPanel.add(sapChieuPanel);
 
+        // Thêm thông báo không có kết quả
+        contentPanel.add(Box.createVerticalStrut(20));
+        contentPanel.add(noResultsLabel);
+
         // Thêm vào scroll pane
         JScrollPane scrollPane = new JScrollPane(contentPanel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         
+        // Chuyển tiếp sự kiện cuộn chuột
+        contentPanel.addMouseWheelListener(e -> scrollPane.dispatchEvent(e));
+        
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    public void loadPhimList(String searchText) {
+    private void updateDateComboBoxOptions() {
+        List<SuatChieu> allSuatChieu = suatChieuRepository.findAll();
+		Set<LocalDate> showDates = allSuatChieu.stream()
+		    .map(suatChieu -> suatChieu.getNgayGioChieu().toLocalDate())
+		    .filter(Objects::nonNull)
+		    .collect(Collectors.toCollection(HashSet::new));
+		
+		dateComboBox.removeAllItems();
+		dateComboBox.addItem(""); // Mục mặc định
+		showDates.stream()
+		    .sorted()
+		    .map(date -> date.format(formatter))
+		    .forEach(dateComboBox::addItem);
+    }
+
+    public void loadPhimList(String searchText, LocalDate selectedDate) {
         try {
             List<Phim> allPhims = phimService.getAllPhim();
             LocalDate today = LocalDate.now();
             
+            // Lấy danh sách mã phim có suất chiếu nếu lọc theo ngày
+            final Set<Integer> phimIdsWithShowtime = new HashSet<>();
+            if (selectedDate != null) {
+                List<SuatChieu> suatChieu = suatChieuRepository.findAll();
+                suatChieu.stream()
+                    .filter(s -> s.getNgayGioChieu() != null && s.getNgayGioChieu().toLocalDate().equals(selectedDate))
+                    .map(SuatChieu::getMaPhim)
+                    .forEach(phimIdsWithShowtime::add);
+            }
+            
             // Lọc phim đang chiếu (trạng thái active)
             List<Phim> phimDangChieu = allPhims.stream()
-                    .filter(p -> "active".equals(p.getTrangThai()))
-                    .collect(Collectors.toList());
+                .filter(p -> p.getTrangThai() != null && "active".equals(p.getTrangThai()))
+                .filter(p -> selectedDate == null || phimIdsWithShowtime.contains(p.getMaPhim()))
+                .collect(Collectors.toList());
             
             // Lọc phim sắp chiếu (trạng thái upcoming hoặc ngày khởi chiếu trong tương lai)
             List<Phim> phimSapChieu = allPhims.stream()
-                    .filter(p -> "upcoming".equals(p.getTrangThai()) || 
-                           (p.getNgayKhoiChieu() != null && p.getNgayKhoiChieu().isAfter(today)))
-                    .collect(Collectors.toList());
+                .filter(p -> p.getTrangThai() != null && 
+                       ("upcoming".equals(p.getTrangThai()) || 
+                        (p.getNgayKhoiChieu() != null && p.getNgayKhoiChieu().isAfter(today))))
+                .filter(p -> selectedDate == null || phimIdsWithShowtime.contains(p.getMaPhim()))
+                .collect(Collectors.toList());
             
-            // Nếu có từ khóa tìm kiếm
+            // Lọc theo tên phim
             if (!searchText.isEmpty()) {
                 String searchLower = searchText.toLowerCase();
                 phimDangChieu = phimDangChieu.stream()
-                        .filter(phim -> phim.getTenPhim().toLowerCase().contains(searchLower) ||
-                                phim.getTenTheLoai().toLowerCase().contains(searchLower))
-                        .collect(Collectors.toList());
+                    .filter(phim -> (phim.getTenPhim() != null && phim.getTenPhim().toLowerCase().contains(searchLower)) ||
+                                    (phim.getTenTheLoai() != null && phim.getTenTheLoai().toLowerCase().contains(searchLower)))
+                    .collect(Collectors.toList());
                 
                 phimSapChieu = phimSapChieu.stream()
-                        .filter(phim -> phim.getTenPhim().toLowerCase().contains(searchLower) ||
-                                phim.getTenTheLoai().toLowerCase().contains(searchLower))
-                        .collect(Collectors.toList());
+                    .filter(phim -> (phim.getTenPhim() != null && phim.getTenPhim().toLowerCase().contains(searchLower)) ||
+                                    (phim.getTenTheLoai() != null && phim.getTenTheLoai().toLowerCase().contains(searchLower)))
+                    .collect(Collectors.toList());
+            }
+            
+            // Hiển thị hoặc ẩn thông báo không có kết quả
+            if (phimDangChieu.isEmpty() && phimSapChieu.isEmpty()) {
+                noResultsLabel.setVisible(true);
+                dangChieuPanel.setVisible(false);
+                sapChieuPanel.setVisible(false);
+            } else {
+                noResultsLabel.setVisible(false);
+                dangChieuPanel.setVisible(!phimDangChieu.isEmpty());
+                sapChieuPanel.setVisible(!phimSapChieu.isEmpty());
             }
             
             // Cập nhật các carousel
             dangChieuPanel.setPhimList(phimDangChieu);
             sapChieuPanel.setPhimList(phimSapChieu);
             
+            // Cập nhật giao diện
+            contentPanel.revalidate();
+            contentPanel.repaint();
+            
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Lỗi khi tải danh sách phim: " + e.getMessage(), 
-                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
     }
 
@@ -207,7 +423,7 @@ public class PhimListView extends JPanel {
         infoPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
 
         // Thể loại
-        JLabel genreLabel = new JLabel("\uD83C\uDFAC Thể loại: " + phim.getTenTheLoai());
+        JLabel genreLabel = new JLabel("\uD83C\uDFAC Thể loại: " + (phim.getTenTheLoai() != null ? phim.getTenTheLoai() : "N/A"));
         genreLabel.setFont(new Font("Arial", Font.PLAIN, 16));
         genreLabel.setAlignmentX(LEFT_ALIGNMENT);
         genreLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
@@ -264,7 +480,7 @@ public class PhimListView extends JPanel {
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0));
 
         JButton actionButton;
-        if ("active".equals(phim.getTrangThai())) {
+        if (phim.getTrangThai() != null && "active".equals(phim.getTrangThai())) {
             actionButton = new JButton("Đặt vé");
             actionButton.addActionListener(e -> {
                 try {

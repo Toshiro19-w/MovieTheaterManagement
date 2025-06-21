@@ -54,6 +54,7 @@ public class HeaderPanel extends JPanel {
         }
         logoPanel.add(logoLabel);
 
+
         JButton homeButton = new JButton("Cinema App");
         homeButton.setForeground(Color.WHITE);
         homeButton.setBackground(new Color(0, 48, 135));

@@ -410,7 +410,7 @@ public class MainView extends JFrame implements ThemeableComponent {
         // Create ResponsiveScrollPane to contain main content
         ResponsiveScrollPane scrollPane = new ResponsiveScrollPane();
         scrollPane.scrollToTop(); // Cuộn lên đầu
-        scrollPane.scrollToBottom();
+//        scrollPane.scrollToBottom();
 
         if (controller.getPermissionManager().isAdmin() || controller.getPermissionManager().isQuanLyPhim() || 
             controller.getPermissionManager().isThuNgan() || controller.getPermissionManager().isBanVe()) {

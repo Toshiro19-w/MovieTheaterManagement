@@ -48,4 +48,9 @@ public class SidebarMenuItem {
     public void setSelected(boolean selected) {
         this.selected = selected;
     }
+
+	public void repaint() {
+		// TODO Auto-generated method stub
+		
+	}
 }
