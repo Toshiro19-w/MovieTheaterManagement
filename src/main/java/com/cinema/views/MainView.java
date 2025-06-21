@@ -302,6 +302,9 @@ public class MainView extends JFrame implements ThemeableComponent {
         });
         actionPanel.add(themeToggleButton);
         
+        //nút đăng xuất
+       
+        
         // Thêm ảnh đại diện dạng tròn cho khách hàng
         if (controller.getPermissionManager().isUser()) {
             actionPanel.add(Box.createHorizontalStrut(10));

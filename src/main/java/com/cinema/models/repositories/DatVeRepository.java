@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.LocalDateTime;
 
 import com.cinema.enums.TrangThaiVe;
@@ -202,7 +203,11 @@ public class DatVeRepository implements IDatVeRepository {
             String hoaDonSql = "INSERT INTO HoaDon (maKhachHang, maNhanVien, ngayLap) VALUES (?, ?, NOW())";
             hoaDonStmt = conn.prepareStatement(hoaDonSql, PreparedStatement.RETURN_GENERATED_KEYS);
             hoaDonStmt.setInt(1, maKhachHang);
-            hoaDonStmt.setInt(2, maNhanVien);
+            if (maNhanVien == 0) {
+                hoaDonStmt.setNull(2, Types.INTEGER); // Đặt maNhanVien thành NULL cho thanh toán online
+            } else {
+                hoaDonStmt.setInt(2, maNhanVien);
+            }
             hoaDonStmt.executeUpdate();
 
             generatedKeys = hoaDonStmt.getGeneratedKeys();
