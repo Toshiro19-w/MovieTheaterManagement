@@ -15,9 +15,13 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -62,6 +66,7 @@ public class MainView extends JFrame implements ThemeableComponent {
     private JLabel titleLabel;
     private JLabel usernameLabel;
     private JLabel userRole;
+    private JPanel menuPanel;
 
     public MainView(String username, LoaiTaiKhoan loaiTaiKhoan) throws IOException, SQLException {
         // Đăng ký listener để lắng nghe sự kiện thay đổi theme
@@ -120,7 +125,6 @@ public class MainView extends JFrame implements ThemeableComponent {
                 g2d.dispose();
             }
             
-            // Ensure sidebar always maintains fixed size
             @Override
             public Dimension getPreferredSize() {
                 return new Dimension(UITheme.SIDEBAR_WIDTH, super.getPreferredSize().height);
@@ -197,8 +201,6 @@ public class MainView extends JFrame implements ThemeableComponent {
         JPanel userLabelPanel = UIHelper.createFlowPanel(FlowLayout.LEFT, 5, 0);
         userLabelPanel.setOpaque(false);
         userLabelPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
-        
         
         usernameLabel = new JLabel(controller.getUsername());
         usernameLabel.setFont(UITheme.BODY_FONT.deriveFont(Font.BOLD));
@@ -279,9 +281,6 @@ public class MainView extends JFrame implements ThemeableComponent {
         JPanel actionPanel = UIHelper.createFlowPanel(FlowLayout.RIGHT, 0, 0);
         actionPanel.setOpaque(false);
         
-        // Improved settings button
-        JButton settingsButton = ModernUIApplier.createModernButton("Cài đặt", UITheme.ACCENT_COLOR, Color.WHITE);
-        
         // Thêm nút chuyển đổi theme
         ThemeToggleButton themeToggleButton = new ThemeToggleButton();
         themeToggleButton.setThemeChangeListener(isDarkMode -> {
@@ -302,10 +301,7 @@ public class MainView extends JFrame implements ThemeableComponent {
         });
         actionPanel.add(themeToggleButton);
         
-        //nút đăng xuất
-       
-        
-        // Thêm ảnh đại diện dạng tròn cho khách hàng
+        // Thêm ảnh đại diện và nút đăng xuất cho khách hàng
         if (controller.getPermissionManager().isUser()) {
             actionPanel.add(Box.createHorizontalStrut(10));
             
@@ -324,15 +320,82 @@ public class MainView extends JFrame implements ThemeableComponent {
             });
             
             actionPanel.add(profileButton);
+
+            // Thêm nút đăng xuất cho khách hàng
+            actionPanel.add(Box.createHorizontalStrut(10));
+            ImageIcon logoutIcon1 = IconManager.getInstance().getIcon("Đăng xuất", "/images/Icon/logout.png", "🚪", 30);
+            JButton logoutButtonHeader = new JButton(logoutIcon1);
+            logoutButtonHeader.setBorderPainted(false);
+            logoutButtonHeader.setContentAreaFilled(false);
+            logoutButtonHeader.setFocusPainted(false);
+            logoutButtonHeader.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+            logoutButtonHeader.setToolTipText("Đăng xuất");
+            
+            // Xử lý sự kiện khi nhấn nút đăng xuất
+            logoutButtonHeader.addActionListener(e -> {
+                int confirm = JOptionPane.showConfirmDialog(this,
+                        "Bạn có chắc muốn đăng xuất?",
+                        "Xác nhận đăng xuất",
+                        JOptionPane.YES_NO_OPTION);
+                if (confirm == JOptionPane.YES_OPTION) {
+                    controller.logout();
+                    dispose();
+                }
+            });
+            actionPanel.add(logoutButtonHeader);
         }
         
+        // Improved settings button
+        JButton settingsButton = ModernUIApplier.createModernButton("Cài đặt", UITheme.ACCENT_COLOR, Color.WHITE);
         actionPanel.add(Box.createHorizontalStrut(10));
         settingsButton.addActionListener(_ -> {
-            // Show settings dialog
-            JOptionPane.showMessageDialog(this, 
-                "Tính năng cài đặt đang được phát triển", 
-                "Thông báo", 
-                JOptionPane.INFORMATION_MESSAGE);
+            // Tạo dialog cài đặt
+            JDialog settingsDialog = new JDialog(this, "Cài đặt", true);
+            settingsDialog.setSize(300, 200);
+            settingsDialog.setLayout(new BorderLayout(10, 10));
+            settingsDialog.setLocationRelativeTo(this);
+
+            // Panel chứa các tùy chọn cài đặt
+            JPanel settingsPanel = new JPanel();
+            settingsPanel.setLayout(new BoxLayout(settingsPanel, BoxLayout.Y_AXIS));
+            settingsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+            // Tùy chọn ngôn ngữ
+            JLabel languageLabel = new JLabel("Ngôn ngữ:");
+            JComboBox<String> languageCombo = new JComboBox<>(new String[]{"Tiếng Việt", "English"});
+            languageCombo.setMaximumSize(new Dimension(200, 30));
+            settingsPanel.add(languageLabel);
+            settingsPanel.add(languageCombo);
+            settingsPanel.add(Box.createVerticalStrut(10));
+
+            // Tùy chọn chế độ sáng/tối
+            JLabel themeLabel = new JLabel("Chế độ giao diện:");
+            JComboBox<String> themeCombo = new JComboBox<>(new String[]{"Sáng", "Tối"});
+            themeCombo.setMaximumSize(new Dimension(200, 30));
+            settingsPanel.add(themeLabel);
+            settingsPanel.add(themeCombo);
+
+            // Panel nút điều khiển
+            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+            JButton saveButton = new JButton("Lưu");
+            saveButton.addActionListener(e -> {
+                String selectedLanguage = (String) languageCombo.getSelectedItem();
+                String selectedTheme = (String) themeCombo.getSelectedItem();
+                // Xử lý lưu cài đặt
+                JOptionPane.showMessageDialog(settingsDialog,
+                        "Đã lưu cài đặt: Ngôn ngữ = " + selectedLanguage + ", Chế độ = " + selectedTheme,
+                        "Thông báo",
+                        JOptionPane.INFORMATION_MESSAGE);
+                settingsDialog.dispose();
+            });
+            JButton cancelButton = new JButton("Hủy");
+            cancelButton.addActionListener(e -> settingsDialog.dispose());
+            buttonPanel.add(saveButton);
+            buttonPanel.add(cancelButton);
+
+            settingsDialog.add(settingsPanel, BorderLayout.CENTER);
+            settingsDialog.add(buttonPanel, BorderLayout.SOUTH);
+            settingsDialog.setVisible(true);
         });
         
         actionPanel.add(settingsButton);
@@ -491,9 +554,6 @@ public class MainView extends JFrame implements ThemeableComponent {
         menuPanel.repaint();
     }
     
-    // Thêm biến menuPanel để lưu trữ tham chiếu
-    private JPanel menuPanel;
-    
     private String getIconFileName(String feature) {
         return switch (feature) {
             case "Dashboard" -> "dashboard.png";
@@ -548,9 +608,6 @@ public class MainView extends JFrame implements ThemeableComponent {
         controller.openBookingView(maPhim, maKhachHang, maNhanVien);
     }
 
-    /**
-     * Cập nhật giao diện khi theme thay đổi
-     */
     @Override
     public void updateTheme(Theme newTheme) {
         // Cập nhật màu nền
