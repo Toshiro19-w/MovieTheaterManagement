@@ -559,8 +559,6 @@ public class PhimView extends JPanel {
             }
         });
         
-
-
         // Tạo container cho bảng với hiệu ứng đổ bóng
         JPanel tableContainer = ModernUIApplier.createModernPanel();
         tableContainer.setLayout(new BorderLayout());

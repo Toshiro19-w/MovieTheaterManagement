@@ -96,7 +96,7 @@ public class SuatChieu {
         this.thoiLuongPhim = thoiLuongPhim;
     }
 
-    public String getKieugPhim() {
+    public String getKieuPhim() {
         return kieuPhim;
     }
 

@@ -1,5 +1,7 @@
 package com.cinema.controllers;
 
+import java.awt.Component;
+import java.awt.Container;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -8,10 +10,13 @@ import java.util.List;
 
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 
 import com.cinema.models.Phim;
 import com.cinema.models.PhongChieu;
 import com.cinema.models.SuatChieu;
+import com.cinema.models.dto.CustomPaginationPanel;
+import com.cinema.models.dto.PaginationResult;
 import com.cinema.services.PhimService;
 import com.cinema.services.PhongChieuService;
 import com.cinema.services.SuatChieuService;
@@ -23,6 +28,9 @@ public class SuatChieuController {
     private final PhimService phimService;
     private final PhongChieuService phongChieuService;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages = 1;
 
     public SuatChieuController(SuatChieuView view) throws SQLException {
         this.view = view;
@@ -35,9 +43,9 @@ public class SuatChieuController {
 
     private void initView() {
         try {
-            loadSuatChieuList(service.getAllSuatChieu());
             loadPhimToComboBox();
             loadPhongChieuToComboBox();
+            loadSuatChieuPaginated(currentPage, pageSize);
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(view, "Lỗi khi tải dữ liệu suất chiếu!", "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -75,22 +83,6 @@ public class SuatChieuController {
         }
     }
 
-    private void loadSuatChieuList(List<SuatChieu> suatChieus) {
-        DefaultTableModel model = view.getSuatChieuTableModel();
-        model.setRowCount(0);
-        for (SuatChieu sc : suatChieus) {
-            String ngayGioChieuFormatted = sc.getNgayGioChieu() != null
-                    ? sc.getNgayGioChieu().format(formatter)
-                    : "Chưa có";
-            model.addRow(new Object[]{
-                    sc.getMaSuatChieu(),
-                    sc.getTenPhim(),
-                    sc.getTenPhong(),
-                    ngayGioChieuFormatted
-            });
-        }
-    }
-
     private void displaySuatChieuInfo(int row) {
         DefaultTableModel model = view.getSuatChieuTableModel();
         view.getTxtMaSuatChieu().setText(model.getValueAt(row, 0).toString());
@@ -124,7 +116,7 @@ public class SuatChieuController {
             SuatChieu suatChieu = createSuatChieuFromForm();
             service.addSuatChieu(suatChieu);
             JOptionPane.showMessageDialog(view, "Thêm suất chiếu thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadSuatChieuList(service.getAllSuatChieu());
+            loadSuatChieuPaginated(currentPage, pageSize);
             clearForm();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -146,7 +138,7 @@ public class SuatChieuController {
             suatChieu.setMaSuatChieu(Integer.parseInt(view.getTxtMaSuatChieu().getText()));
             service.updateSuatChieu(suatChieu);
             JOptionPane.showMessageDialog(view, "Cập nhật suất chiếu thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadSuatChieuList(service.getAllSuatChieu());
+            loadSuatChieuPaginated(currentPage, pageSize);
             clearForm();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -171,7 +163,7 @@ public class SuatChieuController {
             if (confirm == JOptionPane.YES_OPTION) {
                 service.deleteSuatChieu(maSuatChieu);
                 JOptionPane.showMessageDialog(view, "Xóa suất chiếu thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-                loadSuatChieuList(service.getAllSuatChieu());
+                loadSuatChieuPaginated(currentPage, pageSize);
                 clearForm();
             }
         } catch (SQLException e) {
@@ -229,5 +221,52 @@ public class SuatChieuController {
         }
 
         return LocalDateTime.parse(ngayGioChieuStr, formatter);
+    }
+
+    public void loadSuatChieuPaginated(int page, int pageSize) throws SQLException {
+        PaginationResult<SuatChieu> result = service.getAllSuatChieuPaginated(page, pageSize);
+        DefaultTableModel model = view.getSuatChieuTableModel();
+        model.setRowCount(0);
+        for (SuatChieu sc : result.getData()) {
+            model.addRow(new Object[]{
+                sc.getMaSuatChieu(),
+                sc.getTenPhim(),
+                sc.getTenPhong(),
+                sc.getNgayGioChieu(),
+                sc.getThoiLuongPhim(),
+                sc.getKieuPhim()
+            });
+        }
+        // Tìm pagination panel theo tên
+        findPaginationPanelByName(view, "paginationPanel", result);
+        
+        // Đảm bảo TableRowSorter được cập nhật
+        if (view.getSuatChieuTable().getRowSorter() instanceof TableRowSorter) {
+            ((TableRowSorter<?>) view.getSuatChieuTable().getRowSorter()).sort();
+        }
+        // Đảm bảo TableRowSorter được cập nhật
+        if (view.getSuatChieuTable().getRowSorter() instanceof TableRowSorter) {
+            ((TableRowSorter<?>) view.getSuatChieuTable().getRowSorter()).sort();
+        }
+    }
+
+    private void findPaginationPanelByName(Component component, String name, PaginationResult<SuatChieu> result) {
+        if (component instanceof CustomPaginationPanel && name.equals(component.getName())) {
+            CustomPaginationPanel paginationPanel = (CustomPaginationPanel) component;
+            paginationPanel.updatePagination(result.getCurrentPage(), result.getTotalPages());
+            System.out.println("Pagination updated: page " + result.getCurrentPage() + " of " + result.getTotalPages());
+            return;
+        }
+        
+        if (component instanceof Container) {
+            Component[] children = ((Container) component).getComponents();
+            for (Component child : children) {
+                findPaginationPanelByName(child, name, result);
+            }
+        }
+    }
+
+    public int getCurrentPage() {
+        return currentPage;
     }
 }

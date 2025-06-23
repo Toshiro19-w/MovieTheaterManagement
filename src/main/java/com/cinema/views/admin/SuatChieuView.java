@@ -1,100 +1,62 @@
 package com.cinema.views.admin;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.RenderingHints;
+import java.awt.*;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.chrono.ChronoLocalDateTime;
 import java.util.ResourceBundle;
-
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTable;
-import javax.swing.ListSelectionModel;
-import javax.swing.RowFilter;
-import javax.swing.SwingConstants;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableRowSorter;
 
+import com.cinema.models.dto.CustomPaginationPanel;
 import com.cinema.components.DateTimePicker;
+import com.cinema.components.UIConstants;
 import com.cinema.components.UnderlineTextField;
-import com.cinema.controllers.PhongChieuController;
 import com.cinema.controllers.SuatChieuController;
 import com.cinema.models.Phim;
-import com.cinema.services.PhimService;
+import com.cinema.models.PhongChieu;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.SimpleDocumentListener;
 import com.cinema.utils.SuatChieuValidation;
 
 public class SuatChieuView extends JPanel {
-    private DatabaseConnection databaseConnection;
-    private PhimService phimService;
+    private final ResourceBundle messages;
+    private final DatabaseConnection databaseConnection;
+    private final SuatChieuController controller;
+    private Integer selectedMaSuatChieu = null; // Mã suất chiếu được chọn
+    private Integer selectedMaPhong = null; // Mã phòng chiếu được chọn
 
-    // SuatChieu components
+    // UI Components
     private UnderlineTextField txtNgayGioChieu, suatChieuSearchField;
     private JLabel txtMaSuatChieu;
-    private JComboBox cbMaPhim, cbMaPhong;
+    private JComboBox<Phim> cbMaPhim;
+    private JComboBox<PhongChieu> cbMaPhong;
     private JTable suatChieuTable;
     private DefaultTableModel suatChieuTableModel;
     private JButton btnThemSuat, btnSuaSuat, btnXoaSuat, btnClearSuat;
     private TableRowSorter<DefaultTableModel> suatChieuSorter;
-    private Integer selectedMaSuatChieu;
-    private ResourceBundle messages;
+    private JTable phongChieuTable;
+    private DefaultTableModel phongChieuTableModel;
 
     // Error labels
     private JLabel lblNgayGioChieuError, lblPhimError, lblPhongError;
 
-    // PhongChieu components
-    private JTable phongChieuTable;
-    private DefaultTableModel phongChieuTableModel;
-    private Integer selectedMaPhong;
-
     // UI Constants
     private static final Color PRIMARY_COLOR = new Color(59, 130, 246);
-    private static final Color CINESTAR_BLUE = new Color(0, 51, 102);
-    private static final Color CINESTAR_YELLOW = new Color(255, 204, 0);
     private static final Color BACKGROUND_COLOR = new Color(245, 245, 245);
-    private static final Color ROW_ALTERNATE_COLOR = new Color(240, 240, 240);
     private static final Font LABEL_FONT = new Font("Inter", Font.PLAIN, 14);
     private static final Font TITLE_FONT = new Font("Inter", Font.BOLD, 24);
-    private static final Font BUTTON_FONT = new Font("Inter", Font.BOLD, 14);
-
-    public SuatChieuView() throws SQLException {
+    private static final Font BUTTON_FONT = new Font("Inter", Font.BOLD, 14);    
+    public SuatChieuView() throws SQLException, IOException {
         this.messages = ResourceBundle.getBundle("Messages");
-        initializeDatabase();
+        this.databaseConnection = new DatabaseConnection();
         initializeUI();
-        new SuatChieuController(this);
-        new PhongChieuController(this);
+        this.controller = new SuatChieuController(this);
         addValidationListeners();
-    }
-
-    private void initializeDatabase() {
-        try {
-            databaseConnection = new DatabaseConnection();
-        } catch (IOException e) {
-            showError("Không thể kết nối cơ sở dữ liệu: " + e.getMessage());
-        }
     }
 
     private void initializeUI() {
@@ -130,8 +92,14 @@ public class SuatChieuView extends JPanel {
     private JPanel createSuatChieuPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
-        // Info panel with shadow effect
+        // Tạo panel trung gian với BoxLayout
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setOpaque(false);
+
+        // Info panel (form nhập liệu, bo góc, đổ bóng nhẹ)
         JPanel infoPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -162,10 +130,7 @@ public class SuatChieuView extends JPanel {
         initializeSuatChieuFields(fieldsPanel, gbc);
         infoPanel.add(fieldsPanel, BorderLayout.CENTER);
 
-        // Table panel
-        JPanel tablePanel = createSuatChieuTablePanel();
-
-        // Button panel
+        // Button panel (đẩy lên trên bảng)
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
         buttonPanel.setOpaque(false);
         btnThemSuat = createStyledButton("THÊM", PRIMARY_COLOR);
@@ -177,10 +142,16 @@ public class SuatChieuView extends JPanel {
         buttonPanel.add(btnXoaSuat);
         buttonPanel.add(btnClearSuat);
 
-        panel.add(infoPanel, BorderLayout.NORTH);
-        panel.add(tablePanel, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
+        // Table panel (bảng suất chiếu + CustomPaginationPanel)
+        JPanel tablePanel = createSuatChieuTablePanel();
 
+        contentPanel.add(infoPanel);
+        contentPanel.add(Box.createVerticalStrut(10));
+        contentPanel.add(buttonPanel);
+        contentPanel.add(Box.createVerticalStrut(10));
+        contentPanel.add(tablePanel);
+
+        panel.add(contentPanel, BorderLayout.CENTER);
         return panel;
     }
 
@@ -259,53 +230,96 @@ public class SuatChieuView extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setOpaque(false);
 
-        String[] columns = {"Mã Suất Chiếu", "Tên Phim", "Phòng Chiếu", "Ngày Giờ Chiếu"};
-        suatChieuTableModel = new DefaultTableModel(columns, 0) {
+        // Search panel
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.setOpaque(false);
+        searchPanel.add(new JLabel("Tìm kiếm:"));
+        suatChieuSearchField = new UnderlineTextField(20);
+        styleTextField(suatChieuSearchField);
+        searchPanel.add(suatChieuSearchField);
+
+        // Table
+        suatChieuTableModel = new DefaultTableModel(
+                new Object[]{"Mã Suất Chiếu", "Tên Phim", "Phòng Chiếu", "Ngày Giờ Chiếu"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
-        suatChieuTable = new JTable(suatChieuTableModel) {
-            @Override
-            public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
-                Component c = super.prepareRenderer(renderer, row, column);
-                if (isRowSelected(row)) {
-                    c.setBackground(new Color(255, 204, 0, 100));
-                } else if (row % 2 == 0) {
-                    c.setBackground(Color.WHITE);
-                } else {
-                    c.setBackground(ROW_ALTERNATE_COLOR);
-                }
-                return c;
-            }
-        };
 
-        suatChieuTable.setFont(LABEL_FONT);
-        suatChieuTable.getTableHeader().setBackground(CINESTAR_BLUE);
-        suatChieuTable.getTableHeader().setForeground(Color.WHITE);
-        suatChieuTable.getTableHeader().setFont(BUTTON_FONT);
-        suatChieuTable.setRowHeight(30);
-        suatChieuTable.setGridColor(Color.LIGHT_GRAY);
+        suatChieuTable = new JTable(suatChieuTableModel);
+        suatChieuTable.setRowHeight(35);
         suatChieuTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        suatChieuTable.getTableHeader().setReorderingAllowed(false);
 
-        suatChieuSorter = new TableRowSorter<>(suatChieuTableModel);
-        suatChieuTable.setRowSorter(suatChieuSorter);
+        // Custom header renderer
+        suatChieuTable.getTableHeader().setDefaultRenderer((table, value, isSelected, hasFocus, row, col) -> {
+            JLabel label = new JLabel(value.toString());
+            label.setFont(label.getFont().deriveFont(Font.BOLD));
+            label.setBackground(new Color(240, 240, 240));
+            label.setHorizontalAlignment(SwingConstants.CENTER);
+            label.setOpaque(true);
+            return label;
+        });
 
-        suatChieuTable.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                int selectedRow = suatChieuTable.getSelectedRow();
-                if (selectedRow >= 0) {
-                    selectedMaSuatChieu = (Integer) suatChieuTableModel.getValueAt(selectedRow, 0);
-                } else {
-                    selectedMaSuatChieu = null;
-                }
+        // Custom cell renderer
+        suatChieuTable.setDefaultRenderer(Object.class, (table, value, isSelected, hasFocus, row, col) -> {
+            JLabel label = new JLabel(value != null ? value.toString() : "");
+            label.setHorizontalAlignment(SwingConstants.CENTER);
+            if (isSelected) {
+                label.setBackground(UIManager.getColor("Table.selectionBackground"));
+                label.setForeground(UIManager.getColor("Table.selectionForeground"));
+            } else {
+                label.setBackground(row % 2 == 0 ? Color.WHITE : new Color(245, 245, 245));
+                label.setForeground(UIManager.getColor("Table.foreground"));
             }
+            label.setOpaque(true);
+            return label;
         });
 
         JScrollPane scrollPane = new JScrollPane(suatChieuTable);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("DANH SÁCH SUẤT CHIẾU"));
+        scrollPane.setPreferredSize(new Dimension(800, 300));        
+
+        // Thêm phân trang với thiết kế hiện đại
+        CustomPaginationPanel paginationPanel = new CustomPaginationPanel();
+        paginationPanel.setName("paginationPanel"); // Đặt tên để dễ tìm kiếm
+        paginationPanel.setBackground(UIConstants.CARD_BACKGROUND);
+        paginationPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        paginationPanel.setPageChangeListener(page -> {
+            try {
+                controller.loadSuatChieuPaginated(page, 10);
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(this,
+                        "Lỗi khi tải dữ liệu suất chiếu: " + e.getMessage(),
+                        "Lỗi",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Layout
+        panel.add(searchPanel, BorderLayout.NORTH);
         panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(paginationPanel, BorderLayout.SOUTH);
+
+        // Search functionality
+        suatChieuSearchField.getDocument().addDocumentListener(new SimpleDocumentListener(() -> {
+            String searchText = suatChieuSearchField.getText().toLowerCase();
+            suatChieuSorter.setRowFilter(searchText.isEmpty() ? null : new RowFilter<DefaultTableModel, Integer>() {
+                @Override
+                public boolean include(RowFilter.Entry<? extends DefaultTableModel, ? extends Integer> entry) {
+                    for (int i = 0; i < entry.getValueCount(); i++) {
+                        if (entry.getStringValue(i).toLowerCase().contains(searchText)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            });
+        }));
+        
+        // Setup sorter
+        suatChieuSorter = new TableRowSorter<>(suatChieuTableModel);
+        suatChieuTable.setRowSorter(suatChieuSorter);
 
         return panel;
     }
@@ -338,14 +352,14 @@ public class SuatChieuView extends JPanel {
                 } else if (row % 2 == 0) {
                     c.setBackground(Color.WHITE);
                 } else {
-                    c.setBackground(ROW_ALTERNATE_COLOR);
+                    c.setBackground(new Color(245, 245, 245));
                 }
                 return c;
             }
         };
 
         phongChieuTable.setFont(LABEL_FONT);
-        phongChieuTable.getTableHeader().setBackground(CINESTAR_BLUE);
+        phongChieuTable.getTableHeader().setBackground(PRIMARY_COLOR);
         phongChieuTable.getTableHeader().setForeground(Color.WHITE);
         phongChieuTable.getTableHeader().setFont(BUTTON_FONT);
         phongChieuTable.setRowHeight(30);
@@ -449,25 +463,11 @@ public class SuatChieuView extends JPanel {
             }
             updateButtonStates();
         }));
-
-        // Validate chọn phim
-        cbMaPhim.addActionListener(e -> {
-            SuatChieuValidation.validateMovie(cbMaPhim, lblPhimError, messages);
-            updateButtonStates();
-        });
-
-        // Validate chọn phòng
-        cbMaPhong.addActionListener(e -> {
-            SuatChieuValidation.validateRoom(cbMaPhong, lblPhongError, messages);
-            updateButtonStates();
-        });
     }
 
     private boolean isFormValid() {
         LocalDateTime releaseDate = getMovieReleaseDate();
-        return SuatChieuValidation.validateShowtime(txtNgayGioChieu.getText(), releaseDate, lblNgayGioChieuError, messages) &&
-               SuatChieuValidation.validateMovie(cbMaPhim, lblPhimError, messages) &&
-               SuatChieuValidation.validateRoom(cbMaPhong, lblPhongError, messages);
+        return SuatChieuValidation.validateShowtime(txtNgayGioChieu.getText(), releaseDate, lblNgayGioChieuError, messages);
     }
 
     private void updateButtonStates() {

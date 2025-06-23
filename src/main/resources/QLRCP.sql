@@ -967,3 +967,18 @@ INSERT INTO ActivityLog (loaiHoatDong, moTa, thoiGian, maNguoiDung) VALUES
 ('Xóa suất chiếu', 'Xóa suất chiếu ngày 25/06/2025', NOW() - INTERVAL 5 HOUR, 4),
 ('Thêm khuyến mãi', 'Thêm khuyến mãi mới: Giảm giá hè 2025', NOW() - INTERVAL 6 HOUR, 9),
 ('Đăng xuất', 'Đăng xuất khỏi hệ thống', NOW() - INTERVAL 7 HOUR, 9);
+
+-- View Thống kê nhân viên theo phiên làm việc
+DROP VIEW IF EXISTS ThongKeNhanVienTheoPhien;
+CREATE VIEW ThongKeNhanVienTheoPhien AS
+SELECT 
+    plv.maNhanVien,
+    nd.hoTen AS tenNhanVien,
+    nv.vaiTro,
+    plv.thoiGianBatDau,
+    plv.thoiGianKetThuc,
+    COALESCE(plv.tongDoanhThu, 0) AS tongDoanhThu,
+    COALESCE(plv.soVeDaBan, 0) AS soVeDaBan
+FROM PhienLamViec plv
+JOIN NhanVien nv ON plv.maNhanVien = nv.maNguoiDung
+JOIN NguoiDung nd ON nv.maNguoiDung = nd.maNguoiDung;

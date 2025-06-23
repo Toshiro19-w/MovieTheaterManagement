@@ -11,6 +11,7 @@ import java.util.List;
 
 import com.cinema.models.SuatChieu;
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.models.dto.PaginationResult;
 
 public class SuatChieuRepository extends BaseRepository<SuatChieu> {
     public SuatChieuRepository(DatabaseConnection databaseConnection) {
@@ -19,33 +20,11 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
     
     @Override
     public List<SuatChieu> findAll() {
-        List<SuatChieu> list = new ArrayList<>();
-        String sql = "SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, sc.maPhong, pc.tenPhong, " +
-                "sc.ngayGioChieu, p.thoiLuong, p.kieuPhim " +
-                "FROM SuatChieu sc " +
-                "JOIN Phim p ON sc.maPhim = p.maPhim " +
-                "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong " +
-                "WHERE sc.ngayGioChieu >= NOW() " +
-                "ORDER BY sc.ngayGioChieu";
-        try (Connection conn = dbConnection.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                list.add(new SuatChieu(
-                        rs.getInt("maSuatChieu"),
-                        rs.getInt("maPhim"),
-                        rs.getString("tenPhim"),
-                        rs.getInt("maPhong"),
-                        rs.getString("tenPhong"),
-                        rs.getTimestamp("ngayGioChieu").toLocalDateTime(),
-                        rs.getInt("thoiLuong"),
-                        rs.getString("kieuPhim")
-                ));
-            }
+        try {
+            return findAllPaginated(1, Integer.MAX_VALUE).getData();
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi khi truy vấn chi tiết suất chiếu: " + e.getMessage(), e);
         }
-        return list;
     }
 
     public List<SuatChieu> findByMaPhim(int maPhim) throws SQLException {
@@ -175,5 +154,46 @@ public class SuatChieuRepository extends BaseRepository<SuatChieu> {
     public SuatChieu findById(int id) throws SQLException {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'findById'");
+    }
+
+    public PaginationResult<SuatChieu> findAllPaginated(int page, int pageSize) throws SQLException {
+        List<SuatChieu> list = new ArrayList<>();
+        int offset = (page - 1) * pageSize;
+        int totalItems = 0;
+        String countSql = "SELECT COUNT(*) FROM SuatChieu WHERE ngayGioChieu >= NOW()";
+        try (Connection conn = dbConnection.getConnection();
+             Statement countStmt = conn.createStatement();
+             ResultSet countRs = countStmt.executeQuery(countSql)) {
+            if (countRs.next()) {
+                totalItems = countRs.getInt(1);
+            }
+        }
+        int totalPages = (int) Math.ceil((double) totalItems / pageSize);
+        String sql = "SELECT sc.maSuatChieu, sc.maPhim, p.tenPhim, sc.maPhong, pc.tenPhong, " +
+                "sc.ngayGioChieu, p.thoiLuong, p.kieuPhim " +
+                "FROM SuatChieu sc " +
+                "JOIN Phim p ON sc.maPhim = p.maPhim " +
+                "JOIN PhongChieu pc ON sc.maPhong = pc.maPhong " +
+                "WHERE sc.ngayGioChieu >= NOW() " +
+                "ORDER BY sc.ngayGioChieu LIMIT ? OFFSET ?";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, pageSize);
+            stmt.setInt(2, offset);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                list.add(new SuatChieu(
+                        rs.getInt("maSuatChieu"),
+                        rs.getInt("maPhim"),
+                        rs.getString("tenPhim"),
+                        rs.getInt("maPhong"),
+                        rs.getString("tenPhong"),
+                        rs.getTimestamp("ngayGioChieu").toLocalDateTime(),
+                        rs.getInt("thoiLuong"),
+                        rs.getString("kieuPhim")
+                ));
+            }
+        }
+        return new PaginationResult<>(list, page, totalPages, pageSize, totalItems);
     }
 }

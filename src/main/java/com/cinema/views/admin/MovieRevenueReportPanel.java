@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 
@@ -22,9 +24,9 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.JTabbedPane;
 import javax.swing.table.DefaultTableModel;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -50,9 +52,10 @@ import com.cinema.models.BaoCao;
 import com.cinema.models.repositories.BaoCaoRepository;
 import com.cinema.services.BaoCaoService;
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.utils.SimpleDocumentListener;
 import com.cinema.utils.ValidationUtils;
 
-public class BaoCaoView extends JPanel {
+public class MovieRevenueReportPanel extends JPanel {
     private DatabaseConnection databaseConnection;
     private BaoCaoController controller;
     private BaoCaoRepository baoCaoRepository;
@@ -69,7 +72,7 @@ public class BaoCaoView extends JPanel {
     private static final Font BUTTON_FONT = new Font("Inter", Font.BOLD, 14);
     private static final Color PRIMARY_COLOR = new Color(59, 130, 246);
 
-    public BaoCaoView() {
+    public MovieRevenueReportPanel() {
         try {
             databaseConnection = new DatabaseConnection();
             baoCaoRepository = new BaoCaoRepository(databaseConnection);
@@ -93,15 +96,66 @@ public class BaoCaoView extends JPanel {
         setLayout(new BorderLayout());
         setBackground(new Color(245, 245, 245));
 
-        JTabbedPane tabbedPane = new JTabbedPane();
-        
-        // Tab for Movie Revenue Report
-        tabbedPane.addTab("Báo cáo doanh thu phim", new MovieRevenueReportPanel());
-        
-        // Tab for Employee Report
-        tabbedPane.addTab("Báo cáo nhân viên", new EmployeeReportPanel());
-        
-        add(tabbedPane, BorderLayout.CENTER);
+        // Panel chọn khoảng thời gian
+        JPanel timePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        timePanel.setOpaque(false);
+
+        JLabel tuNgayLabel = new JLabel("Từ ngày:");
+        tuNgayLabel.setFont(LABEL_FONT);
+        tuNgayField = createStyledTextField();
+        tuNgayField.setText("01/01/2025 00:00:00");
+        tuNgayErrorLabel = ValidationUtils.createErrorLabel();
+
+        JLabel denNgayLabel = new JLabel("Đến ngày:");
+        denNgayLabel.setFont(LABEL_FONT);
+        denNgayField = createStyledTextField();
+        denNgayField.setText("31/12/2025 23:59:59");
+        denNgayErrorLabel = ValidationUtils.createErrorLabel();
+
+        JButton xemButton = createStyledButton("Xem báo cáo");
+        JButton xuatfileButton = createStyledButton("Xuất Excel");
+
+        timePanel.add(tuNgayLabel);
+        timePanel.add(tuNgayField);
+        timePanel.add(tuNgayErrorLabel);
+        timePanel.add(denNgayLabel);
+        timePanel.add(denNgayField);
+        timePanel.add(denNgayErrorLabel);
+        timePanel.add(xemButton);
+        timePanel.add(xuatfileButton);
+
+        // Panel chứa bảng và biểu đồ
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setOpaque(false);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Bảng hiển thị báo cáo
+        tableModel = new DefaultTableModel(new String[]{
+                "Tên phim", "Số vé bán ra", "Tổng doanh thu", "Điểm đánh giá TB"
+        }, 0);
+        baoCaoTable = new JTable(tableModel);
+        JScrollPane scrollPane = new JScrollPane(baoCaoTable);
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Panel chứa biểu đồ
+        chartPanel = new JPanel(new BorderLayout());
+        chartPanel.setOpaque(false);
+        contentPanel.add(chartPanel, BorderLayout.SOUTH);
+
+        // Sự kiện
+        xemButton.addActionListener(_ -> xemBaoCao());
+        xuatfileButton.addActionListener(_ -> xuatFile());
+
+        // Thêm kiểm tra real-time
+        tuNgayField.getDocument().addDocumentListener(new SimpleDocumentListener(this::validateDateFields));
+        denNgayField.getDocument().addDocumentListener(new SimpleDocumentListener(this::validateDateFields));
+
+        // Thêm các thành phần vào panel
+        add(timePanel, BorderLayout.NORTH);
+        add(contentPanel, BorderLayout.CENTER);
+
+        // Kiểm tra ban đầu
+        validateDateFields();
     }
 
     private JTextField createStyledTextField() {
@@ -216,7 +270,7 @@ public class BaoCaoView extends JPanel {
             DefaultCategoryDataset ticketsDataset, List<BaoCao> baoCaoList) {
         // C trục tung (Y) cho doanh thu
         NumberAxis revenueAxis = new NumberAxis("Doanh thu");
-        revenueAxis.setNumberFormatOverride(java.text.NumberFormat.getCurrencyInstance());
+        revenueAxis.setNumberFormatOverride(java.text.NumberFormat.getCurrencyInstance(new Locale("vi", "VN")));
         
         // C renderer cho doanh thu (biểu đồ cột)
         BarRenderer revenueRenderer = new BarRenderer();
@@ -256,7 +310,7 @@ public class BaoCaoView extends JPanel {
         
         // Tạo biểu đồ
         JFreeChart chart = new JFreeChart(
-            "Biểu đồ doanh thu và lượng vé bán ra",
+            "Biểu đồ Doanh thu và Lượng vé bán ra",
             new Font("Inter", Font.BOLD, 18),
             plot,
             true

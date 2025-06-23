@@ -296,7 +296,9 @@ public class PhimController {
             view.getPosterLabel().setText("Không có ảnh");
             view.clearSelectedPosterPath();
         }
-    }    public void themPhim() throws SQLException {
+    }    
+    
+    public void themPhim() throws SQLException {
         Phim phim = getPhimFromForm();
         
         // Xử lý poster nếu có

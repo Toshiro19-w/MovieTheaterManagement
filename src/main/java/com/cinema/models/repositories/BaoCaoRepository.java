@@ -1,6 +1,7 @@
 package com.cinema.models.repositories;
 
 import com.cinema.models.BaoCao;
+import com.cinema.models.BaoCaoNhanVien;
 import com.cinema.models.repositories.Interface.IBaoCaoRepository;
 import com.cinema.utils.DatabaseConnection;
 
@@ -46,6 +47,31 @@ public class BaoCaoRepository implements IBaoCaoRepository {
                             rs.getInt("soVeBanRa"),
                             rs.getDouble("tongDoanhThu"),
                             rs.getDouble("DiemDanhGiaTrungBinh")
+                    ));
+                }
+            }
+        }
+        return list;
+    }
+
+    public List<BaoCaoNhanVien> getBaoCaoNhanVien(LocalDateTime tuNgay, LocalDateTime denNgay) throws SQLException {
+        List<BaoCaoNhanVien> list = new ArrayList<>();
+        String sql = "SELECT tenNhanVien, vaiTro, SUM(soVeDaBan) AS totalVe, SUM(tongDoanhThu) AS totalDoanhThu " +
+                     "FROM ThongKeNhanVienTheoPhien " +
+                     "WHERE thoiGianBatDau >= ? AND (thoiGianKetThuc <= ? OR thoiGianKetThuc IS NULL) " +
+                     "GROUP BY tenNhanVien, vaiTro " +
+                     "ORDER BY totalDoanhThu DESC";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setTimestamp(1, java.sql.Timestamp.valueOf(tuNgay));
+            stmt.setTimestamp(2, java.sql.Timestamp.valueOf(denNgay));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    list.add(new BaoCaoNhanVien(
+                            rs.getString("tenNhanVien"),
+                            rs.getString("vaiTro"),
+                            rs.getInt("totalVe"),
+                            rs.getDouble("totalDoanhThu")
                     ));
                 }
             }

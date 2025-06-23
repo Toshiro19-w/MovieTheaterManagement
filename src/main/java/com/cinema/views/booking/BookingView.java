@@ -38,6 +38,7 @@ import com.cinema.controllers.PaymentController;
 import com.cinema.models.Ghe;
 import com.cinema.models.SuatChieu;
 import com.cinema.models.dto.BookingResultDTO;
+import com.cinema.utils.ServerTimeService;
 import com.cinema.utils.SnackbarUtil;
 
 public class BookingView extends JDialog {
@@ -76,6 +77,23 @@ public class BookingView extends JDialog {
         setLayout(new BorderLayout());
         setLocationRelativeTo(parent);
         getContentPane().setBackground(BACKGROUND_COLOR);
+
+        List<SuatChieu> suatChieuList;
+        try {
+            suatChieuList = datVeController.getSuatChieuByPhim(maPhim)
+                .stream()
+                .filter(sc -> !sc.getNgayGioChieu().isBefore(ServerTimeService.getServerTime()))
+                .collect(Collectors.toList());
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(parent, "Lỗi khi tải suất chiếu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            dispose();
+            return;
+        }
+        if (suatChieuList.isEmpty()) {
+            JOptionPane.showMessageDialog(parent, "Không còn suất chiếu khả dụng cho phim này!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+            dispose();
+            return;
+        }
 
         initializeComponents();
     }
@@ -119,10 +137,14 @@ public class BookingView extends JDialog {
         suatChieuLabel.setFont(LABEL_FONT);
         JComboBox<SuatChieu> suatChieuCombo = new JComboBox<>();
         suatChieuCombo.setFont(LABEL_FONT);
-        suatChieuCombo.setPreferredSize(new Dimension(300, 30));
+        suatChieuCombo.setPreferredSize(new Dimension(400, 30));
         
         try {
-            List<SuatChieu> suatChieuList = datVeController.getSuatChieuByPhim(maPhim);
+            // Lọc suất chiếu hợp lệ (ngày giờ chiếu >= thời gian hiện tại)
+            List<SuatChieu> suatChieuList = datVeController.getSuatChieuByPhim(maPhim)
+                .stream()
+                .filter(sc -> !sc.getNgayGioChieu().isBefore(ServerTimeService.getServerTime()))
+                .collect(Collectors.toList());
 
             if (suatChieuList.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Không còn suất chiếu khả dụng cho phim này!", "Thông báo", JOptionPane.WARNING_MESSAGE);
