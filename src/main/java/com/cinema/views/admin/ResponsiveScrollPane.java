@@ -1,5 +1,6 @@
 package com.cinema.views.admin;
 
+import com.cinema.views.common.ResizableView;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.MouseWheelEvent;
@@ -14,6 +15,9 @@ public class ResponsiveScrollPane extends JScrollPane {
     private static final int UNIT_INCREMENT = 10;      // Tốc độ cuộn cơ bản
     private static final int WHEEL_MULTIPLIER = 4;      // Hệ số nhân cho cuộn chuột
     private static final double BLOCK_MULTIPLIER = 2.5; // Hệ số nhân cho cuộn trang
+
+    private ResizableView resizableView;
+    private boolean adjustingSize = false;
 
     public ResponsiveScrollPane() {
         super();
@@ -125,5 +129,108 @@ public class ResponsiveScrollPane extends JScrollPane {
     public void scrollToBottom() {
         int maxY = getVerticalScrollBar().getMaximum() - getViewport().getHeight();
         scrollToPosition(getViewport().getViewPosition().x, maxY);
+    }
+
+    /**
+     * Cập nhật view và áp dụng các thuộc tính kích thước
+     */
+    public void updateView(Component view) {
+        if (view instanceof ResizableView) {
+            resizableView = (ResizableView) view;
+            configureScrollBehavior();
+        }
+        setViewportView(view);
+        updateScrollBars();
+    }
+
+    /**
+     * Cấu hình scroll behavior dựa trên ResizableView
+     */
+    private void configureScrollBehavior() {
+        if (resizableView == null) return;
+
+        ResizableView.SizeMode sizeMode = resizableView.getSizeMode();
+        switch (sizeMode) {
+            case FIXED:
+                setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_NEVER);
+                setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_NEVER);
+                break;
+            case RESPONSIVE:
+                setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_NEVER);
+                setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_NEVER);
+                break;
+            case SCROLLABLE:
+                setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_AS_NEEDED);
+                setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_AS_NEEDED);
+                break;
+            case STRETCH:
+                setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_NEVER);
+                setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_NEVER);
+                break;
+        }
+    }
+
+    /**
+     * Cập nhật trạng thái thanh cuộn
+     */
+    private void updateScrollBars() {
+        if (resizableView == null) return;
+
+        Component view = getViewport().getView();
+        if (view == null) return;
+
+        Dimension viewSize = view.getPreferredSize();
+        Dimension viewportSize = getViewport().getSize();
+
+        if (resizableView.getSizeMode() == ResizableView.SizeMode.SCROLLABLE) {
+            // Chỉ hiện thanh cuộn khi nội dung vượt quá viewport
+            setVerticalScrollBarPolicy(
+                viewSize.height > viewportSize.height ? 
+                VERTICAL_SCROLLBAR_AS_NEEDED : VERTICAL_SCROLLBAR_NEVER
+            );
+            setHorizontalScrollBarPolicy(
+                viewSize.width > viewportSize.width ? 
+                HORIZONTAL_SCROLLBAR_AS_NEEDED : HORIZONTAL_SCROLLBAR_NEVER
+            );
+        }
+    }
+
+    /**
+     * Điều chỉnh kích thước component khi viewport thay đổi
+     */
+    @Override
+    public void doLayout() {
+        if (adjustingSize) return;
+        adjustingSize = true;
+        
+        try {
+            super.doLayout();
+            
+            if (resizableView != null) {
+                Component view = getViewport().getView();
+                if (view != null) {
+                    Dimension viewportSize = getViewport().getSize();
+                    ResizableView.SizeMode sizeMode = resizableView.getSizeMode();
+                    
+                    switch (sizeMode) {
+                        case RESPONSIVE:
+                        case STRETCH:
+                            view.setSize(viewportSize);
+                            break;
+                        case FIXED:
+                            Dimension preferred = resizableView.getPreferredViewSize();
+                            view.setSize(preferred);
+                            break;
+                        case SCROLLABLE:
+                            // Giữ preferred size của view
+                            break;
+                    }
+                }
+            }
+            
+            updateScrollBars();
+        } finally {
+            adjustingSize = false;
+        }
     }
 }

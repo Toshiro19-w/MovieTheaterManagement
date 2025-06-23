@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -12,7 +11,9 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 import javax.swing.BorderFactory;
@@ -21,9 +22,9 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.JTabbedPane;
 import javax.swing.table.DefaultTableModel;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -32,10 +33,16 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.CategoryAxis;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.labels.StandardCategoryToolTipGenerator;
+import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.renderer.category.BarRenderer;
+import org.jfree.chart.renderer.category.LineAndShapeRenderer;
+import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
 
 import com.cinema.controllers.BaoCaoController;
@@ -43,7 +50,6 @@ import com.cinema.models.BaoCao;
 import com.cinema.models.repositories.BaoCaoRepository;
 import com.cinema.services.BaoCaoService;
 import com.cinema.utils.DatabaseConnection;
-import com.cinema.utils.SimpleDocumentListener;
 import com.cinema.utils.ValidationUtils;
 
 public class BaoCaoView extends JPanel {
@@ -87,66 +93,15 @@ public class BaoCaoView extends JPanel {
         setLayout(new BorderLayout());
         setBackground(new Color(245, 245, 245));
 
-        // Panel chọn khoảng thời gian
-        JPanel timePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
-        timePanel.setOpaque(false);
-
-        JLabel tuNgayLabel = new JLabel("Từ ngày:");
-        tuNgayLabel.setFont(LABEL_FONT);
-        tuNgayField = createStyledTextField();
-        tuNgayField.setText("01/01/2025 00:00:00");
-        tuNgayErrorLabel = ValidationUtils.createErrorLabel();
-
-        JLabel denNgayLabel = new JLabel("Đến ngày:");
-        denNgayLabel.setFont(LABEL_FONT);
-        denNgayField = createStyledTextField();
-        denNgayField.setText("31/12/2025 23:59:59");
-        denNgayErrorLabel = ValidationUtils.createErrorLabel();
-
-        JButton xemButton = createStyledButton("Xem báo cáo");
-        JButton xuatfileButton = createStyledButton("Xuất Excel");
-
-        timePanel.add(tuNgayLabel);
-        timePanel.add(tuNgayField);
-        timePanel.add(tuNgayErrorLabel);
-        timePanel.add(denNgayLabel);
-        timePanel.add(denNgayField);
-        timePanel.add(denNgayErrorLabel);
-        timePanel.add(xemButton);
-        timePanel.add(xuatfileButton);
-
-        // Panel chứa bảng và biểu đồ
-        JPanel contentPanel = new JPanel(new BorderLayout());
-        contentPanel.setOpaque(false);
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        // Bảng hiển thị báo cáo
-        tableModel = new DefaultTableModel(new String[]{
-                "Tên phim", "Số vé bán ra", "Tổng doanh thu", "Điểm đánh giá TB"
-        }, 0);
-        baoCaoTable = new JTable(tableModel);
-        JScrollPane scrollPane = new JScrollPane(baoCaoTable);
-        contentPanel.add(scrollPane, BorderLayout.CENTER);
-
-        // Panel chứa biểu đồ
-        chartPanel = new JPanel(new BorderLayout());
-        chartPanel.setOpaque(false);
-        contentPanel.add(chartPanel, BorderLayout.SOUTH);
-
-        // Sự kiện
-        xemButton.addActionListener(_ -> xemBaoCao());
-        xuatfileButton.addActionListener(_ -> xuatFile());
-
-        // Thêm kiểm tra real-time
-        tuNgayField.getDocument().addDocumentListener(new SimpleDocumentListener(this::validateDateFields));
-        denNgayField.getDocument().addDocumentListener(new SimpleDocumentListener(this::validateDateFields));
-
-        // Thêm các thành phần vào panel
-        add(timePanel, BorderLayout.NORTH);
-        add(contentPanel, BorderLayout.CENTER);
-
-        // Kiểm tra ban đầu
-        validateDateFields();
+        JTabbedPane tabbedPane = new JTabbedPane();
+        
+        // Tab for Movie Revenue Report
+        tabbedPane.addTab("Báo cáo doanh thu phim", new MovieRevenueReportPanel());
+        
+        // Tab for Employee Report
+        tabbedPane.addTab("Báo cáo nhân viên", new EmployeeReportPanel());
+        
+        add(tabbedPane, BorderLayout.CENTER);
     }
 
     private JTextField createStyledTextField() {
@@ -209,12 +164,20 @@ public class BaoCaoView extends JPanel {
 
             List<BaoCao> baoCaoList = controller.getBaoCaoDoanhThuTheoPhim(tuNgay, denNgay);
             tableModel.setRowCount(0);
-            DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+
             if (baoCaoList.isEmpty()) {
                 JOptionPane.showMessageDialog(this,
                         "Không có dữ liệu báo cáo trong khoảng thời gian này!",
-                        messages.getString("error"), JOptionPane.INFORMATION_MESSAGE);
+                        messages.getString("information"), JOptionPane.INFORMATION_MESSAGE);
+                chartPanel.removeAll();
+                chartPanel.revalidate();
+                chartPanel.repaint();
+                return;
             }
+
+            DefaultCategoryDataset revenueDataset = new DefaultCategoryDataset();
+            DefaultCategoryDataset ticketsDataset = new DefaultCategoryDataset();
+
             for (BaoCao baoCao : baoCaoList) {
                 tableModel.addRow(new Object[]{
                         baoCao.getTenPhim(),
@@ -222,25 +185,18 @@ public class BaoCaoView extends JPanel {
                         formatCurrency(baoCao.getTongDoanhThu()),
                         formatRating(baoCao.getDiemDanhGiaTrungBinh())
                 });
-                dataset.addValue(baoCao.getTongDoanhThu(), "Doanh thu", baoCao.getTenPhim());
+                revenueDataset.addValue(baoCao.getTongDoanhThu(), "Doanh thu", baoCao.getTenPhim());
+                ticketsDataset.addValue(baoCao.getSoVeBanRa(), "Số vé bán ra", baoCao.getTenPhim());
             }
 
-            // Tạo biểu đồ
-            JFreeChart chart = ChartFactory.createBarChart(
-                    "Biểu đồ doanh thu theo phim",
-                    "Tên phim",
-                    "Doanh thu (VND)",
-                    dataset,
-                    PlotOrientation.VERTICAL,
-                    true,
-                    true,
-                    false
-            );
+            // Tạo biểu đồ chuyên nghiệp
+            JFreeChart chart = createProfessionalChart(revenueDataset, ticketsDataset, baoCaoList);
 
             // Hiển thị biểu đồ
             chartPanel.removeAll();
             ChartPanel chartComponent = new ChartPanel(chart);
             chartComponent.setPreferredSize(new Dimension(800, 400));
+            chartComponent.setMouseWheelEnabled(true);
             chartPanel.add(chartComponent, BorderLayout.CENTER);
             chartPanel.revalidate();
             chartPanel.repaint();
@@ -254,6 +210,60 @@ public class BaoCaoView extends JPanel {
                     "Định dạng ngày không hợp lệ. Vui lòng nhập theo định dạng dd/MM/yyyy HH:mm:ss",
                     messages.getString("error"), JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private JFreeChart createProfessionalChart(DefaultCategoryDataset revenueDataset,
+            DefaultCategoryDataset ticketsDataset, List<BaoCao> baoCaoList) {
+        // C trục tung (Y) cho doanh thu
+        NumberAxis revenueAxis = new NumberAxis("Doanh thu");
+        revenueAxis.setNumberFormatOverride(java.text.NumberFormat.getCurrencyInstance());
+        
+        // C renderer cho doanh thu (biểu đồ cột)
+        BarRenderer revenueRenderer = new BarRenderer();
+        revenueRenderer.setSeriesPaint(0, PRIMARY_COLOR);
+        revenueRenderer.setDrawBarOutline(false);
+        revenueRenderer.setDefaultToolTipGenerator(new CustomToolTipGenerator(baoCaoList));
+
+        // C trục tung (Y) cho số vé bán ra
+        NumberAxis ticketsAxis = new NumberAxis("Số vé bán ra");
+        ticketsAxis.setNumberFormatOverride(java.text.NumberFormat.getIntegerInstance());
+
+        // C renderer cho số vé (biểu đồ đường)
+        LineAndShapeRenderer ticketsRenderer = new LineAndShapeRenderer();
+        ticketsRenderer.setSeriesPaint(0, new Color(249, 115, 22)); // Orange color
+        ticketsRenderer.setSeriesStroke(0, new java.awt.BasicStroke(2.5f));
+        ticketsRenderer.setDefaultToolTipGenerator(new CustomToolTipGenerator(baoCaoList));
+
+        // Tạo plot chính và kết hợp các thành phần
+        CategoryPlot plot = new CategoryPlot();
+        plot.setDataset(0, revenueDataset);
+        plot.setRenderer(0, revenueRenderer);
+        plot.setRangeAxis(0, revenueAxis);
+
+        plot.setDataset(1, ticketsDataset);
+        plot.setRenderer(1, ticketsRenderer);
+        plot.setRangeAxis(1, ticketsAxis);
+
+        plot.mapDatasetToRangeAxis(0, 0);
+        plot.mapDatasetToRangeAxis(1, 1);
+        
+        CategoryAxis domainAxis = new CategoryAxis("Phim");
+        plot.setDomainAxis(domainAxis);
+        plot.setOrientation(PlotOrientation.VERTICAL);
+        
+        plot.setBackgroundPaint(new Color(248, 250, 252));
+        plot.setRangeGridlinePaint(new Color(229, 231, 235));
+        
+        // Tạo biểu đồ
+        JFreeChart chart = new JFreeChart(
+            "Biểu đồ doanh thu và lượng vé bán ra",
+            new Font("Inter", Font.BOLD, 18),
+            plot,
+            true
+        );
+        chart.setBackgroundPaint(Color.WHITE);
+        
+        return chart;
     }
 
     private void xuatFile() {
@@ -318,6 +328,36 @@ public class BaoCaoView extends JPanel {
                         "Lỗi khi xuất file: " + e.getMessage(),
                         messages.getString("error"), JOptionPane.ERROR_MESSAGE);
             }
+        }
+    }
+
+    private static class CustomToolTipGenerator extends StandardCategoryToolTipGenerator {
+        private final Map<String, BaoCao> baoCaoData;
+
+        public CustomToolTipGenerator(List<BaoCao> baoCaoList) {
+            this.baoCaoData = new HashMap<>();
+            for (BaoCao baoCao : baoCaoList) {
+                baoCaoData.put(baoCao.getTenPhim(), baoCao);
+            }
+        }
+
+        @Override
+        public String generateToolTip(CategoryDataset dataset, int row, int column) {
+            String tenPhim = (String) dataset.getColumnKey(column);
+            BaoCao baoCao = baoCaoData.get(tenPhim);
+
+            if (baoCao == null) {
+                return null; // or a default tooltip
+            }
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("<html><b>").append(baoCao.getTenPhim()).append("</b><br>");
+            sb.append("Doanh thu: ").append(String.format("%,.0f VND", baoCao.getTongDoanhThu())).append("<br>");
+            sb.append("Số vé bán ra: ").append(baoCao.getSoVeBanRa()).append("<br>");
+            sb.append("Đánh giá TB: ").append(String.format("%.1f", baoCao.getDiemDanhGiaTrungBinh()))
+                    .append("</html>");
+
+            return sb.toString();
         }
     }
 }

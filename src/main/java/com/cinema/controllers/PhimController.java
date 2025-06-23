@@ -17,32 +17,31 @@ import java.util.stream.Collectors;
 
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 
 import com.cinema.components.MultiSelectComboBox;
+import com.cinema.models.NhanVien;
 import com.cinema.models.Phim;
 import com.cinema.models.dto.CustomPaginationPanel;
 import com.cinema.models.dto.PaginationResult;
 import com.cinema.models.repositories.PhimRepository;
 import com.cinema.services.PhimService;
-import com.cinema.services.PhimTheLoaiService;
+import com.cinema.utils.LogUtils;
 import com.cinema.views.admin.PhimView;
 
 public class PhimController {
     private PhimView view;
     private PhimService service;
-    private PhimTheLoaiService phimTheLoaiService;
     private Map<Integer, String> theLoaiMap;
+    private NhanVien currentNhanVien;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    public PhimController(PhimView view) throws SQLException {
+    public PhimController(PhimView view, NhanVien currentNhanVien) throws SQLException {
         this.view = view;
         this.service = new PhimService(view.getDatabaseConnection());
-        this.phimTheLoaiService = new PhimTheLoaiService(view.getDatabaseConnection());
+        this.currentNhanVien = currentNhanVien;
         
         try {
             loadComboBoxData();
@@ -54,12 +53,22 @@ public class PhimController {
         setupTableSelectionListener();
     }
 
+    /**
+     * Lấy mã người dùng hiện tại từ nhân viên đăng nhập
+     */
+    private int getCurrentUserId() {
+        if (currentNhanVien != null) {
+            return currentNhanVien.getMaNguoiDung();
+        }
+        return -1; // Trả về -1 nếu không có người dùng
+    }
+
     public void loadTheLoaiList() throws SQLException {
         PhimRepository phimRepository = new PhimRepository(view.getDatabaseConnection());
         List<String> theLoaiList = phimRepository.getAllTheLoai();
         
         // Lấy danh sách thể loại đã chọn trước đó để giữ lại trạng thái
-        List<Object> selectedIds = view.getCbTenTheLoai().getSelectedIds();
+        List<Integer> selectedIds = view.getCbTenTheLoai().getSelectedIds();
         
         // Xóa tất cả các item hiện tại
         view.getCbTenTheLoai().removeAllItems();
@@ -287,8 +296,8 @@ public class PhimController {
             view.getPosterLabel().setText("Không có ảnh");
             view.clearSelectedPosterPath();
         }
-    }
-
+    }    
+    
     public void themPhim() throws SQLException {
         Phim phim = getPhimFromForm();
         
@@ -304,6 +313,14 @@ public class PhimController {
         // Lưu phim vào database thông qua service
         int maPhim = service.addPhim(phim);
         
+        // Ghi log hoạt động
+        String moTa = String.format("Thêm phim mới: %s (%s, %d phút)", 
+            phim.getTenPhim(), 
+            phim.getKieuPhim(), 
+            phim.getThoiLuong()
+        );
+        LogUtils.logThemPhim(maPhim, moTa, getCurrentUserId());
+
         JOptionPane.showMessageDialog(view, "Thêm phim thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
         view.clearForm();
         loadPhimPaginated(1, 10);
@@ -323,8 +340,8 @@ public class PhimController {
         
         JOptionPane.showMessageDialog(view, "Cập nhật phim thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
         loadPhimPaginated(1, 10);
-    }
-
+    }    
+    
     public void xoaPhim() throws SQLException {
         String maPhimText = view.getTxtMaPhim().getText();
         if (maPhimText.isEmpty()) {
@@ -333,7 +350,19 @@ public class PhimController {
         }
         
         int maPhim = Integer.parseInt(maPhimText);
-        service.deletePhim(maPhim);
+        
+        // Lấy thông tin phim trước khi xóa để ghi log
+        Phim phim = service.getPhimById(maPhim);
+        if (phim != null) {
+            service.deletePhim(maPhim);
+            
+            // Ghi log hoạt động
+            String moTa = String.format("Xóa phim: %s (ID: %d)", 
+                phim.getTenPhim(), 
+                phim.getMaPhim()
+            );
+            LogUtils.logXoaPhim(maPhim, moTa, getCurrentUserId());
+        }
         
         JOptionPane.showMessageDialog(view, "Xóa phim thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
         view.clearForm();
@@ -365,7 +394,7 @@ public class PhimController {
         
         // Set thể loại - Cập nhật để hỗ trợ nhiều thể loại
         MultiSelectComboBox cbTenTheLoai = view.getCbTenTheLoai();
-        List<Object> selectedIds = cbTenTheLoai.getSelectedIds();
+        List<Integer> selectedIds = cbTenTheLoai.getSelectedIds();
         List<Integer> maTheLoaiList = selectedIds.stream()
                 .map(id -> (Integer) id)
                 .collect(Collectors.toList());

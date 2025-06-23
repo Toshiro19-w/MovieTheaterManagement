@@ -6,6 +6,7 @@ import java.util.List;
 import com.cinema.models.SuatChieu;
 import com.cinema.models.repositories.SuatChieuRepository;
 import com.cinema.utils.DatabaseConnection;
+import com.cinema.models.dto.PaginationResult;
 
 public class SuatChieuService {
     private final SuatChieuRepository suatChieuRepository;
@@ -45,5 +46,9 @@ public class SuatChieuService {
 
     public List<String> getThoiGianChieuByPhongVaPhim(String tenPhong, String tenPhim) throws SQLException {
         return suatChieuRepository.getThoiGianChieuByPhongVaPhim(tenPhong, tenPhim);
+    }
+
+    public PaginationResult<SuatChieu> getAllSuatChieuPaginated(int page, int pageSize) throws SQLException {
+        return suatChieuRepository.findAllPaginated(page, pageSize);
     }
 }

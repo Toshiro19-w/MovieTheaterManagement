@@ -40,11 +40,13 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableRowSorter;
 
 import com.cinema.components.CountryComboBox;
+import com.cinema.components.DatePicker;
 import com.cinema.components.ModernUIApplier;
 import com.cinema.components.MultiSelectComboBox;
 import com.cinema.components.UIConstants;
 import com.cinema.components.UnderlineTextField;
 import com.cinema.controllers.PhimController;
+import com.cinema.models.NhanVien;
 import com.cinema.models.dto.CustomPaginationPanel;
 import com.cinema.models.repositories.SuatChieuRepository;
 import com.cinema.models.repositories.VeRepository;
@@ -73,8 +75,10 @@ public class PhimView extends JPanel {
     private TheLoaiSidebar theLoaiSidebar;
     private JPanel sidebarContainer;
     private boolean isSidebarVisible = false;
+    private NhanVien currentNhanVien;
 
-    public PhimView() throws IOException {
+    public PhimView(NhanVien currentNhanVien) throws IOException {
+        this.currentNhanVien = currentNhanVien;
         dbConnection = new DatabaseConnection();
         this.messages = ResourceBundle.getBundle("Messages");
         try {
@@ -85,7 +89,7 @@ public class PhimView extends JPanel {
             initUI();
 
             // Khởi tạo controller
-            this.controller = new PhimController(this);
+            this.controller = new PhimController(this, currentNhanVien);
 
             System.out.println("PhimView khởi tạo hoàn tất");
         } catch (SQLException e) {
@@ -188,7 +192,7 @@ public class PhimView extends JPanel {
         
         txtNgayKhoiChieu = createStyledUnderlineTextField();
         txtNgayKhoiChieu.setPlaceholder("dd/MM/yyyy");
-        txtNgayKhoiChieu.setToolTipText("Nhập ngày khởi chiếu (dd/MM/yyyy, từ hôm nay trở đi)");
+        txtNgayKhoiChieu.setToolTipText("Chọn ngày khởi chiếu");
         
         // ComboBox quốc gia
         cbNuocSanXuat = new CountryComboBox();
@@ -287,7 +291,20 @@ public class PhimView extends JPanel {
         JPanel col2 = new JPanel();
         col2.setOpaque(false);
         col2.setLayout(new BoxLayout(col2, BoxLayout.Y_AXIS));
-        addFormFieldSimple(col2, "Ngày khởi chiếu:", txtNgayKhoiChieu, lblNgayKhoiChieuError);
+        // Tạo panel cho ngày khởi chiếu với DatePicker
+        JPanel ngayKhoiChieuPanel = new JPanel(new BorderLayout(5, 0));
+        ngayKhoiChieuPanel.setOpaque(false);
+        ngayKhoiChieuPanel.add(txtNgayKhoiChieu, BorderLayout.CENTER);
+        
+        JButton btnDatePicker = new JButton("...");
+        btnDatePicker.setPreferredSize(new Dimension(30, 30));
+        btnDatePicker.addActionListener(e -> {
+            DatePicker datePicker = new DatePicker(txtNgayKhoiChieu);
+            datePicker.setVisible(true);
+        });
+        ngayKhoiChieuPanel.add(btnDatePicker, BorderLayout.EAST);
+        
+        addFormFieldSimple(col2, "Ngày khởi chiếu:", ngayKhoiChieuPanel, lblNgayKhoiChieuError);
         addFormFieldSimple(col2, "Trạng thái:", txtTrangThai, null);
         addFormFieldSimple(col2, "Kiểu phim:", cbKieuPhim, null);
         addFormFieldSimple(col2, "Nước sản xuất:", cbNuocSanXuat, lblNuocSanXuatError);
@@ -542,8 +559,6 @@ public class PhimView extends JPanel {
             }
         });
         
-
-
         // Tạo container cho bảng với hiệu ứng đổ bóng
         JPanel tableContainer = ModernUIApplier.createModernPanel();
         tableContainer.setLayout(new BorderLayout());
@@ -791,7 +806,7 @@ public class PhimView extends JPanel {
         sidebarContainer.setPreferredSize(new Dimension(350, getHeight()));
         sidebarContainer.setVisible(false);
         
-        theLoaiSidebar = new TheLoaiSidebar(dbConnection,_ -> hideSidebar());
+        theLoaiSidebar = new TheLoaiSidebar(dbConnection,_ -> hideSidebar(), currentNhanVien);
         sidebarContainer.add(theLoaiSidebar, BorderLayout.CENTER);
         
         add(sidebarContainer, BorderLayout.EAST);

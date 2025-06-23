@@ -1,4 +1,4 @@
-package com.cinema.views;
+package com.cinema.views.booking;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -30,6 +30,7 @@ import com.cinema.models.Ghe;
 import com.cinema.models.SuatChieu;
 import com.cinema.models.dto.PaymentRequest;
 import com.cinema.models.dto.PaymentResponse;
+import com.cinema.models.dto.PaymentResult;
 
 public class PaymentView extends JDialog {
     private final PaymentController paymentController;
@@ -129,7 +130,7 @@ public class PaymentView extends JDialog {
                         "Đang chờ",
                         JOptionPane.INFORMATION_MESSAGE);
             } else switch (status) {
-                case COMPLETED -> {
+                case COMPLETED -> {                    
                     statusLabel.setText("Thanh toán thành công!");
                     // Đặt vé chính thức sau khi thanh toán thành công
                     datVeController.datVe(
@@ -140,8 +141,11 @@ public class PaymentView extends JDialog {
                             maKhachHang,
                             maNhanVien
                     );
-                    // Sử dụng mã nhân viên 1 (có thể thay đổi sau)
                     int maHoaDon = datVeController.confirmPayment(maVe, maKhachHang, maNhanVien);
+                    JOptionPane.showMessageDialog(this,
+                            "Thanh toán thành công! Vé của bạn đã được đặt.",
+                            "Thành công",
+                            JOptionPane.INFORMATION_MESSAGE);
                     paymentCallback.accept(new PaymentResult(suatChieu, ghe, giaVe, transactionId));
                     dispose();
                 }
@@ -191,20 +195,6 @@ public class PaymentView extends JDialog {
             paymentCallback.accept(null);
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Lỗi khi hủy vé: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    public static class PaymentResult {
-        public final SuatChieu suatChieu;
-        public final Ghe ghe;
-        public final BigDecimal giaVe;
-        public final String transactionId;
-
-        public PaymentResult(SuatChieu suatChieu, Ghe ghe, BigDecimal giaVe, String transactionId) {
-            this.suatChieu = suatChieu;
-            this.ghe = ghe;
-            this.giaVe = giaVe;
-            this.transactionId = transactionId;
         }
     }
 }

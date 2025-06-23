@@ -39,7 +39,7 @@ public class DarkTheme implements Theme {
 
     @Override
     public Color getSidebarColor() {
-        return new Color(26, 32, 44); // Dark blue gray
+        return new Color(31, 41, 55); // Dark blue gray
     }
 
     @Override

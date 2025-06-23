@@ -39,7 +39,7 @@ public class LightTheme implements Theme {
 
     @Override
     public Color getSidebarColor() {
-        return new Color(248, 249, 250);
+        return Color.WHITE;
     }
 
     @Override

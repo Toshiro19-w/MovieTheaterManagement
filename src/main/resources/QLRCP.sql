@@ -114,23 +114,20 @@ SET GLOBAL event_scheduler = ON;
 
 -- Tạo event để tự động cập nhật trạng thái phim hàng ngày
 DELIMITER //
-CREATE EVENT IF NOT EXISTS update_movie_status_daily
+DROP EVENT IF EXISTS update_movie_status_daily//
+CREATE EVENT update_movie_status_daily 
 ON SCHEDULE EVERY 1 DAY
-STARTS CURRENT_DATE
+STARTS CURRENT_TIMESTAMP
 DO
 BEGIN
-    -- Cập nhật phim từ upcoming sang active khi đến ngày khởi chiếu
-    UPDATE Phim
-    SET trangThai = 'active'
+    UPDATE Phim SET trangThai = 'active'
     WHERE trangThai = 'upcoming'
     AND ngayKhoiChieu <= CURDATE();
-    
-    -- Cập nhật phim từ active sang deleted khi quá 10 ngày sau ngày khởi chiếu
-    UPDATE Phim
-    SET trangThai = 'deleted'
+
+    UPDATE Phim SET trangThai = 'deleted'
     WHERE trangThai = 'active'
     AND ngayKhoiChieu < DATE_SUB(CURDATE(), INTERVAL 10 DAY);
-END //
+END//
 DELIMITER ;
 
 select * from phim;
@@ -348,9 +345,26 @@ CREATE TABLE IF NOT EXISTS GiaVe (
     maGiaVe INT AUTO_INCREMENT PRIMARY KEY,
     loaiGhe ENUM('Thuong', 'VIP') NOT NULL,
     ngayApDung DATE NOT NULL,
+    ngayKetThuc DATE NOT NULL,
     giaVe DECIMAL(10,2) NOT NULL,
     ghiChu TEXT
 );
+
+select * from giave;
+
+DELIMITER //
+CREATE TRIGGER before_giave_insert
+BEFORE INSERT ON GiaVe
+FOR EACH ROW
+BEGIN
+    -- Cập nhật ngayKetThuc cho giá vé cũ của cùng loại ghế
+    UPDATE GiaVe
+    SET ngayKetThuc = DATE_SUB(NEW.ngayApDung, INTERVAL 1 DAY)
+    WHERE loaiGhe = NEW.loaiGhe
+    AND (ngayKetThuc IS NULL OR ngayKetThuc > NEW.ngayApDung)
+    AND ngayApDung < NEW.ngayApDung;
+END //
+DELIMITER ;
 
 -- Tạo bảng Ve
 CREATE TABLE IF NOT EXISTS Ve (
@@ -612,12 +626,6 @@ WHERE
 ORDER BY 
     v.maVe;
 
-SELECT DATE(v.ngayDat) as ngay, COUNT(*) as soVe, SUM(v.giaVeSauGiam) as doanhThu 
-FROM Ve v
-WHERE v.trangThai = 'PAID' AND DATE(v.ngayDat) BETWEEN 01/01/2025 AND 12/31/2025 
-GROUP BY DATE(v.ngayDat)
-ORDER BY ngay
-
 -- Tạo các chỉ mục để tối ưu hóa truy vấn
 CREATE INDEX idx_phim_maTheLoai ON Phim(maTheLoai);
 CREATE INDEX idx_ve_maSuatChieu ON Ve(maSuatChieu);
@@ -633,6 +641,12 @@ CREATE INDEX idx_danhgia_maphim ON DanhGia(maPhim);
 -- Tạo chỉ mục mới
 CREATE INDEX idx_phimtheloai_maphim ON PhimTheLoai(maPhim);
 CREATE INDEX idx_phimtheloai_matheloai ON PhimTheLoai(maTheLoai);
+
+-- Thêm cột phiên bản cho các bảng quan trọng để hỗ trợ khóa lạc quan (optimistic locking)
+ALTER TABLE Ve ADD COLUMN phienBan INT DEFAULT 1;
+ALTER TABLE HoaDon ADD COLUMN phienBan INT DEFAULT 1;
+ALTER TABLE SuatChieu ADD COLUMN phienBan INT DEFAULT 1;
+ALTER TABLE Ghe ADD COLUMN phienBan INT DEFAULT 1;
 
 INSERT INTO NguoiDung (hoTen, soDienThoai, email, loaiNguoiDung) VALUES
 ('Lê Trần Minh Khôi', '0565321247', 'letranminhkhoi2506@gmail.com', 'KhachHang'),
@@ -731,7 +745,7 @@ INSERT INTO PhongChieu (tenPhong, soLuongGhe, loaiPhong) VALUES
 ('Phòng 4', 60, 'VIP'),
 ('Phòng 5', 150, 'Thường');
 
-select * from ve;
+select * from phim;
 
 -- Dữ liệu cho bảng Ghe
 INSERT INTO Ghe (maPhong, loaiGhe, soGhe) VALUES
@@ -944,3 +958,27 @@ INSERT INTO PhienLamViec (maNhanVien, thoiGianBatDau, thoiGianKetThuc, tongDoanh
 (10, '2025-01-15 16:00:00', '2025-01-15 23:59:00', 3000000.00, 12),
 (8, '2025-01-16 08:00:00', '2025-01-16 16:00:00', 2500000.00, 10);
 
+-- Thêm một số dữ liệu mẫu
+INSERT INTO ActivityLog (loaiHoatDong, moTa, thoiGian, maNguoiDung) VALUES
+('Đăng nhập', 'Đăng nhập vào hệ thống', NOW() - INTERVAL 1 HOUR, 9),
+('Thêm phim', 'Thêm phim mới: Avatar 3', NOW() - INTERVAL 2 HOUR, 4),
+('Sửa phim', 'Cập nhật thông tin phim: The Batman 2', NOW() - INTERVAL 3 HOUR, 4),
+('Bán vé', 'Bán vé cho khách hàng: Nguyễn Văn A', NOW() - INTERVAL 4 HOUR, 5),
+('Xóa suất chiếu', 'Xóa suất chiếu ngày 25/06/2025', NOW() - INTERVAL 5 HOUR, 4),
+('Thêm khuyến mãi', 'Thêm khuyến mãi mới: Giảm giá hè 2025', NOW() - INTERVAL 6 HOUR, 9),
+('Đăng xuất', 'Đăng xuất khỏi hệ thống', NOW() - INTERVAL 7 HOUR, 9);
+
+-- View Thống kê nhân viên theo phiên làm việc
+DROP VIEW IF EXISTS ThongKeNhanVienTheoPhien;
+CREATE VIEW ThongKeNhanVienTheoPhien AS
+SELECT 
+    plv.maNhanVien,
+    nd.hoTen AS tenNhanVien,
+    nv.vaiTro,
+    plv.thoiGianBatDau,
+    plv.thoiGianKetThuc,
+    COALESCE(plv.tongDoanhThu, 0) AS tongDoanhThu,
+    COALESCE(plv.soVeDaBan, 0) AS soVeDaBan
+FROM PhienLamViec plv
+JOIN NhanVien nv ON plv.maNhanVien = nv.maNguoiDung
+JOIN NguoiDung nd ON nv.maNguoiDung = nd.maNguoiDung;

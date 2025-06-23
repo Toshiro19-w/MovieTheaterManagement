@@ -3,21 +3,20 @@ package com.cinema.utils;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
-import java.util.logging.Logger;
-import java.util.logging.Level;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 
+import org.apache.batik.transcoder.TranscoderException;
 import org.apache.batik.transcoder.TranscoderInput;
 import org.apache.batik.transcoder.TranscoderOutput;
 import org.apache.batik.transcoder.image.ImageTranscoder;
-import org.apache.batik.transcoder.TranscoderException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Lớp tiện ích để quản lý biểu tượng ứng dụng với hỗ trợ SVG
@@ -25,7 +24,7 @@ import org.apache.batik.transcoder.TranscoderException;
  */
 public class AppIconUtils {
     
-    private static final Logger LOGGER = Logger.getLogger(AppIconUtils.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(AppIconUtils.class);
     
     // Paths cho logo
     private static final String SVG_LOGO_PATH = "/images/Icon/LogoApp.svg";
@@ -39,6 +38,10 @@ public class AppIconUtils {
     // Flag để biết loại logo nào available
     private static volatile Boolean hasSvgLogo;
     private static volatile ImageIcon fallbackPngLogo;
+    
+    // Thêm các hằng số mới
+    private static final double DEFAULT_SCALE_FACTOR = 2.0; // For HiDPI screens
+    private static final int RENDER_QUALITY_MULTIPLIER = 4; // Tăng chất lượng render
     
     /**
      * Đặt biểu tượng cho cửa sổ ứng dụng
@@ -64,11 +67,11 @@ public class AppIconUtils {
                     frame.setIconImage(pngIcon.getImage());
                     LOGGER.info("Đã đặt biểu tượng PNG cho ứng dụng thành công");
                 } else {
-                    LOGGER.warning("Không thể tải biểu tượng ứng dụng");
+                    LOGGER.warn("Không thể tải biểu tượng ứng dụng");
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Lỗi khi đặt biểu tượng cho ứng dụng", e);
+            LOGGER.error("Lỗi khi đặt biểu tượng cho ứng dụng", e);
         }
     }
     
@@ -138,15 +141,19 @@ public class AppIconUtils {
     /**
      * Render SVG logo với kích thước cụ thể
      * Thử nhiều phương pháp để đạt chất lượng tốt nhất
-     */
-    private static BufferedImage renderSvgLogo(int width, int height) {
+     */    private static BufferedImage renderSvgLogo(int width, int height) {
         if (!checkSvgAvailability()) {
             return null;
         }
+
+        // Tính toán kích thước render thực tế dựa trên scale factor của màn hình
+        double scaleFactor = getScreenScaleFactor();
+        int actualWidth = (int) (width * scaleFactor);
+        int actualHeight = (int) (height * scaleFactor);
         
         try (InputStream svgInputStream = AppIconUtils.class.getResourceAsStream(SVG_LOGO_PATH)) {
             if (svgInputStream == null) {
-                LOGGER.warning("Không tìm thấy file SVG: " + SVG_LOGO_PATH);
+                LOGGER.warn("Không tìm thấy file SVG: " + SVG_LOGO_PATH);
                 return null;
             }
             
@@ -154,7 +161,7 @@ public class AppIconUtils {
             try {
                 return renderSvgToImage(svgInputStream, width, height);
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "Batik render failed, trying alternative method", e);
+                LOGGER.warn("Batik render failed, trying alternative method", e);
                 
                 // Reset stream và thử phương pháp khác
                 try (InputStream alternativeStream = AppIconUtils.class.getResourceAsStream(SVG_LOGO_PATH)) {
@@ -163,7 +170,7 @@ public class AppIconUtils {
             }
             
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Lỗi khi render SVG logo", e);
+            LOGGER.warn("Lỗi khi render SVG logo", e);
             return null;
         }
     }
@@ -204,7 +211,7 @@ public class AppIconUtils {
             return image;
             
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Alternative SVG render failed", e);
+            LOGGER.warn("Alternative SVG render failed", e);
             return null;
         }
     }
@@ -254,8 +261,8 @@ public class AppIconUtils {
             throws TranscoderException {
         
         // Tăng độ phân giải render gấp đôi để tránh blur
-        int renderWidth = width * 2;
-        int renderHeight = height * 2;
+        int renderWidth = width * RENDER_QUALITY_MULTIPLIER;
+        int renderHeight = height * RENDER_QUALITY_MULTIPLIER;
         
         final BufferedImage[] resultImage = new BufferedImage[1];
         
@@ -369,7 +376,7 @@ public class AppIconUtils {
                             fallbackPngLogo = null;
                         }
                     } catch (Exception e) {
-                        LOGGER.log(Level.WARNING, "Không thể tải PNG fallback", e);
+                        LOGGER.warn("Không thể tải PNG fallback", e);
                         fallbackPngLogo = null;
                     }
                 }
@@ -449,5 +456,21 @@ public class AppIconUtils {
             this.width = width;
             this.height = height;
         }
+    }
+    
+    /**
+     * Lấy scale factor cho màn hình hiện tại
+     */
+    private static double getScreenScaleFactor() {
+        java.awt.GraphicsEnvironment env = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment();
+        java.awt.GraphicsDevice device = env.getDefaultScreenDevice();
+        java.awt.GraphicsConfiguration config = device.getDefaultConfiguration();
+        
+        // Lấy transform của màn hình
+        java.awt.geom.AffineTransform transform = config.getDefaultTransform();
+        double scaleX = transform.getScaleX();
+        double scaleY = transform.getScaleY();
+        
+        return Math.max(scaleX, scaleY);
     }
 }

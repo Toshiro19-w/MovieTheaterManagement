@@ -138,6 +138,16 @@ public class PhimService {
     }
     
     /**
+     * Lấy danh sách phim đang chiếu
+     * 
+     * @return Danh sách phim đang chiếu
+     * @throws SQLException Nếu có lỗi SQL
+     */
+    public List<Phim> getPhimDangChieu() throws SQLException {
+        return phimRepository.findPhimDangChieu();
+    }
+    
+    /**
      * Kiểm tra xem tên phim đã tồn tại chưa
      * 
      * @param tenPhim Tên phim
@@ -148,4 +158,44 @@ public class PhimService {
     public boolean isMovieTitleExists(String tenPhim, int excludeMaPhim) throws SQLException {
         return phimRepository.isMovieTitleExists(tenPhim, excludeMaPhim);
     }
+
+	public List<Phim> searchPhim(String keyword) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public PaginationResult<Phim> searchPhim(String keyword, int i, int j) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public PaginationResult<Phim> findAllPaginated(int page, int pageSize) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public void savePhim(Phim phim) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public Phim findPhimById(int maPhim) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public void addTheLoai(String newGenre) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void updateTheLoai(int genreId, String updatedGenre) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void deleteTheLoai(int genreId) {
+		// TODO Auto-generated method stub
+		
+	}
 }

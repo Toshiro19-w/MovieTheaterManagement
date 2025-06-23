@@ -1,37 +1,19 @@
 package com.cinema.views.admin;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridLayout;
-import java.awt.event.ActionListener;
+import java.awt.*;
+import java.awt.event.*;
 import java.sql.SQLException;
 import java.util.List;
-
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingConstants;
+import java.util.logging.Logger;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-
-import com.cinema.components.ModernUIApplier;
-import com.cinema.components.UIConstants;
-import com.cinema.components.UnderlineTextField;
+import com.cinema.components.*;
+import com.cinema.models.NhanVien;
 import com.cinema.models.TheLoaiPhim;
 import com.cinema.models.repositories.TheLoaiRepository;
-import com.cinema.utils.DatabaseConnection;
-import com.cinema.utils.SimpleDocumentListener;
+import com.cinema.utils.*;
 
 public class TheLoaiSidebar extends JPanel {
     private UnderlineTextField txtMaTheLoai, txtTenTheLoai;
@@ -42,10 +24,12 @@ public class TheLoaiSidebar extends JPanel {
     private TheLoaiRepository theLoaiRepository;
     private DatabaseConnection dbConnection;
     private ActionListener closeListener;
+    private NhanVien currentNhanVien;
 
-    public TheLoaiSidebar(DatabaseConnection dbConnection, ActionListener closeListener) {
+    public TheLoaiSidebar(DatabaseConnection dbConnection, ActionListener closeListener, NhanVien currentNhanVien) {
         this.dbConnection = dbConnection;
         this.closeListener = closeListener;
+        this.currentNhanVien = currentNhanVien;
         this.theLoaiRepository = new TheLoaiRepository(dbConnection);
         initUI();
         loadTheLoai();
@@ -53,46 +37,41 @@ public class TheLoaiSidebar extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout());
-        setPreferredSize(new Dimension(350, 600));
         setBackground(UIConstants.BACKGROUND_COLOR);
-        setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, new Color(200, 200, 200)));
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // Reduced padding
 
-        // Header panel
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(UIConstants.PRIMARY_COLOR);
-        headerPanel.setBorder(new EmptyBorder(10, 15, 10, 15));
+        headerPanel.setBorder(new EmptyBorder(8, 10, 8, 10)); // Reduced padding
 
         JLabel titleLabel = new JLabel("Quản lý thể loại", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16)); // Smaller font
         titleLabel.setForeground(Color.WHITE);
         headerPanel.add(titleLabel, BorderLayout.CENTER);
 
         btnClose = ModernUIApplier.createUnicodeButton("\u00D7", UIConstants.ERROR_COLOR, Color.WHITE);
-        btnClose.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        btnClose.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        btnClose.setFont(new Font("Segoe UI", Font.BOLD, 14)); // Smaller font
+        btnClose.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
         btnClose.addActionListener(closeListener);
         headerPanel.add(btnClose, BorderLayout.EAST);
 
         add(headerPanel, BorderLayout.NORTH);
 
-        // Content panel
         JPanel contentPanel = ModernUIApplier.createModernPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        contentPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        contentPanel.setBorder(new EmptyBorder(10, 10, 10, 10)); // Reduced padding
 
-        // Form panel
         JPanel formPanel = new JPanel();
         formPanel.setOpaque(false);
         formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
         formPanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200)), 
+                BorderFactory.createLineBorder(new Color(200, 200, 200)),
                 "Thông tin thể loại"));
 
-        // Mã thể loại
-        JPanel maTheLoaiPanel = new JPanel(new BorderLayout(10, 0));
+        JPanel maTheLoaiPanel = new JPanel(new BorderLayout(5, 0)); // Reduced gap
         maTheLoaiPanel.setOpaque(false);
         JLabel lblMaTheLoai = new JLabel("Mã thể loại:");
-        lblMaTheLoai.setPreferredSize(new Dimension(80, 30));
+        lblMaTheLoai.setPreferredSize(new Dimension(80, 25)); // Smaller height
         maTheLoaiPanel.add(lblMaTheLoai, BorderLayout.WEST);
 
         txtMaTheLoai = createStyledUnderlineTextField();
@@ -100,39 +79,36 @@ public class TheLoaiSidebar extends JPanel {
         txtMaTheLoai.setBackground(new Color(245, 245, 245));
         maTheLoaiPanel.add(txtMaTheLoai, BorderLayout.CENTER);
         formPanel.add(maTheLoaiPanel);
-        formPanel.add(Box.createVerticalStrut(10));
+        formPanel.add(Box.createVerticalStrut(5)); // Reduced strut
 
-        // Tên thể loại
-        JPanel tenTheLoaiPanel = new JPanel(new BorderLayout(10, 0));
+        JPanel tenTheLoaiPanel = new JPanel(new BorderLayout(5, 0)); // Reduced gap
         tenTheLoaiPanel.setOpaque(false);
         JLabel lblTenTheLoai = new JLabel("Tên thể loại:");
-        lblTenTheLoai.setPreferredSize(new Dimension(80, 30));
+        lblTenTheLoai.setPreferredSize(new Dimension(80, 25)); // Smaller height
         tenTheLoaiPanel.add(lblTenTheLoai, BorderLayout.WEST);
 
         txtTenTheLoai = createStyledUnderlineTextField();
         tenTheLoaiPanel.add(txtTenTheLoai, BorderLayout.CENTER);
         formPanel.add(tenTheLoaiPanel);
-        formPanel.add(Box.createVerticalStrut(5));
+        formPanel.add(Box.createVerticalStrut(3)); // Reduced strut
 
-        // Error label
         lblTenTheLoaiError = new JLabel("");
         lblTenTheLoaiError.setForeground(UIConstants.ERROR_COLOR);
-        lblTenTheLoaiError.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+        lblTenTheLoaiError.setFont(new Font("Segoe UI", Font.ITALIC, 11)); // Smaller font
         lblTenTheLoaiError.setVisible(false);
         JPanel errorPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         errorPanel.setOpaque(false);
         errorPanel.add(Box.createHorizontalStrut(85));
         errorPanel.add(lblTenTheLoaiError);
         formPanel.add(errorPanel);
-        formPanel.add(Box.createVerticalStrut(10));
+        formPanel.add(Box.createVerticalStrut(5)); // Reduced strut
 
         contentPanel.add(formPanel);
-        contentPanel.add(Box.createVerticalStrut(10));
+        contentPanel.add(Box.createVerticalStrut(5)); // Reduced strut
 
-        // Button panel
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 4, 5, 0));
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 4, 5, 0)); // Reduced gap
         buttonPanel.setOpaque(false);
-        buttonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        buttonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35)); // Smaller height
 
         btnThem = ModernUIApplier.createModernButton("Thêm", UIConstants.PRIMARY_COLOR, Color.WHITE);
         btnSua = ModernUIApplier.createModernButton("Sửa", UIConstants.PRIMARY_COLOR, Color.WHITE);
@@ -145,13 +121,12 @@ public class TheLoaiSidebar extends JPanel {
         buttonPanel.add(btnClear);
 
         contentPanel.add(buttonPanel);
-        contentPanel.add(Box.createVerticalStrut(15));
+        contentPanel.add(Box.createVerticalStrut(10)); // Reduced strut
 
-        // Table panel
         JPanel tablePanel = ModernUIApplier.createModernPanel();
         tablePanel.setLayout(new BorderLayout());
         tablePanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200)), 
+                BorderFactory.createLineBorder(new Color(200, 200, 200)),
                 "Danh sách thể loại"));
 
         tableModel = new DefaultTableModel(
@@ -165,30 +140,34 @@ public class TheLoaiSidebar extends JPanel {
         table = new JTable(tableModel);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         ModernUIApplier.applyModernTableStyle(table);
-        table.setRowHeight(30);
+        table.setRowHeight(25); // Smaller row height
+        table.setPreferredScrollableViewportSize(new Dimension(350, 200)); // Fixed table height
 
-        // Center align text in cells
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
         table.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
         table.getColumnModel().getColumn(0).setPreferredWidth(80);
         table.getColumnModel().getColumn(1).setPreferredWidth(200);
 
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        tablePanel.add(scrollPane, BorderLayout.CENTER);
+        JScrollPane tableScrollPane = new JScrollPane(table);
+        tableScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        tablePanel.add(tableScrollPane, BorderLayout.CENTER);
 
         contentPanel.add(tablePanel);
 
-        add(contentPanel, BorderLayout.CENTER);
+        // Wrap contentPanel in a JScrollPane for overall scrolling
+        JScrollPane contentScrollPane = new JScrollPane(contentPanel);
+        contentScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        contentScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        contentScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        add(contentScrollPane, BorderLayout.CENTER);
 
-        // Add listeners
         setupListeners();
     }
 
     private UnderlineTextField createStyledUnderlineTextField() {
         UnderlineTextField field = new UnderlineTextField(15);
-        field.setFont(UIConstants.BODY_FONT);
+        field.setFont(UIConstants.BODY_FONT.deriveFont(12f)); // Smaller font
         field.setUnderlineColor(new Color(200, 200, 200));
         field.setFocusColor(UIConstants.PRIMARY_COLOR);
         field.setErrorColor(UIConstants.ERROR_COLOR);
@@ -196,13 +175,11 @@ public class TheLoaiSidebar extends JPanel {
     }
 
     private void setupListeners() {
-        // Validation listener
         txtTenTheLoai.getDocument().addDocumentListener(new SimpleDocumentListener(() -> {
             validateTenTheLoai();
             updateButtonState();
         }));
 
-        // Table selection listener
         table.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && table.getSelectedRow() != -1) {
                 int row = table.getSelectedRow();
@@ -212,13 +189,11 @@ public class TheLoaiSidebar extends JPanel {
             }
         });
 
-        // Button listeners
-        btnThem.addActionListener(e -> themTheLoai());
-        btnSua.addActionListener(e -> suaTheLoai());
-        btnXoa.addActionListener(e -> xoaTheLoai());
+        btnThem.addActionListener(e -> addTheLoai());
+        btnSua.addActionListener(e -> updateTheLoai());
+        btnXoa.addActionListener(e -> deleteTheLoai());
         btnClear.addActionListener(e -> clearForm());
 
-        // Initial button state
         updateButtonState();
     }
 
@@ -263,10 +238,10 @@ public class TheLoaiSidebar extends JPanel {
         try {
             tableModel.setRowCount(0);
             List<TheLoaiPhim> theLoaiList = theLoaiRepository.findAll();
-            for (TheLoaiPhim theLoai : theLoaiList) {
+            for (TheLoaiPhim phim : theLoaiList) {
                 tableModel.addRow(new Object[]{
-                    theLoai.getMaTheLoai(),
-                    theLoai.getTenTheLoai()
+                    phim.getMaTheLoai(),
+                    phim.getTenTheLoai()
                 });
             }
         } catch (SQLException e) {
@@ -274,44 +249,61 @@ public class TheLoaiSidebar extends JPanel {
         }
     }
 
-    private void themTheLoai() {
+    private void addTheLoai() {
         try {
             String tenTheLoai = txtTenTheLoai.getText().trim();
             TheLoaiPhim theLoai = new TheLoaiPhim();
             theLoai.setTenTheLoai(tenTheLoai);
-            theLoaiRepository.save(theLoai);
+            TheLoaiPhim savedTheLoai = theLoaiRepository.save(theLoai);
+            int maTheLoai = savedTheLoai.getMaTheLoai();
             JOptionPane.showMessageDialog(this, "Thêm thể loại thành công", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+
+            String moTa = String.format("Thêm thể loại: %s (ID: %d)", tenTheLoai, maTheLoai);
+            LogUtils.logThemTheLoai(maTheLoai, moTa, getCurrentUserId());
+
             clearForm();
             loadTheLoai();
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Lỗi khi thêm thể loại: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            Logger.getLogger(TheLoaiSidebar.class.getName()).severe("Lỗi khi thêm thể loại: " + e.getMessage());
         }
     }
 
-    private void suaTheLoai() {
+    private void updateTheLoai() {
         try {
             int maTheLoai = Integer.parseInt(txtMaTheLoai.getText());
             String tenTheLoai = txtTenTheLoai.getText().trim();
             TheLoaiPhim theLoai = new TheLoaiPhim(maTheLoai, tenTheLoai);
             theLoaiRepository.update(theLoai);
             JOptionPane.showMessageDialog(this, "Cập nhật thể loại thành công", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+
+            String moTa = String.format("Cập nhật thể loại: %s (ID: %d)", tenTheLoai, maTheLoai);
+            LogUtils.logSuaTheLoai(maTheLoai, moTa, getCurrentUserId());
+
             clearForm();
             loadTheLoai();
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật thể loại: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            Logger.getLogger(TheLoaiSidebar.class.getName()).severe("Lỗi khi cập nhật thể loại: " + e.getMessage());
         }
     }
 
-    private void xoaTheLoai() {
+    private void deleteTheLoai() {
         if (JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa thể loại này?", "Xác nhận", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
             try {
                 int maTheLoai = Integer.parseInt(txtMaTheLoai.getText());
+                String tenTheLoai = txtTenTheLoai.getText().trim();
                 theLoaiRepository.delete(maTheLoai);
                 JOptionPane.showMessageDialog(this, "Xóa thể loại thành công", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+
+                String moTa = String.format("Xóa thể loại: %s (ID: %d)", tenTheLoai, maTheLoai);
+                LogUtils.logXoaTheLoai(maTheLoai, moTa, getCurrentUserId());
+
                 clearForm();
                 loadTheLoai();
             } catch (SQLException e) {
                 JOptionPane.showMessageDialog(this, "Lỗi khi xóa thể loại: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                Logger.getLogger(TheLoaiSidebar.class.getName()).severe("Lỗi khi xóa thể loại: " + e.getMessage());
             }
         }
     }
@@ -324,7 +316,15 @@ public class TheLoaiSidebar extends JPanel {
         table.clearSelection();
         updateButtonState();
     }
-    
+
+    private int getCurrentUserId() {
+        if (currentNhanVien == null) {
+            Logger.getLogger(TheLoaiSidebar.class.getName()).warning("currentNhanVien is null, using default user ID 0");
+            return 0;
+        }
+        return currentNhanVien.getMaNguoiDung();
+    }
+
     public void refreshData() {
         loadTheLoai();
     }

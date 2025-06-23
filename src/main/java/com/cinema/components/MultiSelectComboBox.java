@@ -19,9 +19,6 @@ import javax.swing.event.PopupMenuListener;
 
 import com.cinema.models.dto.CheckableItem;
 
-/**
- * ComboBox cho phép chọn nhiều giá trị
- */
 public class MultiSelectComboBox extends JComboBox<CheckableItem> {
     private static final long serialVersionUID = 1L;
     
@@ -35,7 +32,6 @@ public class MultiSelectComboBox extends JComboBox<CheckableItem> {
     private void init() {
         setRenderer(new CheckBoxRenderer());
         
-        // Ngăn không cho dropdown tự đóng khi chọn item
         setUI(new javax.swing.plaf.basic.BasicComboBoxUI() {
             @Override
             protected javax.swing.plaf.basic.ComboPopup createPopup() {
@@ -57,9 +53,7 @@ public class MultiSelectComboBox extends JComboBox<CheckableItem> {
             }
             
             @Override
-            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-                // Không làm gì khi popup đóng
-            }
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {}
             
             @Override
             public void popupMenuCanceled(PopupMenuEvent e) {
@@ -73,168 +67,134 @@ public class MultiSelectComboBox extends JComboBox<CheckableItem> {
                 CheckableItem item = getItemAt(index);
                 item.setSelected(!item.isSelected());
                 
-                // Update display
                 setSelectedIndex(-1);
                 repaint();
                 
-                // Notify item change
                 fireItemStateChanged();
             }
         });
     }
     
-    /**
-     * Thêm item vào combobox
-     * 
-     * @param id ID của item
-     * @param text Text hiển thị
-     * @param selected Trạng thái chọn
-     */
     public void addItem(Object id, String text, boolean selected) {
+        if (id == null || text == null) {
+            return; // Bỏ qua nếu id hoặc text null
+        }
         CheckableItem item = new CheckableItem(id, text, selected);
         items.put(id, item);
         super.addItem(item);
     }
     
-    /**
-     * Lấy danh sách ID của các item đã chọn
-     * 
-     * @return Danh sách ID
-     */
-    public List<Object> getSelectedIds() {
-        List<Object> selectedIds = new ArrayList<>();
+    public List<Integer> getSelectedIds() {
+        List<Integer> selectedIds = new ArrayList<>();
         for (int i = 0; i < getItemCount(); i++) {
             CheckableItem item = getItemAt(i);
-            if (item.isSelected()) {
+            if (item != null && item.isSelected()) {
                 selectedIds.add(item.getId());
             }
         }
         return selectedIds;
     }
     
-    /**
-     * Lấy danh sách text của các item đã chọn
-     * 
-     * @return Danh sách text
-     */
     public List<String> getSelectedTexts() {
         List<String> selectedTexts = new ArrayList<>();
         for (int i = 0; i < getItemCount(); i++) {
             CheckableItem item = getItemAt(i);
-            if (item.isSelected()) {
+            if (item != null && item.isSelected()) {
                 selectedTexts.add(item.getText());
             }
         }
         return selectedTexts;
     }
     
-    /**
-     * Lấy text hiển thị của các item đã chọn, phân cách bởi dấu phẩy
-     * 
-     * @return Text hiển thị
-     */
     public String getSelectedItemsText() {
         List<String> texts = getSelectedTexts();
-        if (texts.isEmpty()) {
-            return "";
-        }
-        return String.join(", ", texts);
+        return texts.isEmpty() ? "" : String.join(", ", texts);
     }
     
-    /**
-     * Kiểm tra xem có item nào được chọn không
-     * 
-     * @return true nếu có ít nhất một item được chọn
-     */
     public boolean hasSelectedItems() {
         for (int i = 0; i < getItemCount(); i++) {
-            if (getItemAt(i).isSelected()) {
+            CheckableItem item = getItemAt(i);
+            if (item != null && item.isSelected()) {
                 return true;
             }
         }
         return false;
     }
     
-    /**
-     * Thiết lập trạng thái chọn cho các item
-     * 
-     * @param ids Danh sách ID cần chọn
-     */
     public void setSelectedIds(List<?> ids) {
-        if (ids == null) {
-            ids = new ArrayList<>();
+        if (ids == null || getItemCount() == 0) {
+            return; // Bỏ qua nếu ids null hoặc không có mục nào
         }
         
-        // Tạo set để tìm kiếm nhanh hơn
         Set<Object> idSet = new HashSet<>(ids);
-        
-        // Cập nhật trạng thái cho tất cả các item
         boolean changed = false;
+        
         for (int i = 0; i < getItemCount(); i++) {
             CheckableItem item = getItemAt(i);
-            boolean shouldBeSelected = idSet.contains(item.getId());
-            if (item.isSelected() != shouldBeSelected) {
-                item.setSelected(shouldBeSelected);
-                changed = true;
+            if (item != null) {
+                boolean shouldBeSelected = idSet.contains(item.getId());
+                if (item.isSelected() != shouldBeSelected) {
+                    item.setSelected(shouldBeSelected);
+                    changed = true;
+                }
             }
         }
         
         if (changed) {
-            // Cập nhật giao diện
             repaint();
-            
-            // Thông báo cho các listener
             fireItemStateChanged();
         }
     }
     
-    /**
-     * Xóa tất cả item
-     */
     @Override
     public void removeAllItems() {
         super.removeAllItems();
         items.clear();
+        repaint();
     }
     
-    /**
-     * Thông báo cho các listener khi có sự thay đổi
-     */
     protected void fireItemStateChanged() {
         ActionEvent event = new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "selectionChanged");
         for (ActionListener listener : getActionListeners()) {
             listener.actionPerformed(event);
         }
     }
-
-    /**
-     * Renderer cho checkbox trong combobox
-     */
+    
     private class CheckBoxRenderer implements ListCellRenderer<CheckableItem> {
         private final JCheckBox checkbox = new JCheckBox();
         
         @Override
         public Component getListCellRendererComponent(JList<? extends CheckableItem> list, CheckableItem value, int index,
                 boolean isSelected, boolean cellHasFocus) {
+            if (getItemCount() == 0) {
+                checkbox.setText("Không có thể loại");
+                checkbox.setSelected(false);
+                checkbox.setEnabled(false);
+                return checkbox;
+            }
             
             if (index == -1 && value == null) {
-                // Hiển thị text khi không có item nào được chọn hoặc có item được chọn
                 String text = getSelectedItemsText();
-                if (text.isEmpty()) {
-                    text = "Chọn thể loại";
-                }
-                checkbox.setText(text);
+                checkbox.setText(text.isEmpty() ? "Chọn thể loại" : text);
+                checkbox.setSelected(false);
             } else if (value != null) {
-                // Hiển thị item trong dropdown
                 checkbox.setText(value.getText());
                 checkbox.setSelected(value.isSelected());
+            } else {
+                checkbox.setText("");
+                checkbox.setSelected(false);
             }
             
             checkbox.setOpaque(true);
             checkbox.setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
             checkbox.setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
+            checkbox.setEnabled(true);
             return checkbox;
         }
     }
-}
 
+	public void setItems(Map<Integer, String> genreMap) {
+		// TODO Auto-generated method stub
+		
+	}
+}

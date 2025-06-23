@@ -20,13 +20,13 @@ import com.cinema.services.SuatChieuService;
 import com.cinema.services.VeService;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.PermissionManager;
-import com.cinema.views.BookingView;
 import com.cinema.views.MainView;
-import com.cinema.views.PhimListView;
-import com.cinema.views.UserInfoView;
 import com.cinema.views.admin.AdminViewManager;
 import com.cinema.views.admin.DashboardView;
 import com.cinema.views.admin.UserManagementView;
+import com.cinema.views.booking.BookingView;
+import com.cinema.views.customer.PhimListView;
+import com.cinema.views.customer.UserInfoView;
 import com.cinema.views.login.LoginView;
 import com.cinema.views.sidebar.SidebarMenuItem;
 
@@ -54,7 +54,7 @@ public class MainViewController {
         
         try {
             this.databaseConnection = new DatabaseConnection();
-            this.phimController = new PhimController(new com.cinema.views.admin.PhimView());
+            this.phimController = new PhimController(new com.cinema.views.admin.PhimView(currentNhanVien), currentNhanVien);
             
             if (!permissionManager.isUser()) {
                 NhanVienService nhanVienService = new NhanVienService(databaseConnection);
@@ -86,6 +86,9 @@ public class MainViewController {
             mainContentPanel.add(dashboardView, "Dashboard");
 
             cardLayout.show(mainContentPanel, "Dashboard");
+            
+            // Cập nhật kích thước view sau khi hiển thị Dashboard
+            view.updateViewLayout(dashboardView);
             UserManagementView userManagementView = new UserManagementView();
             mainContentPanel.add(userManagementView, "Người dùng");
         } else {
@@ -104,15 +107,25 @@ public class MainViewController {
         
         // Hiển thị màn hình phim mặc định
         cardLayout.show(mainContentPanel, "Phim");
-    }
-    
-    public void handleMenuSelection(String feature, SidebarMenuItem menuItem) {
+        
+        // Cập nhật kích thước view sau khi hiển thị màn hình phim
+        view.updateViewLayout(phimListView);
+    }      public void handleMenuSelection(String feature, SidebarMenuItem menuItem) {
         if (permissionManager.isAdmin() || permissionManager.isQuanLyPhim() || 
             permissionManager.isThuNgan() || permissionManager.isBanVe()) {
             try {
                 // Check if user has permission to access this feature
                 if (permissionManager.hasPermission(feature) || feature.equals("Dashboard")) {
                     cardLayout.show(mainContentPanel, feature);
+                    
+                    // Tìm view hiện tại và cập nhật kích thước
+                    Component[] components = mainContentPanel.getComponents();
+                    for (Component component : components) {
+                        if (component.isVisible() && component instanceof JPanel) {
+                            view.updateViewLayout((JPanel) component);
+                            break;
+                        }
+                    }
                 } else {
                     JOptionPane.showMessageDialog(view, 
                         "Bạn không có quyền truy cập tính năng này!", 
@@ -130,6 +143,15 @@ public class MainViewController {
             try {
                 if (feature.equals("Phim")) {
                     cardLayout.show(mainContentPanel, "Phim");
+                    
+                    // Cập nhật kích thước view sau khi chuyển đổi
+                    Component[] components = mainContentPanel.getComponents();
+                    for (Component component : components) {
+                        if (component.isVisible() && component instanceof JPanel) {
+                            view.updateViewLayout((JPanel) component);
+                            break;
+                        }
+                    }
                 } else if (feature.equals("Thông tin cá nhân")) {
                     // Hiển thị thông tin cá nhân trong dialog
                     UserInfoView userInfoView = new UserInfoView(view, username);

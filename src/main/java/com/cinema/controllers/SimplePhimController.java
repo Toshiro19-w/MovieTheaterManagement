@@ -15,4 +15,8 @@ public class SimplePhimController {
     public List<Phim> getAllPhim() throws SQLException {
         return service.getAllPhim();
     }
+    
+    public List<Phim> getPhimDangChieu() throws SQLException {
+        return service.getPhimDangChieu();
+    }
 } 

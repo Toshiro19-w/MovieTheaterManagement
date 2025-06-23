@@ -198,15 +198,16 @@ public class DatVeRepository implements IDatVeRepository {
             conn = dbConnection.getConnection();
             conn.setAutoCommit(false);
             
-            BigDecimal giaVe = getGiaVeFromVe(maVe, conn);
-
+            BigDecimal giaVe = getGiaVeFromVe(maVe, conn);         
             String hoaDonSql = "INSERT INTO HoaDon (maKhachHang, maNhanVien, ngayLap) VALUES (?, ?, NOW())";
             hoaDonStmt = conn.prepareStatement(hoaDonSql, PreparedStatement.RETURN_GENERATED_KEYS);
             hoaDonStmt.setInt(1, maKhachHang);
-            if (maNhanVien == 0) {
-                hoaDonStmt.setNull(2, Types.INTEGER); // Đặt maNhanVien thành NULL cho thanh toán online
-            } else {
+
+            if (maNhanVien > 0) {
                 hoaDonStmt.setInt(2, maNhanVien);
+            } else {
+                hoaDonStmt.setNull(2, java.sql.Types.INTEGER);
+
             }
             hoaDonStmt.executeUpdate();
 
@@ -232,6 +233,37 @@ public class DatVeRepository implements IDatVeRepository {
             chiTietHoaDonStmt.setInt(1, maHoaDonGenerated);
             chiTietHoaDonStmt.setInt(2, maVe);
             chiTietHoaDonStmt.executeUpdate();
+            
+            // Cập nhật phiên làm việc sau khi bán vé
+            if (maNhanVien > 0) {
+                try {
+                    // Lấy phiên làm việc hiện tại của nhân viên
+                    String phienSql = "SELECT maPhien FROM PhienLamViec WHERE maNhanVien = ? AND thoiGianKetThuc IS NULL";
+                    PreparedStatement phienStmt = conn.prepareStatement(phienSql);
+                    phienStmt.setInt(1, maNhanVien);
+                    ResultSet phienRs = phienStmt.executeQuery();
+                    
+                    if (phienRs.next()) {
+                        int maPhien = phienRs.getInt("maPhien");
+                        System.out.println("KIỂM TRA: Cập nhật phiên làm việc " + maPhien + " với giá vé " + giaVe);
+                        
+                        // Cập nhật doanh thu và số vé bán
+                        String updatePhienSql = "UPDATE PhienLamViec SET tongDoanhThu = tongDoanhThu + ?, soVeDaBan = soVeDaBan + 1 WHERE maPhien = ?";
+                        PreparedStatement updatePhienStmt = conn.prepareStatement(updatePhienSql);
+                        updatePhienStmt.setBigDecimal(1, giaVe);
+                        updatePhienStmt.setInt(2, maPhien);
+                        int phienRows = updatePhienStmt.executeUpdate();
+                        
+                        System.out.println("KIỂM TRA: Số dòng phiên làm việc được cập nhật: " + phienRows);
+                        updatePhienStmt.close();
+                    }
+                    phienRs.close();
+                    phienStmt.close();
+                } catch (SQLException e) {
+                    System.out.println("KIỂM TRA LỖI: Không thể cập nhật phiên làm việc: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
 
             conn.commit();
             return maHoaDonGenerated;
@@ -319,7 +351,6 @@ public class DatVeRepository implements IDatVeRepository {
 
     @Override
     public int getMaVeFromBooking(int maSuatChieu, String soGhe, int maKhachHang) throws SQLException {
-        // Sửa lại để sử dụng maGhe thay vì soGhe
         String sql = """
             SELECT v.maVe 
             FROM Ve v
@@ -387,17 +418,17 @@ public class DatVeRepository implements IDatVeRepository {
             if (conn != null) try { conn.close(); } catch (SQLException e) {}
         }
     }
-
+    
     @Override
     public BigDecimal getGiaVeFromVe(int maVe, Connection conn) throws SQLException {
-        // Sửa lại để lấy giá vé từ bảng GiaVe thông qua maGiaVe
+        
         String sql = """
             SELECT gv.giaVe 
             FROM Ve v
             JOIN GiaVe gv ON v.maGiaVe = gv.maGiaVe
             WHERE v.maVe = ?""";
             
-        try ( // Không đóng PreparedStatement và ResultSet khi Connection được truyền từ bên ngoài
+        try (
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, maVe);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -412,7 +443,7 @@ public class DatVeRepository implements IDatVeRepository {
         throw new SQLException("Không tìm thấy giá vé cho mã vé: " + maVe);
     }
 
-    // Sửa lại phương thức isSeatTaken để sử dụng maGhe thay vì soGhe
+    // Phương thức isSeatTaken trong interface
     @Override
     public boolean isSeatTaken(int maSuatChieu, String soGhe, Connection conn) throws SQLException {
         String sql = """

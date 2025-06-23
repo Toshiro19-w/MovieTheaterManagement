@@ -12,4 +12,7 @@ public interface IGiaVeRepository extends IRepository<GiaVe> {
     
     // Tìm giá vé theo ngày
     List<GiaVe> findByDate(LocalDate date) throws SQLException;
+    
+    // Tìm giá vé có hiệu lực vào một ngày cụ thể
+    GiaVe findActiveByLoaiGheAndDate(String loaiGhe, LocalDate date) throws SQLException;
 }

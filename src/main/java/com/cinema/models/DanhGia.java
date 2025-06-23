@@ -1,6 +1,7 @@
 package com.cinema.models;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class DanhGia {
     private int maDanhGia;
@@ -10,6 +11,9 @@ public class DanhGia {
     private int diemDanhGia; // 1-5 sao
     private String nhanXet;
     private LocalDateTime ngayDanhGia;
+    
+    // Thêm trường để hiển thị tên người dùng
+    private String tenNguoiDung;
 
     // Navigation properties
     private Phim phim;
@@ -96,6 +100,20 @@ public class DanhGia {
         this.ve = ve;
     }
     
+    public String getTenNguoiDung() {
+        return tenNguoiDung;
+    }
+
+    public void setTenNguoiDung(String tenNguoiDung) {
+        this.tenNguoiDung = tenNguoiDung;
+    }
+    
+    public String getNgayDanhGiaFormatted() {
+        if (ngayDanhGia == null) return "";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        return ngayDanhGia.format(formatter);
+    }
+    
     // Constructors
     public DanhGia() {}
     
@@ -109,8 +127,6 @@ public class DanhGia {
         this.nhanXet = nhanXet;
         this.ngayDanhGia = ngayDanhGia;
     }
-
-    
     
     @Override
     public String toString() {

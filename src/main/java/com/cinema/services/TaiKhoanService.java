@@ -15,6 +15,10 @@ public class TaiKhoanService {
     public TaiKhoanService(DatabaseConnection databaseConnection) {
         this.taiKhoanRepository = new TaiKhoanRepository(databaseConnection);
     }
+    
+    public String findUsernameByEmailOrPhone(String emailOrPhone) throws SQLException {
+        return taiKhoanRepository.findUsernameByEmailOrPhone(emailOrPhone);
+    }
 
     public void createTaiKhoan(TaiKhoan taiKhoan) throws SQLException {
         // Validate input
@@ -66,6 +70,10 @@ public class TaiKhoanService {
         return taiKhoanRepository.findByUsername(username);
     }
 
+    public int getUserIdFromUsername(String username) throws SQLException {
+        return taiKhoanRepository.getUserIdFromUsername(username);
+    }
+
     public int handleRegistration(String username, String fullName, String phone, String email, String password) throws SQLException {
         // Validate input
         if (!ValidationUtils.isValidString(username) || !ValidationUtils.isValidString(fullName) ||
@@ -80,5 +88,9 @@ public class TaiKhoanService {
         }
 
         return taiKhoanRepository.registerUser(username, fullName, phone, email, password);
+    }
+
+    public String getEmailByUsername(String username) throws SQLException {
+        return taiKhoanRepository.getEmailByUsername(username);
     }
 }
