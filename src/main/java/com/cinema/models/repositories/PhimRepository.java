@@ -367,4 +367,31 @@ public class PhimRepository extends BaseRepository<Phim> {
         
         return list;
     }
+    public void addTheLoai(String tenTheLoai) throws SQLException {
+        String sql = "INSERT INTO theloai (ten_the_loai) VALUES (?)";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tenTheLoai);
+            ps.executeUpdate();
+        }
+    }
+
+    public void updateTheLoai(int maTheLoai, String tenTheLoai) throws SQLException {
+        String sql = "UPDATE theloai SET ten_the_loai = ? WHERE ma_the_loai = ?";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tenTheLoai);
+            ps.setInt(2, maTheLoai);
+            ps.executeUpdate();
+        }
+    }
+
+    public void deleteTheLoai(int maTheLoai) throws SQLException {
+        String sql = "DELETE FROM theloai WHERE ma_the_loai = ?";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, maTheLoai);
+            ps.executeUpdate();
+        }
+    }
 }
