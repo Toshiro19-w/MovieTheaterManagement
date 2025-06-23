@@ -33,7 +33,6 @@ public class ValidationUtils {
     private static final int MIN_MOVIE_DURATION = 90;
     private static final int MAX_MOVIE_DURATION = 200;
 
-    // Danh sách các quốc gia hợp lệ
     private static final Set<String> VALID_COUNTRIES = new HashSet<>(Arrays.asList(
         "Việt Nam", "Mỹ", "Anh", "Pháp", "Đức", "Ý", "Tây Ban Nha", "Nhật Bản", "Hàn Quốc", "Trung Quốc",
         "Thái Lan", "Singapore", "Malaysia", "Indonesia", "Philippines", "Australia", "Canada", "Brazil",
@@ -91,12 +90,10 @@ public class ValidationUtils {
                 return messages.getString("startDateInvalid");
             }
 
-            // Kiểm tra đã có vé bán
             if (veRepo.hasPaidTicketsByPhim(maPhim)) {
                 return messages.getString("cannotEditReleaseDateWithTickets");
             }
 
-            // Kiểm tra có suất chiếu trước ngày mới
             if (suatChieuRepo.hasShowtimeBefore(maPhim, date)) {
                 return messages.getString("releaseDateHasShowtime");
             }
@@ -113,12 +110,10 @@ public class ValidationUtils {
             LocalDateTime showTime = parseDateTime(dateTimeStr);
             LocalDateTime serverTime = ServerTimeService.getServerTime();
 
-            // Kiểm tra thời gian không được trước thời gian hiện tại
             if (showTime.isBefore(serverTime)) {
                 return false;
             }
 
-            // Kiểm tra ngày giờ chiếu phải sau hoặc bằng ngày khởi chiếu của phim
             String checkReleaseDateQuery = "SELECT ngayKhoiChieu FROM Phim WHERE maPhim = ?";
             try (PreparedStatement pstmt = dbConnection.getConnection().prepareStatement(checkReleaseDateQuery)) {
                 pstmt.setInt(1, maPhim);
@@ -238,6 +233,12 @@ public class ValidationUtils {
             errorLabel.revalidate();
             errorLabel.repaint();
             System.out.println("Ẩn lỗi tại " + (errorLabel.getName() != null ? errorLabel.getName() : "unknown"));
+        }
+    }
+
+    public static void hideAllErrors(JLabel... errorLabels) {
+        for (JLabel errorLabel : errorLabels) {
+            hideError(errorLabel);
         }
     }
 
@@ -442,12 +443,10 @@ public class ValidationUtils {
         }
     }
 
-    // Kiểm tra tên khách hàng hợp lệ (có thể mở rộng kiểm tra ký tự đặc biệt, độ dài...)
     public static boolean isCustomerNameValid(String name) {
         return name != null && !name.trim().isEmpty();
     }
 
-    // Hiển thị lỗi khi tên khách hàng không hợp lệ
     public static void validateCustomerSelection(String name, JLabel errorLabel, ResourceBundle messages) {
         if (!isCustomerNameValid(name)) {
             showError(errorLabel, messages.getString("customerNameInvalid"));
@@ -481,7 +480,6 @@ public class ValidationUtils {
         String dateStr = field.getText().trim();
         int maPhim = 0;
         
-        // Lấy mã phim nếu đang sửa phim
         String maPhimStr = maPhimField.getText().trim();
         if (!maPhimStr.isEmpty()) {
             try {

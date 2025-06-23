@@ -12,8 +12,8 @@ import javax.swing.SwingConstants;
 
 public class ResponsiveScrollPane extends JScrollPane {
     // Các hằng số để điều chỉnh tốc độ cuộn
-    private static final int UNIT_INCREMENT = 100;      // Tốc độ cuộn cơ bản
-    private static final int WHEEL_MULTIPLIER = 3;      // Hệ số nhân cho cuộn chuột
+    private static final int UNIT_INCREMENT = 10;      // Tốc độ cuộn cơ bản
+    private static final int WHEEL_MULTIPLIER = 4;      // Hệ số nhân cho cuộn chuột
     private static final double BLOCK_MULTIPLIER = 2.5; // Hệ số nhân cho cuộn trang
 
     private ResizableView resizableView;

@@ -132,9 +132,8 @@ public class TaiKhoanRepository implements ITaiKhoanRepository {
                 try (ResultSet rs = checkStmt.executeQuery()) {
                     while (rs.next()) {
                         if (rs.getInt(1) > 0) {
-                            return -1; // Trùng lặp
+                            throw new SQLException ("tên đăng nhập, số điện thoại hoặc email đã được sử dụng !!!");  // Trùng lặp
                         }
-                    }
                 }
             }
 
@@ -182,6 +181,7 @@ public class TaiKhoanRepository implements ITaiKhoanRepository {
         } catch (SQLException ex) {
             LOGGER.severe("Lỗi đăng ký người dùng: " + ex.getMessage());
             throw ex;
+        }
         }
     }
 

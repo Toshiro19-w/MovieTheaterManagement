@@ -120,24 +120,17 @@ public class CountryComboBox extends JComboBox<String> {
 
     @Override
     public void removeNotify() {
-        // Cleanup GlazedLists resources
-        if (autoCompleteSupport != null) {
-            try {
-                autoCompleteSupport.uninstall();
-            } catch (IllegalStateException ex) {
-                // Đã uninstall rồi thì bỏ qua, không crash
+        try {
+            if (filteredCountries != null) {
+                filteredCountries.dispose();
             }
-            autoCompleteSupport = null;
-        }
-        if (filteredCountries != null) {
-            filteredCountries.dispose();
-        }
-        if (sortedCountries != null) {
-            sortedCountries.dispose();
-        }
-        if (allCountries != null) {
-            allCountries.dispose();
+            if (allCountries != null) {
+                allCountries.dispose();
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
         super.removeNotify();
     }
+
 } 

@@ -3,6 +3,7 @@ package com.cinema.utils;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -17,14 +18,13 @@ import com.cinema.controllers.ActivityLogController;
 
 /**
  * Lớp tiện ích để quản lý việc ghi log hoạt động trong hệ thống
- * TODO: Hỗ trợ cho nhiều loại log khác nhau, không chỉ giới hạn ở phim
  */
 public class LogUtils {
     private static final Logger LOGGER = Logger.getLogger(LogUtils.class.getName());
     private static volatile ActivityLogController activityLogController;
-    private static final Object LOCK = new Object();
+    private static final Object LOCKING_OBJECT = new Object();
     private static final int MAX_RETRY = 3;
-    private static final long RETRY_DELAY = 1000; // 1 second
+    private static final long RETRY_DELAY_MS = 1000;
     private static final String BACKUP_LOG_DIR = "logs";
     private static final BlockingQueue<LogEntry> logQueue;
     private static final SimpleDateFormat dateFormat;
@@ -45,11 +45,15 @@ public class LogUtils {
     public static final String OBJ_KHACH_HANG = "khách hàng";
     public static final String OBJ_NHAN_VIEN = "nhân viên";
     public static final String OBJ_HOA_DON = "hoá đơn";
+    public static final String OBJ_THE_LOAI = "thể loại";
 
     // Actions cho các đối tượng
     private static final String ACTION_THEM_PHIM = "Thêm phim mới";
-    private static final String ACTION_CAP_NHAT_PHIM = "Cập nhật thông tin phim";
+    private static final String ACTION_SUA_PHIM = "Cập nhật thông tin phim";
     private static final String ACTION_XOA_PHIM = "Xóa phim";
+    private static final String ACTION_THEM_THE_LOAI = "Thêm thể loại mới";
+    private static final String ACTION_SUA_THE_LOAI = "Cập nhật thể loại";
+    private static final String ACTION_XOA_THE_LOAI = "Xóa thể loại";
 
     /**
      * Class để đóng gói thông tin log
@@ -62,7 +66,7 @@ public class LogUtils {
 
         LogEntry(String loaiHoatDong, String moTa, int maNguoiDung) {
             this.loaiHoatDong = loaiHoatDong;
-            this.moTa = moTa;
+            this.moTa = moTa != null ? moTa : "";
             this.maNguoiDung = maNguoiDung;
             this.timestamp = System.currentTimeMillis();
         }
@@ -72,7 +76,7 @@ public class LogUtils {
         try {
             File logDir = new File(BACKUP_LOG_DIR);
             if (!logDir.exists() && !logDir.mkdirs()) {
-                System.err.println("Không thể tạo thư mục logs");
+                LOGGER.severe("Không thể tạo thư mục logs");
                 return;
             }
             
@@ -80,13 +84,13 @@ public class LogUtils {
                 BACKUP_LOG_DIR + "/activity_%g.log",
                 5242880, // 5MB mỗi file
                 5,       // Tối đa 5 file
-                true    // Append mode
+                true     // Append mode
             );
             fileHandler.setFormatter(new SimpleFormatter());
             LOGGER.addHandler(fileHandler);
             LOGGER.setLevel(Level.ALL);
         } catch (IOException e) {
-            System.err.println("Không thể thiết lập file logger: " + e.getMessage());
+            LOGGER.severe("Không thể thiết lập file logger: " + e.getMessage());
         }
     }
 
@@ -114,7 +118,7 @@ public class LogUtils {
 
         for (int i = 0; i < MAX_RETRY && !success; i++) {
             try {
-                synchronized (LOCK) {
+                synchronized (LOCKING_OBJECT) {
                     if (activityLogController == null) {
                         activityLogController = new ActivityLogController();
                     }
@@ -128,7 +132,7 @@ public class LogUtils {
                 LOGGER.warning("Lần thử " + (i + 1) + " thất bại: " + e.getMessage());
                 if (i < MAX_RETRY - 1) {
                     try {
-                        Thread.sleep(RETRY_DELAY * (i + 1)); // Exponential backoff
+                        Thread.sleep(RETRY_DELAY_MS * (i + 1));
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         break;
@@ -148,7 +152,7 @@ public class LogUtils {
             entry.loaiHoatDong,
             entry.moTa,
             entry.maNguoiDung,
-            dbException.getMessage());
+            dbException != null ? dbException.getMessage() : "Unknown error");
 
         File backupFile = new File(BACKUP_LOG_DIR + "/backup_" + 
             new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".log");
@@ -164,12 +168,16 @@ public class LogUtils {
     /**
      * Phương thức chung để ghi log
      */
-    private static void ghiLog(String loaiHoatDong, String moTa, int maNguoiDung) {
+    public static void ghiLog(String loaiHoatDong, String moTa, int maNguoiDung) {
+        if (loaiHoatDong == null || loaiHoatDong.trim().isEmpty()) {
+            LOGGER.warning("Loại hoạt động không hợp lệ");
+            return;
+        }
         try {
             LogEntry entry = new LogEntry(loaiHoatDong, moTa, maNguoiDung);
             if (!logQueue.offer(entry)) {
                 LOGGER.warning("Queue log đầy, ghi trực tiếp vào file backup");
-                writeToBackupFile(entry, new Exception("Queue full"));
+                writeToBackupFile(entry, new Exception("Log queue full"));
             }
         } catch (Exception e) {
             LOGGER.severe("Lỗi nghiêm trọng khi ghi log: " + e.getMessage());
@@ -177,36 +185,46 @@ public class LogUtils {
     }
 
     // Các phương thức log cho Phim
-    public static void logThemPhim(int  maPhim, String tenPhim, int maNguoiDung) {
-        String chiTiet = String.format("Thêm phim mới - Mã: %s, Tên: %s", maPhim, tenPhim);
-        ghiLog(ACTION_THEM_PHIM, chiTiet, maNguoiDung);
+    public static void logThemPhim(int maPhim, String moTa, int maNguoiDung) {
+        ghiLog(ACTION_THEM_PHIM, moTa, maNguoiDung);
     }
 
-    public static void logCapNhatPhim(int maPhim, String tenPhim, String thongTinCapNhat, int maNguoiDung) {
-        String chiTiet = String.format("Cập nhật phim - Mã: %s, Tên: %s, Chi tiết: %s", 
-            maPhim, tenPhim, thongTinCapNhat);
-        ghiLog(ACTION_CAP_NHAT_PHIM, chiTiet, maNguoiDung);
+    public static void logSuaPhim(int maPhim, String moTa, int maNguoiDung) {
+        ghiLog(ACTION_SUA_PHIM, moTa, maNguoiDung);
     }
 
-    public static void logXoaPhim(int maPhim, String tenPhim, int maNguoiDung) {
-        String chiTiet = String.format("Xóa phim - Mã: %s, Tên: %s", maPhim, tenPhim);
-        ghiLog(ACTION_XOA_PHIM, chiTiet, maNguoiDung);
+    public static void logXoaPhim(int maPhim, String moTa, int maNguoiDung) {
+        ghiLog(ACTION_XOA_PHIM, moTa, maNguoiDung);
+    }
+
+    // Các phương thức log cho Thể loại
+    public static void logThemTheLoai(int maTheLoai, String moTa, int maNguoiDung) {
+        ghiLog(ACTION_THEM_THE_LOAI, moTa, maNguoiDung);
+    }
+
+    public static void logSuaTheLoai(int maTheLoai, String moTa, int maNguoiDung) {
+        ghiLog(ACTION_SUA_THE_LOAI, moTa, maNguoiDung);
+    }
+
+    public static void logXoaTheLoai(int maTheLoai, String moTa, int maNguoiDung) {
+        ghiLog(ACTION_XOA_THE_LOAI, moTa, maNguoiDung);
     }
 
     /**
      * Đóng connection và dọn dẹp resources
+     * @throws Exception 
      */
-    public static void shutdown() {
+    public static void shutdown() throws Exception {
         if (logProcessor != null) {
             logProcessor.interrupt();
         }
         
-        synchronized (LOCK) {
+        synchronized (LOCKING_OBJECT) {
             if (activityLogController != null) {
                 try {
                     activityLogController.close();
                     activityLogController = null;
-                } catch (Exception e) {
+                } catch (SQLException e) {
                     LOGGER.warning("Lỗi khi đóng ActivityLogController: " + e.getMessage());
                 }
             }

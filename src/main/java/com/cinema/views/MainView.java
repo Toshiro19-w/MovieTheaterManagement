@@ -17,8 +17,11 @@ import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -30,8 +33,6 @@ import javax.swing.JSeparator;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
-
-import com.cinema.components.ThemeToggleButton;
 
 import com.cinema.components.IconManager;
 import com.cinema.components.ModernUIApplier;
@@ -59,7 +60,7 @@ public class MainView extends JFrame implements ThemeableComponent {
     private SidebarMenuItem selectedMenuItem;
     private JScrollPane contentScrollPane;
     
-    // Các biến UI cần thiết cho updateTheme
+    // UI components for theme updates
     private JPanel userPanel;
     private JPanel userInfoPanel;
     private JPanel contentContainer;
@@ -70,9 +71,11 @@ public class MainView extends JFrame implements ThemeableComponent {
     private JLabel titleLabel;
     private JLabel usernameLabel;
     private JLabel userRole;
+    private JPanel menuPanel;
+    private JButton toggleSidebarButton;
 
     public MainView(String username, LoaiTaiKhoan loaiTaiKhoan) throws IOException, SQLException {
-        // Đăng ký listener để lắng nghe sự kiện thay đổi theme
+        // Register theme change listener
         ThemeManager.getInstance().addThemeChangeListener((oldTheme, newTheme) -> {
             updateTheme(newTheme);
         });
@@ -100,7 +103,7 @@ public class MainView extends JFrame implements ThemeableComponent {
 
         setTitle("CinemaHub");
         setExtendedState(JFrame.MAXIMIZED_BOTH);
-        setResizable(false);
+        setResizable(true);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setBackground(UITheme.BACKGROUND_COLOR);
@@ -114,7 +117,7 @@ public class MainView extends JFrame implements ThemeableComponent {
     private void initUI() throws IOException, SQLException {
         setLayout(new BorderLayout());
 
-        // Sidebar with improved design - fixed size for admin users only
+        // Sidebar with fixed size for admin users
         sidebarPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -128,7 +131,6 @@ public class MainView extends JFrame implements ThemeableComponent {
                 g2d.dispose();
             }
             
-            // Ensure sidebar always maintains fixed size
             @Override
             public Dimension getPreferredSize() {
                 return new Dimension(UITheme.SIDEBAR_WIDTH, super.getPreferredSize().height);
@@ -145,10 +147,10 @@ public class MainView extends JFrame implements ThemeableComponent {
             }
         };
         sidebarPanel.setLayout(new BorderLayout());
-        sidebarPanel.setBackground(UITheme.SIDEBAR_COLOR);
+        sidebarPanel.setBackground(UITheme.BACKGROUND_COLOR);
         sidebarPanel.setBorder(new EmptyBorder(15, 10, 10, 10));
 
-        // Logo and app title in sidebar with more prominent design
+        // Logo and app title in sidebar
         logoPanel = UIHelper.createVerticalBoxPanel();
         logoPanel.setOpaque(false);
         logoPanel.setBorder(new EmptyBorder(5, 5, 15, 5));
@@ -177,7 +179,7 @@ public class MainView extends JFrame implements ThemeableComponent {
         
         sidebarPanel.add(logoPanel, BorderLayout.NORTH);
 
-        // Sidebar Menu with improved design
+        // Sidebar Menu
         menuPanel = UIHelper.createVerticalBoxPanel();
         menuPanel.setBackground(UITheme.SIDEBAR_COLOR);
         menuPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
@@ -185,7 +187,7 @@ public class MainView extends JFrame implements ThemeableComponent {
         // Create menu items based on user role
         createMenuItems(menuPanel);
 
-        // User Profile Section improved
+        // User Profile Section
         userPanel = UIHelper.createVerticalBoxPanel();
         userPanel.setBackground(UITheme.SIDEBAR_COLOR);
         userPanel.setBorder(new EmptyBorder(20, 10, 10, 10));
@@ -226,12 +228,12 @@ public class MainView extends JFrame implements ThemeableComponent {
         sidebarPanel.add(menuPanel, BorderLayout.CENTER);
         sidebarPanel.add(userPanel, BorderLayout.SOUTH);
 
-        // Chỉ hiển thị sidebar cho nhân viên, không hiển thị cho khách hàng
+        // Show sidebar only for non-customer users
         if (!controller.getPermissionManager().isUser()) {
             add(sidebarPanel, BorderLayout.WEST);
         }
 
-        // Create container that can adapt to different view sizes
+        // Create container for content
         contentContainer = new JPanel();
         contentContainer.setLayout(new BorderLayout());
         contentContainer.setBackground(UITheme.BACKGROUND_COLOR);
@@ -242,7 +244,7 @@ public class MainView extends JFrame implements ThemeableComponent {
         centeringPanel.add(contentContainer);
         add(centeringPanel, BorderLayout.CENTER);
 
-        // Improved header
+        // Header panel
         headerPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -261,6 +263,32 @@ public class MainView extends JFrame implements ThemeableComponent {
         headerPanel.setPreferredSize(new Dimension(0, UITheme.HEADER_HEIGHT));
         headerPanel.setBorder(new EmptyBorder(10, 20, 10, 20));
 
+        // Hamburger menu button for toggling sidebar
+        JPanel togglePanel = UIHelper.createFlowPanel(FlowLayout.LEFT, 5, 0);
+        togglePanel.setOpaque(false);
+        if(!controller.getPermissionManager().isUser()) {
+        ImageIcon hamburgerIcon = IconManager.getInstance().getIcon("Menu", "/images/Icon/menu.jpg", "☰", 20);
+        toggleSidebarButton = new JButton(hamburgerIcon);
+        toggleSidebarButton.setBorderPainted(false);
+        toggleSidebarButton.setContentAreaFilled(false);
+        toggleSidebarButton.setFocusPainted(false);
+        toggleSidebarButton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        toggleSidebarButton.setToolTipText("Toggle Sidebar");
+        toggleSidebarButton.addActionListener(e -> toggleSidebar());
+        toggleSidebarButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                toggleSidebarButton.setBackground(UITheme.ACCENT_COLOR);
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                toggleSidebarButton.setBackground(UITheme.HEADER_COLOR);
+            }
+        });
+        togglePanel.add(toggleSidebarButton);
+        }
+        headerPanel.add(togglePanel, BorderLayout.WEST);
+
         JPanel titlePanel = UIHelper.createFlowPanel(FlowLayout.LEFT, 5, 0);
         titlePanel.setOpaque(false);
 
@@ -269,12 +297,12 @@ public class MainView extends JFrame implements ThemeableComponent {
         titleLabel.setForeground(UITheme.TEXT_COLOR);
         titlePanel.add(titleLabel);
 
-        headerPanel.add(titlePanel, BorderLayout.WEST);
+        headerPanel.add(titlePanel, BorderLayout.CENTER);
 
         JPanel actionPanel = UIHelper.createFlowPanel(FlowLayout.RIGHT, 0, 0);
         actionPanel.setOpaque(false);
         
-        // Tạo nút cài đặt với menu popup
+        // Settings button with popup menu
         ImageIcon settingsIcon = IconManager.getInstance().getIcon("Cài đặt", "/images/Icon/setting.png", "⚙️", 20);
         JButton settingsButton = new JButton(settingsIcon);
         settingsButton.setBorderPainted(false);
@@ -283,7 +311,7 @@ public class MainView extends JFrame implements ThemeableComponent {
         settingsButton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         settingsButton.setToolTipText("Cài đặt");
         
-        // Tạo popup menu cho nút cài đặt
+        // Create popup menu for settings
         JPopupMenu settingsMenu = new JPopupMenu();
         settingsMenu.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(226, 232, 240)),
@@ -291,8 +319,7 @@ public class MainView extends JFrame implements ThemeableComponent {
         ));
         settingsMenu.setPreferredSize(new Dimension(200, 100));
         
-        // Thêm các mục menu
-        // 1. Chuyển đổi theme với toggle button
+        // Theme toggle menu item
         JPanel themePanel = new JPanel(new BorderLayout(10, 0));
         themePanel.setOpaque(false);
         
@@ -302,24 +329,15 @@ public class MainView extends JFrame implements ThemeableComponent {
         
         ThemeToggleButton themeToggle = new ThemeToggleButton();
         themeToggle.setThemeChangeListener(isDarkMode -> {
-            // Cập nhật ThemeManager trước
             ThemeManager.getInstance().setDarkMode(isDarkMode);
-            
-            // Cập nhật lại FlatLaf theme
             try {
                 if (isDarkMode) {
                     UIManager.setLookAndFeel(new com.formdev.flatlaf.FlatDarkLaf());
                 } else {
                     UIManager.setLookAndFeel(new com.formdev.flatlaf.FlatLightLaf());
                 }
-                
-                // Cập nhật theme cho tất cả các thành phần
                 updateTheme(ThemeManager.getInstance().getCurrentTheme());
-                
-                // Cập nhật lại toàn bộ UI
                 SwingUtilities.updateComponentTreeUI(this);
-                
-                // Đảm bảo các thành phần được vẽ lại
                 revalidate();
                 repaint();
             } catch (Exception ex) {
@@ -334,26 +352,23 @@ public class MainView extends JFrame implements ThemeableComponent {
         themeMenuItem.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         settingsMenu.add(themeMenuItem);
         
-        // 3. Thêm separator
         settingsMenu.addSeparator();
         
-        // 4. Đăng xuất
+        // Logout menu item
         JMenuItem logoutMenuItem = new JMenuItem("Đăng xuất");
         logoutMenuItem.setIcon(IconManager.getInstance().getIcon("Đăng xuất", "/images/Icon/logout.png", "🚪", 16));
         logoutMenuItem.addActionListener(e -> controller.logout());
         logoutMenuItem.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         settingsMenu.add(logoutMenuItem);
         
-        // Xử lý sự kiện khi nhấn vào nút cài đặt
         settingsButton.addActionListener(e -> {
             settingsMenu.show(settingsButton, 0, settingsButton.getHeight());
         });
         
-        // Thêm ảnh đại diện dạng tròn cho khách hàng
+        // Add profile and logout buttons for customers
         if (controller.getPermissionManager().isUser()) {
             actionPanel.add(Box.createHorizontalStrut(10));
             
-            // Tạo ảnh đại diện dạng tròn
             ImageIcon userIcon = IconManager.getInstance().getIcon("Người dùng", "/images/Icon/user.png", "👤", 30);
             JButton profileButton = new JButton(userIcon);
             profileButton.setBorderPainted(false);
@@ -361,13 +376,30 @@ public class MainView extends JFrame implements ThemeableComponent {
             profileButton.setFocusPainted(false);
             profileButton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
             profileButton.setToolTipText("Thông tin cá nhân");
-            
-            // Xử lý sự kiện khi nhấn vào ảnh đại diện
             profileButton.addActionListener(e -> {
                 controller.handleMenuSelection("Thông tin cá nhân", null);
             });
-            
             actionPanel.add(profileButton);
+
+//            actionPanel.add(Box.createHorizontalStrut(10));
+//            ImageIcon logoutIcon = IconManager.getInstance().getIcon("Đăng xuất", "/images/Icon/logout.png", "🚪", 30);
+//            JButton logoutButtonHeader = new JButton(logoutIcon);
+//            logoutButtonHeader.setBorderPainted(false);
+//            logoutButtonHeader.setContentAreaFilled(false);
+//            logoutButtonHeader.setFocusPainted(false);
+//            logoutButtonHeader.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+//            logoutButtonHeader.setToolTipText("Đăng xuất");
+//            logoutButtonHeader.addActionListener(e -> {
+//                int confirm = JOptionPane.showConfirmDialog(this,
+//                        "Bạn có chắc muốn đăng xuất?",
+//                        "Xác nhận đăng xuất",
+//                        JOptionPane.YES_NO_OPTION);
+//                if (confirm == JOptionPane.YES_OPTION) {
+//                    controller.logout();
+//                    dispose();
+//                }
+//            });
+//            actionPanel.add(logoutButtonHeader);
         }
         
         actionPanel.add(Box.createHorizontalStrut(10));
@@ -376,14 +408,12 @@ public class MainView extends JFrame implements ThemeableComponent {
 
         contentContainer.add(headerPanel, BorderLayout.NORTH);
 
-        // Main content with improved design - add ResponsiveScrollPane to only scroll vertically
+        // Main content
         mainContentPanel = new JPanel();
         mainContentPanel.setBackground(UIConstants.BACKGROUND_COLOR);
         
-        // Create ResponsiveScrollPane to contain main content
         ResponsiveScrollPane scrollPane = new ResponsiveScrollPane();
-        scrollPane.scrollToTop(); // Cuộn lên đầu
-        scrollPane.scrollToBottom();
+        scrollPane.scrollToTop();
 
         if (controller.getPermissionManager().isAdmin() || controller.getPermissionManager().isQuanLyPhim() || 
             controller.getPermissionManager().isThuNgan() || controller.getPermissionManager().isBanVe()) {
@@ -392,112 +422,81 @@ public class MainView extends JFrame implements ThemeableComponent {
             controller.setMainContentPanel(mainContentPanel, cardLayout);
             controller.initializeAdminPanels();
         } else {
-            // Khách hàng vẫn sử dụng CardLayout để chuyển đổi giữa các màn hình
             cardLayout = new CardLayout();
             mainContentPanel.setLayout(cardLayout);
             controller.setMainContentPanel(mainContentPanel, cardLayout);
-            
-            // Khởi tạo các panel cho khách hàng
             controller.initializeCustomerPanels();
         }
         mainContentPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
         
-        // Lưu lại contentScrollPane để có thể thay đổi kích thước sau này
         contentScrollPane = scrollPane;
-        
-        // Add mainContentPanel to ResponsiveScrollPane
         scrollPane.setViewportView(mainContentPanel);
         contentContainer.add(scrollPane, BorderLayout.CENTER);
 
         add(contentContainer, BorderLayout.CENTER);
     }
 
+    private void toggleSidebar() {
+        if (!controller.getPermissionManager().isUser()) { // Only toggle for non-customer users
+            sidebarPanel.setVisible(!sidebarPanel.isVisible());
+            toggleSidebarButton.setToolTipText(sidebarPanel.isVisible() ? "Hide Sidebar" : "Show Sidebar");
+            contentContainer.revalidate();
+            contentContainer.repaint();
+            centeringPanel.revalidate();
+            centeringPanel.repaint();
+        }
+    }
+
     private void createMenuItems(JPanel menuPanel) {
-        // Clear existing menu items
         menuItems.clear();
         
         if (controller.getPermissionManager().isAdmin() || controller.getPermissionManager().isQuanLyPhim() || 
             controller.getPermissionManager().isThuNgan() || controller.getPermissionManager().isBanVe()) {
             
-            // Add Dashboard for all staff
             addMenuItem(menuPanel, "Dashboard", "Dashboard");
-            
-            // Film and screening management
             if (controller.getPermissionManager().hasPermission("Phim")) {
                 addMenuItem(menuPanel, "Quản lý Phim", "Phim");
             }
-            
             if (controller.getPermissionManager().hasPermission("Suất chiếu")) {
                 addMenuItem(menuPanel, "Quản lý Suất chiếu", "Suất chiếu");
             }
-            
-            // Ticket sales
             if (controller.getPermissionManager().hasPermission("Bán vé")) {
                 addMenuItem(menuPanel, "Bán vé", "Bán vé");
             }
-            
-            // Ticket management
             if (controller.getPermissionManager().hasPermission("Vé")) {
                 addMenuItem(menuPanel, "Quản lý Vé", "Vé");
             }
-            
-            // Invoices
             if (controller.getPermissionManager().hasPermission("Hoá đơn")) {
                 addMenuItem(menuPanel, "Quản lý Hóa đơn", "Hoá đơn");
             }
-            
-            // Reports & Statistics
             if (controller.getPermissionManager().hasPermission("Báo cáo")) {
                 addMenuItem(menuPanel, "Báo cáo & Thống kê", "Báo cáo");
             }
-            
-            // Staff management
             if (controller.getPermissionManager().hasPermission("Nhân viên")) {
                 addMenuItem(menuPanel, "Quản lý Nhân viên", "Nhân viên");
             }
-            
-            // User management (customers)
             if (controller.getPermissionManager().isAdmin()) {
                 addMenuItem(menuPanel, "Quản lý Người dùng", "Người dùng");
             }
-        } 
-        // Khách hàng không có menu sidebar nên không cần thêm menu items
+        }
     }
     
     private void addMenuItem(JPanel menuPanel, String text, String feature) {
-        // Get icon for the menu item
         ImageIcon icon = IconManager.getInstance().getIcon(feature, "/images/Icon/" + getIconFileName(feature), getIconFallback(feature), 20);
-        
-        // Create menu item with final reference to avoid initialization issues
         final SidebarMenuItem menuItem = new SidebarMenuItem(text, feature, icon, null);
-        
-        // Set action after initialization
         menuItem.setAction(e -> {
-            // Deselect previous selected item
             if (selectedMenuItem != null) {
                 selectedMenuItem.setSelected(false);
             }
-
-            // Select current item
             menuItem.setSelected(true);
             selectedMenuItem = menuItem;
-            
-            // Update all menu items
             updateMenuItemsSelection();
-            
-            // Handle menu selection
             controller.handleMenuSelection(feature, menuItem);
         });
-        
-        // Add to list
         menuItems.add(menuItem);
-        
-        // Create panel for the menu item
         JPanel itemPanel = createMenuItemPanel(menuItem);
         menuPanel.add(itemPanel);
         menuPanel.add(Box.createVerticalStrut(5));
-        
-        // Select first item by default if none selected
         if (selectedMenuItem == null && menuItems.size() == 1) {
             menuItem.setSelected(true);
             selectedMenuItem = menuItem;
@@ -515,27 +514,19 @@ public class MainView extends JFrame implements ThemeableComponent {
     }
     
     private void updateMenuItemsSelection() {
-        // Xóa tất cả các menu item hiện tại
         menuPanel.removeAll();
-        
-        // Thêm lại các menu item với trạng thái đã cập nhật
         for (SidebarMenuItem menuItem : menuItems) {
             JPanel itemPanel = createMenuItemPanel(menuItem);
             menuPanel.add(itemPanel);
             menuPanel.add(Box.createVerticalStrut(5));
         }
-        
-        // Cập nhật giao diện
         menuPanel.revalidate();
         menuPanel.repaint();
     }
     
-    // Thêm biến menuPanel để lưu trữ tham chiếu
-    private JPanel menuPanel;
-    
     private String getIconFileName(String feature) {
         return switch (feature) {
-            case "Dashboard" -> "dashboard.png";
+            case "Dashboard" -> "Dashboard.png";
             case "Phim" -> "movie.png";
             case "Suất chiếu" -> "schedule.png";
             case "Bán vé" -> "sell_ticket.png";
@@ -569,7 +560,6 @@ public class MainView extends JFrame implements ThemeableComponent {
         };
     }
 
-    // Method to get logo from utility class
     public static JLabel getAppLogo() {
         return com.cinema.utils.AppIconUtils.getAppLogo();
     }
@@ -587,24 +577,16 @@ public class MainView extends JFrame implements ThemeableComponent {
         controller.openBookingView(maPhim, maKhachHang, maNhanVien);
     }
     
-    /**
-     * Cập nhật layout cho view được hiển thị
-     * @param view View cần cập nhật layout
-     */
     public void updateViewLayout(JPanel view) {
         if (view instanceof ResizableView resizableView) {
-            // Reset kích thước các container
             contentContainer.setPreferredSize(null);
             centeringPanel.setPreferredSize(null);
             mainContentPanel.setPreferredSize(null);
 
-            // Lấy kích thước mong muốn và tối thiểu từ view
             Dimension preferredSize = resizableView.getPreferredViewSize();
             Dimension minimumSize = resizableView.getMinimumViewSize();
             
-            // Kiểm tra xem view có cần responsive không
             if (resizableView.isResponsive()) {
-                // Nếu responsive, sử dụng kích thước của container cha
                 Dimension parentSize = contentContainer.getParent().getSize();
                 if (parentSize.width > 0 && parentSize.height > 0) {
                     preferredSize = new Dimension(
@@ -614,30 +596,23 @@ public class MainView extends JFrame implements ThemeableComponent {
                 }
             }
             
-            // Cập nhật kích thước cho view
             view.setPreferredSize(preferredSize);
             view.setMinimumSize(minimumSize);
-            
-            // Cập nhật kích thước cho contentContainer
             contentContainer.setPreferredSize(preferredSize);
             contentContainer.setMinimumSize(minimumSize);
 
-            // Cấu hình scroll pane
             if (contentScrollPane != null) {
                 contentScrollPane.setVerticalScrollBarPolicy(
                     resizableView.needsScrolling() ? 
                     JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED : 
                     JScrollPane.VERTICAL_SCROLLBAR_NEVER
                 );
-                
                 contentScrollPane.revalidate();
                 contentScrollPane.repaint();
             }
 
-            // Thông báo cho view rằng nó đã được hiển thị
             resizableView.onViewShown();
 
-            // Revalidate và repaint các container
             view.revalidate();
             contentContainer.revalidate();
             centeringPanel.revalidate();
@@ -649,28 +624,17 @@ public class MainView extends JFrame implements ThemeableComponent {
         }
     }
 
-    /**
-     * Cập nhật giao diện khi theme thay đổi
-     */
     @Override
     public void updateTheme(Theme newTheme) {
-        // Cập nhật màu nền
         setBackground(UITheme.BACKGROUND_COLOR);
-        
-        // Cập nhật sidebar
         sidebarPanel.setBackground(UITheme.SIDEBAR_COLOR);
         menuPanel.setBackground(UITheme.SIDEBAR_COLOR);
         userPanel.setBackground(UITheme.SIDEBAR_COLOR);
         userInfoPanel.setBackground(UITheme.SIDEBAR_COLOR);
-        
-        // Cập nhật content
         contentContainer.setBackground(UITheme.BACKGROUND_COLOR);
         centeringPanel.setBackground(UITheme.BACKGROUND_COLOR);
-        
-        // Cập nhật header
         headerPanel.setBackground(UITheme.HEADER_COLOR);
         
-        // Cập nhật các label
         appTitle.setFont(UITheme.TITLE_FONT);
         appTitle.setForeground(UITheme.SELECTED_COLOR);
         titleLabel.setFont(UITheme.HEADER_FONT);
@@ -680,10 +644,8 @@ public class MainView extends JFrame implements ThemeableComponent {
         userRole.setFont(UITheme.SMALL_FONT);
         userRole.setForeground(UITheme.LIGHT_TEXT_COLOR);
         
-        // Cập nhật menu items
         updateMenuItemsSelection();
         
-        // Cập nhật màu cho các separator
         for (Component comp : logoPanel.getComponents()) {
             if (comp instanceof JSeparator) {
                 ((JSeparator) comp).setForeground(new Color(226, 232, 240));
@@ -696,7 +658,6 @@ public class MainView extends JFrame implements ThemeableComponent {
             }
         }
         
-        // Repaint toàn bộ UI
         SwingUtilities.updateComponentTreeUI(this);
     }
 }

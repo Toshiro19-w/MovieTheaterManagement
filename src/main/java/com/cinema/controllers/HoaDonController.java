@@ -120,23 +120,28 @@ public class HoaDonController {
         try {
             int maHoaDon = (int) view.getModelHoaDon().getValueAt(selectedRow, 0);
             HoaDon hoaDon = service.getHoaDonById(maHoaDon);
-            
+
             if (hoaDon != null) {
-                // Hiển thị dialog để sửa thông tin
-                JTextField txtMaKhachHang = new JTextField(String.valueOf(hoaDon.getMaKhachHang()));
-                
+                JTextField txtMaKhachHang = new JTextField(
+                    hoaDon.getMaKhachHang() != null ? String.valueOf(hoaDon.getMaKhachHang()) : ""
+                );
                 JPanel panel = new JPanel(new GridLayout(2, 2));
-                panel.add(new JLabel("Mã Khách Hàng:"));
+                panel.add(new JLabel("Mã Khách Hàng (bỏ trống nếu vãng lai):"));
                 panel.add(txtMaKhachHang);
-                
+
                 int result = JOptionPane.showConfirmDialog(view, panel, 
                     "Sửa Hóa Đơn", JOptionPane.OK_CANCEL_OPTION);
-                
+
                 if (result == JOptionPane.OK_OPTION) {
                     try {
-                        int maKhachHang = Integer.parseInt(txtMaKhachHang.getText());
-                        hoaDon.setMaKhachHang(maKhachHang);
-                        
+                        String maKhachHangStr = txtMaKhachHang.getText().trim();
+                        if (maKhachHangStr.isEmpty() || maKhachHangStr.equalsIgnoreCase("null")) {
+                            hoaDon.setMaKhachHang(null); // khách vãng lai
+                        } else {
+                            int maKhachHang = Integer.parseInt(maKhachHangStr);
+                            hoaDon.setMaKhachHang(maKhachHang);
+                        }
+
                         if (service.updateHoaDon(hoaDon)) {
                             JOptionPane.showMessageDialog(view, "Cập nhật hóa đơn thành công!");
                             lamMoi();

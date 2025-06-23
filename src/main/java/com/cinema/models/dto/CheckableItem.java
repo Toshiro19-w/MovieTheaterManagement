@@ -14,8 +14,8 @@ public class CheckableItem {
         this.selected = selected;
     }
     
-    public Object getId() {
-        return id;
+    public Integer getId() {
+        return (Integer) id;
     }
     
     public String getText() {

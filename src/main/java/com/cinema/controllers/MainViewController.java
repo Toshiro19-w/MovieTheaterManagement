@@ -51,19 +51,25 @@ public class MainViewController {
         this.loaiTaiKhoan = loaiTaiKhoan;
         this.permissionManager = new PermissionManager(loaiTaiKhoan);
         this.paymentController = new PaymentController();
-        
+
         try {
             this.databaseConnection = new DatabaseConnection();
-            this.phimController = new PhimController(new com.cinema.views.admin.PhimView(currentNhanVien), currentNhanVien);
-            
+
+            // Lấy currentNhanVien nếu không phải user
             if (!permissionManager.isUser()) {
                 NhanVienService nhanVienService = new NhanVienService(databaseConnection);
                 this.currentNhanVien = nhanVienService.findByUsername(username);
-                
+
                 if (this.currentNhanVien == null) {
                     throw new IllegalStateException("Không tìm thấy thông tin nhân viên cho tài khoản: " + username);
                 }
+            } else {
+                this.currentNhanVien = null;
             }
+
+            // Tạo PhimService và PhimController đúng chuẩn mới
+            com.cinema.services.PhimService phimService = new com.cinema.services.PhimService(databaseConnection);
+            this.phimController = new PhimController(currentNhanVien, phimService);
         } catch (IOException e) {
             JOptionPane.showMessageDialog(view, "Không thể đọc file cấu hình cơ sở dữ liệu!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             throw e;
@@ -231,4 +237,6 @@ public class MainViewController {
     public LoaiTaiKhoan getLoaiTaiKhoan() {
         return loaiTaiKhoan;
     }
+
+		
 }
