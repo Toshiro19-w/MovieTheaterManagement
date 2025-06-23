@@ -46,7 +46,9 @@ public class HoaDonRepository implements IHoaDonRepository {
                 HoaDon hoaDon = new HoaDon();
                 hoaDon.setMaHoaDon(rs.getInt("maHoaDon"));
                 hoaDon.setMaNhanVien(rs.getInt("maNhanVien"));
-                hoaDon.setMaKhachHang(rs.getInt("maKhachHang"));
+                // getObject cho phép lấy null, getInt trả về 0 nếu null
+                Object maKhachHangObj = rs.getObject("maKhachHang");
+                hoaDon.setMaKhachHang(maKhachHangObj != null ? (Integer) maKhachHangObj : null);
                 hoaDon.setNgayLap(rs.getTimestamp("ngayLap").toLocalDateTime());
                 hoaDon.setTenNhanVien(rs.getString("tenNhanVien"));
                 hoaDon.setTenKhachHang(rs.getString("tenKhachHang"));
@@ -82,7 +84,7 @@ public class HoaDonRepository implements IHoaDonRepository {
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             stmt.setInt(1, maHoaDon);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -119,14 +121,15 @@ public class HoaDonRepository implements IHoaDonRepository {
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             stmt.setInt(1, maHoaDon);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     HoaDon hoaDon = new HoaDon();
                     hoaDon.setMaHoaDon(rs.getInt("maHoaDon"));
                     hoaDon.setMaNhanVien(rs.getInt("maNhanVien"));
-                    hoaDon.setMaKhachHang(rs.getInt("maKhachHang"));
+                    Object maKhachHangObj = rs.getObject("maKhachHang");
+                    hoaDon.setMaKhachHang(maKhachHangObj != null ? (Integer) maKhachHangObj : null);
                     hoaDon.setNgayLap(rs.getTimestamp("ngayLap").toLocalDateTime());
                     hoaDon.setTenNhanVien(rs.getString("tenNhanVien"));
                     hoaDon.setTenKhachHang(rs.getString("tenKhachHang"));
@@ -140,15 +143,20 @@ public class HoaDonRepository implements IHoaDonRepository {
     public boolean insert(HoaDon hoaDon) throws SQLException {
         String sql = """
             INSERT INTO HoaDon (maNhanVien, maKhachHang, ngayLap)
-            VALUES (?, NULL, ?)
+            VALUES (?, ?, ?)
         """;
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            
+
             stmt.setInt(1, hoaDon.getMaNhanVien());
-            stmt.setTimestamp(2, Timestamp.valueOf(hoaDon.getNgayLap()));
-            
+            if (hoaDon.getMaKhachHang() == null) {
+                stmt.setNull(2, java.sql.Types.INTEGER);
+            } else {
+                stmt.setInt(2, hoaDon.getMaKhachHang());
+            }
+            stmt.setTimestamp(3, Timestamp.valueOf(hoaDon.getNgayLap()));
+
             int affectedRows = stmt.executeUpdate();
             if (affectedRows > 0) {
                 try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -173,22 +181,26 @@ public class HoaDonRepository implements IHoaDonRepository {
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             stmt.setInt(1, hoaDon.getMaNhanVien());
-            stmt.setInt(2, hoaDon.getMaKhachHang());
+            if (hoaDon.getMaKhachHang() == null) {
+                stmt.setNull(2, java.sql.Types.INTEGER);
+            } else {
+                stmt.setInt(2, hoaDon.getMaKhachHang());
+            }
             stmt.setTimestamp(3, Timestamp.valueOf(hoaDon.getNgayLap()));
             stmt.setInt(4, hoaDon.getMaHoaDon());
-            
+
             return stmt.executeUpdate() > 0;
         }
     }
 
     public boolean delete(int maHoaDon) throws SQLException {
         String sql = "DELETE FROM HoaDon WHERE maHoaDon = ?";
-        
+
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             stmt.setInt(1, maHoaDon);
             return stmt.executeUpdate() > 0;
         }
@@ -224,7 +236,7 @@ public class HoaDonRepository implements IHoaDonRepository {
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             stmt.setString(1, username);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {

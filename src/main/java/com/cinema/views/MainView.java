@@ -453,7 +453,7 @@ public class MainView extends JFrame implements ThemeableComponent {
         if (controller.getPermissionManager().isAdmin() || controller.getPermissionManager().isQuanLyPhim() || 
             controller.getPermissionManager().isThuNgan() || controller.getPermissionManager().isBanVe()) {
             
-            addMenuItem(menuPanel, "Doanh thu", "Doanh thu");
+            addMenuItem(menuPanel, "Dashboard", "Dashboard");
             if (controller.getPermissionManager().hasPermission("Phim")) {
                 addMenuItem(menuPanel, "Quản lý Phim", "Phim");
             }
@@ -526,7 +526,7 @@ public class MainView extends JFrame implements ThemeableComponent {
     
     private String getIconFileName(String feature) {
         return switch (feature) {
-            case "Doanh thu" -> "Dashboard.png";
+            case "Dashboard" -> "Dashboard.png";
             case "Phim" -> "movie.png";
             case "Suất chiếu" -> "schedule.png";
             case "Bán vé" -> "sell_ticket.png";
@@ -544,7 +544,7 @@ public class MainView extends JFrame implements ThemeableComponent {
     
     private String getIconFallback(String feature) {
         return switch (feature) {
-            case "Doanh thu" -> "📊";
+            case "Dashboard" -> "📊";
             case "Phim" -> "🎬";
             case "Suất chiếu" -> "⏰";
             case "Bán vé" -> "🎫";

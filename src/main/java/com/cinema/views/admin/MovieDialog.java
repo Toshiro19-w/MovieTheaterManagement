@@ -85,7 +85,7 @@ public class MovieDialog extends JDialog {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Lỗi tải kiểu phim: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
-        mainPanel.add(labelAnd(cbKieuPhim, "Kiểu phim"));
+        mainPanel.add(labelAnd(cbKieuPhim, "Định dạng"));
 
         txtMoTa = new UnderlineTextField(30);
         mainPanel.add(labelAnd(txtMoTa, "Mô tả"));

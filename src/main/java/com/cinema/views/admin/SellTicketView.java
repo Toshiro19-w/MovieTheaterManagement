@@ -1,120 +1,85 @@
 package com.cinema.views.admin;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.io.IOException;
-import java.sql.SQLException;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ResourceBundle;
-
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JLayeredPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingUtilities;
-import javax.swing.Timer;
-import javax.swing.border.EmptyBorder;
-import javax.swing.plaf.basic.BasicComboBoxEditor;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-
 import com.cinema.components.ModernUIApplier;
 import com.cinema.components.ModernUIComponents.PlaceholderTextField;
-import static com.cinema.components.ModernUIComponents.getIcon;
 import com.cinema.components.UIConstants;
 import com.cinema.controllers.DatVeController;
 import com.cinema.controllers.KhachHangController;
 import com.cinema.controllers.PaymentController;
 import com.cinema.controllers.SimplePhimController;
-import com.cinema.models.KhachHang;
-import com.cinema.models.NhanVien;
-import com.cinema.models.Phim;
-import com.cinema.services.GheService;
-import com.cinema.services.KhachHangService;
-import com.cinema.services.PhimService;
-import com.cinema.services.SuatChieuService;
-import com.cinema.services.VeService;
+import com.cinema.enums.TrangThaiVe;
+import com.cinema.models.*;
+import com.cinema.models.dto.BookingResultDTO;
+import com.cinema.models.repositories.HoaDonRepository;
+import com.cinema.services.*;
 import com.cinema.utils.DatabaseConnection;
 import com.cinema.utils.SnackbarUtil;
-import com.cinema.utils.ValidationUtils;
+import com.cinema.utils.VePdfExporter;
 import com.cinema.views.booking.BookingView;
-
+import com.cinema.utils.HoaDonPdfExporter;
 import ca.odell.glazedlists.BasicEventList;
 import ca.odell.glazedlists.EventList;
 import ca.odell.glazedlists.swing.AutoCompleteSupport;
-import com.cinema.components.CustomerInfoRow;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.FlowLayout;
 
-public class SellTicketView extends JPanel implements com.cinema.views.common.ResizableView {
-    // Constants
-    private static final int SEARCH_DELAY = 300; // milliseconds
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.basic.BasicComboBoxEditor;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ResourceBundle;
 
-    // Controllers
+public class SellTicketView extends JPanel {
+    // Controllers & Data
     private final KhachHangController khachHangController;
     private final SimplePhimController phimController;
     private final DatVeController datVeController;
     private final PaymentController paymentController;
     private final DatabaseConnection databaseConnection;
-
-    // UI Components
-    private JComboBox<String> customerComboBox;
-    private DefaultComboBoxModel<String> comboBoxModel;
-    private CustomerInfoRow idRow, phoneRow, emailRow;
-    private JLabel nameLabel;
-    private JTable movieTable;
-    private DefaultTableModel tableModel;
-    private JLabel searchErrorLabel;
-    private JLabel loadingLabel;
-    private JPanel snackbarPanel;
-    private JPanel searchPanel;
-
-    // Data
+    private final HoaDonRepository hoaDonRepo;
     private NhanVien currentNhanVien;
     private List<KhachHang> customers;
     private List<Phim> movies;
     private ResourceBundle messages;
     private EventList<String> customerNameList;
     private final Timer searchTimer;
-        
-    @SuppressWarnings("static-access")
+
+    // UI Components
+    private JComboBox<String> customerComboBox;
+    private DefaultComboBoxModel<String> comboBoxModel;
+    private JLabel nameLabel, phoneLabel, emailLabel, idLabel;
+    private JTable movieTable;
+    private DefaultTableModel tableModel;
+    private JLabel loadingLabel;
+    private JButton bookButton, buyButton, printButton;
+    private JTextField cashField; // Moved to instance variable for access
+
+    // Data
+    private List<Ve> selectedTickets = new ArrayList<>();
+    private HoaDon hoaDonThanhToan = null;
+
     public SellTicketView(NhanVien nhanVien) throws IOException, SQLException {
-        if (nhanVien == null) {
-            throw new IllegalArgumentException("NhanVien không thể là null");
-        }
-        
+        if (nhanVien == null) throw new IllegalArgumentException("NhanVien không thể là null");
+
         // Initialize controllers
         databaseConnection = new DatabaseConnection();
-        KhachHangService khachHangService = new KhachHangService(databaseConnection);
-        PhimService phimService = new PhimService(databaseConnection);
-        SuatChieuService suatChieuService = new SuatChieuService(databaseConnection);
-        GheService gheService = new GheService(databaseConnection);
-        VeService veService = new VeService(databaseConnection);
-
-        khachHangController = new KhachHangController(khachHangService);
-        phimController = new SimplePhimController(phimService);
-        datVeController = new DatVeController(suatChieuService, gheService, veService);
+        khachHangController = new KhachHangController(new KhachHangService(databaseConnection));
+        phimController = new SimplePhimController(new PhimService(databaseConnection));
+        datVeController = new DatVeController(
+                new SuatChieuService(databaseConnection),
+                new GheService(databaseConnection),
+                new VeService(databaseConnection)
+        );
         paymentController = new PaymentController();
+        hoaDonRepo = new HoaDonRepository(databaseConnection);
 
         // Initialize data
         this.currentNhanVien = nhanVien;
@@ -122,37 +87,47 @@ public class SellTicketView extends JPanel implements com.cinema.views.common.Re
         movies = new ArrayList<>();
         messages = ResourceBundle.getBundle("Messages");
         customerNameList = new BasicEventList<>();
-        searchTimer = new Timer(SEARCH_DELAY, _ -> performSearch());
+        searchTimer = new Timer(300, _ -> performSearch());
         searchTimer.setRepeats(false);
 
-        SwingUtilities.invokeLater(() -> {
-            try {
-                initUI();
-                loadCustomers();
-                loadMovies();
-                JTextField editor = (JTextField) customerComboBox.getEditor().getEditorComponent();
-                editor.requestFocusInWindow();
-            } catch (Exception e) {
-                SnackbarUtil.showSnackbar(this, messages.getString("error") + ": " + e.getMessage(), false);
-            }
-        });
+        // Initialize UI
+        SwingUtilities.invokeLater(this::initUI);
     }
 
     private void initUI() {
-        // Khởi tạo các thành phần trước
-        nameLabel = new JLabel("Chưa chọn khách hàng");
-        nameLabel.setFont(UIConstants.HEADER_FONT);
-        phoneRow = new CustomerInfoRow(getIcon("/images/Icon/ticket.png", 16, 16), "", "");
-        emailRow = new CustomerInfoRow(getIcon("/images/Icon/invoice.png", 16, 16), "", "");
-        idRow = new CustomerInfoRow(getIcon("/images/Icon/user.png", 16, 16), "", "");
+        setLayout(new BorderLayout(10, 10));
+        setBackground(UIConstants.BACKGROUND_COLOR);
+        setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        // Khởi tạo tableModel và movieTable trước
+        // Center: Movie panel fills all space
+        JPanel moviePanel = createMoviePanel();
+        add(moviePanel, BorderLayout.CENTER);
+
+        // Right: Customer panel fixed width
+        JPanel customerPanel = createCustomerPanel();
+        add(customerPanel, BorderLayout.EAST);
+
+        loadCustomers();
+        loadMovies();
+    }
+
+    private JPanel createMoviePanel() {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.setBackground(UIConstants.CARD_BACKGROUND);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UIConstants.BORDER_COLOR, 1, true),
+                new EmptyBorder(10, 10, 10, 10)));
+
+        JLabel title = new JLabel("Danh Sách Phim Đang Chiếu");
+        title.setFont(UIConstants.HEADER_FONT);
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        headerPanel.setOpaque(false);
+        headerPanel.add(title);
+        panel.add(headerPanel, BorderLayout.NORTH);
+
         String[] columnNames = {"Mã phim", "Tên phim", "Thể loại", "Thời lượng", "Ngày khởi chiếu", "Nước sản xuất"};
         tableModel = new DefaultTableModel(columnNames, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
+            public boolean isCellEditable(int row, int column) { return false; }
         };
         movieTable = new JTable(tableModel);
         movieTable.setFont(UIConstants.BODY_FONT);
@@ -160,203 +135,150 @@ public class SellTicketView extends JPanel implements com.cinema.views.common.Re
         movieTable.getTableHeader().setFont(UIConstants.SUBHEADER_FONT);
         movieTable.getTableHeader().setBackground(UIConstants.PRIMARY_COLOR);
         movieTable.getTableHeader().setForeground(UIConstants.BUTTON_TEXT_COLOR);
+        movieTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        // Setup UI
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setBackground(UIConstants.BACKGROUND_COLOR);
+        JScrollPane scrollPane = new JScrollPane(movieTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        movieTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        for (int i = 0; i < columnNames.length; i++) {
+            movieTable.getColumnModel().getColumn(i).setPreferredWidth(140);
+        }
+        panel.add(scrollPane, BorderLayout.CENTER);
 
-        // Card khách hàng
-        JPanel customerCard = createCardPanel();
-        customerCard.setLayout(new BoxLayout(customerCard, BoxLayout.Y_AXIS));
-        customerCard.add(createCustomerHeaderPanel());
-        customerCard.add(Box.createVerticalStrut(UIConstants.PADDING_LARGE));
-        customerCard.add(createCustomerSearchPanel());
-        customerCard.add(Box.createVerticalStrut(UIConstants.PADDING_LARGE));
-        customerCard.add(createCustomerInfoFieldsPanel());
-        add(customerCard);
-        add(Box.createVerticalStrut(UIConstants.PADDING_LARGE + 4));
-
-        // Card danh sách phim
-        JPanel movieCard = createCardPanel();
-        movieCard.setLayout(new BoxLayout(movieCard, BoxLayout.Y_AXIS));
-        movieCard.add(createMovieHeaderPanel());
-        movieCard.add(Box.createVerticalStrut(UIConstants.PADDING_LARGE));
-        movieCard.add(createMovieTablePanel());
-        movieCard.add(Box.createVerticalStrut(UIConstants.PADDING_LARGE));
-        movieCard.add(createBookButtonPanel());
-        add(movieCard);
-
-        // Sử dụng PlaceholderTextField từ ModernUIComponents
-        PlaceholderTextField placeholderField = new PlaceholderTextField("Nhập tên, số điện thoại hoặc email...");
-        placeholderField.setFont(UIConstants.BODY_FONT);
-        placeholderField.setBorder(BorderFactory.createEmptyBorder(UIConstants.PADDING_SMALL, UIConstants.PADDING_SMALL, UIConstants.PADDING_SMALL, UIConstants.PADDING_SMALL));
-        customerComboBox.setEditor(new BasicComboBoxEditor() {
-            @Override
-            public Component getEditorComponent() {
-                return placeholderField;
-            }
-            @Override
-            public void setItem(Object anObject) {
-                if (anObject != null) {
-                    placeholderField.setText(anObject.toString());
-                } else {
-                    placeholderField.setText("");
-                }
-            }
-            @Override
-            public Object getItem() {
-                return placeholderField.getText();
-            }
-        });
-
-        setupAutoComplete();
+        return panel;
     }
 
-    private JPanel createCardPanel() {
-        JPanel panel = new JPanel();
+    private JPanel createCustomerPanel() {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBackground(UIConstants.CARD_BACKGROUND);
         panel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(UIConstants.BORDER_COLOR, 1, true),
-            BorderFactory.createEmptyBorder(
-                UIConstants.PADDING_LARGE, UIConstants.PADDING_LARGE, UIConstants.PADDING_LARGE, UIConstants.PADDING_LARGE)
-        ));
-        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        return panel;
-    }
+                BorderFactory.createLineBorder(UIConstants.BORDER_COLOR, 1, true),
+                new EmptyBorder(10, 10, 10, 10)));
+        panel.setPreferredSize(new Dimension(340, 0)); // Fixed width
 
-    private JPanel createCustomerHeaderPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setOpaque(false);
         JLabel title = new JLabel("Thông Tin Khách Hàng");
         title.setFont(UIConstants.HEADER_FONT);
-        panel.add(title, BorderLayout.WEST);
-        return panel;
-    }
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        headerPanel.setOpaque(false);
+        headerPanel.add(title);
+        panel.add(headerPanel, BorderLayout.NORTH);
 
-    private JPanel createCustomerSearchPanel() {
-        JPanel panel = new JPanel(new BorderLayout(UIConstants.PADDING_SMALL, 0));
-        panel.setOpaque(false);
-        panel.add(createSearchPanel(), BorderLayout.CENTER);
-        // Có thể thêm nút "Thêm khách hàng" ở đây nếu muốn
-        return panel;
-    }
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        infoPanel.setOpaque(false);
 
-    private JPanel createCustomerInfoFieldsPanel() {
-        JPanel panel = new JPanel();
-        panel.setOpaque(false);
-        panel.setLayout(new GridBagLayout());
+        JPanel searchPanel = createSearchPanel();
+        infoPanel.add(searchPanel);
+        infoPanel.add(Box.createVerticalStrut(10));
+
+        nameLabel = new JLabel("Chưa chọn khách hàng");
+        nameLabel.setFont(UIConstants.SUBHEADER_FONT);
+        phoneLabel = new JLabel(""); phoneLabel.setFont(UIConstants.BODY_FONT);
+        emailLabel = new JLabel(""); emailLabel.setFont(UIConstants.BODY_FONT);
+        idLabel = new JLabel(""); idLabel.setFont(UIConstants.BODY_FONT);
+
+        JPanel fieldsPanel = new JPanel(new GridBagLayout());
+        fieldsPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(UIConstants.PADDING_SMALL, UIConstants.PADDING_MEDIUM, UIConstants.PADDING_SMALL, UIConstants.PADDING_MEDIUM);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
+        gbc.insets = new Insets(4, 2, 4, 2);
+        gbc.fill = GridBagConstraints.NONE;
 
-        // Họ tên
-        gbc.gridx = 0; gbc.gridy = 0;
-        JLabel nameLabelLabel = new JLabel("Họ và tên:");
-        nameLabelLabel.setFont(UIConstants.LABEL_FONT);
-        panel.add(nameLabelLabel, gbc);
-        gbc.gridx = 1;
-        panel.add(nameLabel, gbc);
+        int iconSize = 16;
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
+        fieldsPanel.add(new JLabel(getIcon("/images/Icon/user.png", iconSize, iconSize)), gbc);
+        gbc.gridx = 1; gbc.weightx = 0;
+        fieldsPanel.add(new JLabel("Họ và tên:"), gbc);
+        gbc.gridx = 2; gbc.weightx = 1.0;
+        nameLabel.setPreferredSize(new Dimension(170, 22));
+        fieldsPanel.add(nameLabel, gbc);
 
-        // Số điện thoại
-        gbc.gridx = 0; gbc.gridy = 1;
-        JLabel phoneLabel = new JLabel("Số điện thoại:");
-        phoneLabel.setFont(UIConstants.LABEL_FONT);
-        panel.add(phoneLabel, gbc);
-        gbc.gridx = 1;
-        panel.add(phoneRow, gbc);
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
+        fieldsPanel.add(new JLabel(getIcon("/images/Icon/phone.png", iconSize, iconSize)), gbc);
+        gbc.gridx = 1; fieldsPanel.add(new JLabel("Số điện thoại:"), gbc);
+        gbc.gridx = 2;
+        phoneLabel.setPreferredSize(new Dimension(170, 22));
+        fieldsPanel.add(phoneLabel, gbc);
 
-        // Email
-        gbc.gridx = 0; gbc.gridy = 2;
-        JLabel emailLabel = new JLabel("Email:");
-        emailLabel.setFont(UIConstants.LABEL_FONT);
-        panel.add(emailLabel, gbc);
-        gbc.gridx = 1;
-        panel.add(emailRow, gbc);
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
+        fieldsPanel.add(new JLabel(getIcon("/images/Icon/email.png", iconSize, iconSize)), gbc);
+        gbc.gridx = 1; fieldsPanel.add(new JLabel("Email:"), gbc);
+        gbc.gridx = 2;
+        emailLabel.setPreferredSize(new Dimension(170, 22));
+        fieldsPanel.add(emailLabel, gbc);
 
-        // Tài khoản (ID)
-        gbc.gridx = 0; gbc.gridy = 3;
-        JLabel idLabel = new JLabel("Tài khoản:");
-        idLabel.setFont(UIConstants.LABEL_FONT);
-        panel.add(idLabel, gbc);
-        gbc.gridx = 1;
-        panel.add(idRow, gbc);
+        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0;
+        fieldsPanel.add(new JLabel(getIcon("/images/Icon/account.png", iconSize, iconSize)), gbc);
+        gbc.gridx = 1; fieldsPanel.add(new JLabel("Tài khoản:"), gbc);
+        gbc.gridx = 2;
+        idLabel.setPreferredSize(new Dimension(170, 22));
+        fieldsPanel.add(idLabel, gbc);
 
-        return panel;
-    }
+        infoPanel.add(fieldsPanel);
+        infoPanel.add(Box.createVerticalStrut(20));
 
-    private JPanel createMovieHeaderPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setOpaque(false);
-        JLabel title = new JLabel("Danh Sách Phim Đang Chiếu");
-        title.setFont(UIConstants.HEADER_FONT);
-        panel.add(title, BorderLayout.WEST);
-        return panel;
-    }
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setOpaque(false);
 
-    private JPanel createMovieTablePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setOpaque(false);
-        JScrollPane scrollPane = new JScrollPane(movieTable);
-        scrollPane.setPreferredSize(new Dimension(0, UIConstants.ROW_HEIGHT * 10)); // Chỉ đủ 8-10 phim
-        panel.add(scrollPane, BorderLayout.CENTER);
-        return panel;
-    }
-
-    private JPanel createBookButtonPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        panel.setOpaque(false);
-        JButton bookButton = ModernUIApplier.createModernButton("Đặt vé", UIConstants.SECONDARY_COLOR, UIConstants.PRIMARY_COLOR);
-        bookButton.setFont(UIConstants.BUTTON_FONT);
+        bookButton = ModernUIApplier.createModernButton("Đặt vé", UIConstants.SECONDARY_COLOR, UIConstants.PRIMARY_COLOR);
         bookButton.setPreferredSize(new Dimension(120, 40));
         bookButton.addActionListener(_ -> bookTicket());
-        panel.add(bookButton);
+
+        buyButton = ModernUIApplier.createModernButton("Thanh toán", UIConstants.PRIMARY_COLOR, Color.WHITE);
+        buyButton.setPreferredSize(new Dimension(120, 40));
+        buyButton.addActionListener(_ -> buyTicket());
+
+        printButton = ModernUIApplier.createModernButton("In hóa đơn & vé", UIConstants.SECONDARY_COLOR, UIConstants.PRIMARY_COLOR);
+        printButton.setPreferredSize(new Dimension(150, 40));
+        printButton.addActionListener(_ -> printInvoiceAndTickets());
+
+        buttonPanel.add(bookButton);
+        buttonPanel.add(buyButton);
+        buttonPanel.add(printButton);
+
+        infoPanel.add(buttonPanel);
+        panel.add(infoPanel, BorderLayout.CENTER);
+
         return panel;
+    }
+
+    private ImageIcon getIcon(String path, int w, int h) {
+        try {
+            ImageIcon icon = new ImageIcon(getClass().getResource(path));
+            Image img = icon.getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
+            return new ImageIcon(img);
+        } catch (Exception e) {
+            return new ImageIcon();
+        }
     }
 
     private JPanel createSearchPanel() {
         JPanel panel = new JPanel(new BorderLayout(5, 0));
         panel.setOpaque(false);
-        panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        panel.setMaximumSize(new Dimension(1000, 40));
+        panel.setBorder(new EmptyBorder(5, 5, 5, 5));
 
-        // Tạo panel chứa icon tìm kiếm và combobox
         JPanel searchInputPanel = new JPanel(new BorderLayout(5, 0));
         searchInputPanel.setOpaque(false);
 
-        // Icon tìm kiếm
-        JLabel searchIcon = new JLabel(getIcon("/images/Icon/search.png", 16, 16));
-        searchIcon.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
-        searchInputPanel.add(searchIcon, BorderLayout.WEST);
-
-        // ComboBox
         comboBoxModel = new DefaultComboBoxModel<>();
         customerComboBox = new JComboBox<>(comboBoxModel);
         customerComboBox.setFont(UIConstants.BODY_FONT);
         customerComboBox.setEditable(true);
         customerComboBox.setBackground(Color.WHITE);
-        customerComboBox.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createEmptyBorder(5, 5, 5, 5),
-            ModernUIApplier.createShadowBorder()
-        ));
 
-        // Sử dụng PlaceholderTextField từ ModernUIComponents
         PlaceholderTextField placeholderField = new PlaceholderTextField("Nhập tên, số điện thoại hoặc email...");
+        placeholderField.setPreferredSize(new Dimension(100, 28));
         placeholderField.setFont(UIConstants.BODY_FONT);
-        placeholderField.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         customerComboBox.setEditor(new BasicComboBoxEditor() {
             @Override
             public Component getEditorComponent() {
                 return placeholderField;
             }
+
             @Override
             public void setItem(Object anObject) {
-                if (anObject != null) {
-                    placeholderField.setText(anObject.toString());
-                } else {
-                    placeholderField.setText("");
-                }
+                placeholderField.setText(anObject != null ? anObject.toString() : "");
             }
+
             @Override
             public Object getItem() {
                 return placeholderField.getText();
@@ -366,37 +288,19 @@ public class SellTicketView extends JPanel implements com.cinema.views.common.Re
         searchInputPanel.add(customerComboBox, BorderLayout.CENTER);
         panel.add(searchInputPanel, BorderLayout.CENTER);
 
-        // Loading indicator và nút làm mới
         JPanel rightPanel = new JPanel(new BorderLayout(5, 0));
         rightPanel.setOpaque(false);
 
-        loadingLabel = new JLabel(getIcon("/images/Icon/loading.gif", 20, 20));
+        loadingLabel = new JLabel(new ImageIcon(getClass().getResource("/images/Icon/loading.gif")));
         loadingLabel.setVisible(false);
         rightPanel.add(loadingLabel, BorderLayout.WEST);
 
-        // Nút làm mới
-        JButton refreshButton = new JButton(getIcon("/images/Icon/refresh-button.png", 16, 16));
-        refreshButton.setBorderPainted(false);
-        refreshButton.setContentAreaFilled(false);
-        refreshButton.setFocusPainted(false);
-        refreshButton.setToolTipText("Làm mới danh sách khách hàng");
-        refreshButton.addActionListener(e -> {
-            loadCustomers();
-            JTextField editor = (JTextField) customerComboBox.getEditor().getEditorComponent();
-            editor.setText("");
-            clearCustomerInfo();
-        });
-        rightPanel.add(refreshButton, BorderLayout.EAST);
-
-        panel.add(rightPanel, BorderLayout.EAST);
-
+        setupAutoComplete();
         return panel;
     }
 
     private void setupAutoComplete() {
         JTextField editor = (JTextField) customerComboBox.getEditor().getEditorComponent();
-        editor.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
         AutoCompleteSupport.install(customerComboBox, customerNameList);
         customerComboBox.setEditable(true);
 
@@ -411,17 +315,7 @@ public class SellTicketView extends JPanel implements com.cinema.views.common.Re
 
             @Override
             public void focusLost(FocusEvent e) {
-                String currentText = editor.getText().trim();
-                if (currentText.isEmpty()) {
-                    ValidationUtils.hideError(searchErrorLabel);
-                    editor.setForeground(UIConstants.TEXT_COLOR);
-                    loadCustomers();
-                    customerComboBox.setSelectedItem(null);
-                    clearCustomerInfo();
-                    customerComboBox.hidePopup();
-                } else {
-                    validateAndUpdateSelection();
-                }
+                validateAndUpdateSelection();
             }
         });
 
@@ -450,7 +344,6 @@ public class SellTicketView extends JPanel implements com.cinema.views.common.Re
         customerComboBox.addActionListener(e -> {
             String selectedName = (String) customerComboBox.getSelectedItem();
             if (selectedName != null && !selectedName.trim().isEmpty()) {
-                ValidationUtils.hideError(searchErrorLabel);
                 updateCustomerInfo();
                 customerComboBox.hidePopup();
             }
@@ -463,63 +356,44 @@ public class SellTicketView extends JPanel implements com.cinema.views.common.Re
         loadingLabel.setVisible(false);
 
         if (searchText.isEmpty()) {
-            ValidationUtils.hideError(searchErrorLabel);
-            editor.setForeground(UIConstants.TEXT_COLOR);
             loadCustomers();
             customerComboBox.setSelectedItem(null);
             clearCustomerInfo();
-            if (editor.hasFocus()) {
-                customerComboBox.showPopup();
-            } else {
-                customerComboBox.hidePopup();
-            }
+            customerComboBox.hidePopup();
             return;
         }
 
         try {
-            List<KhachHang> searchResults;
-            if (searchText.length() < 2) {
-                searchResults = khachHangController.findRecentKhachHang(10);
-            } else {
-                // Search by name, phone or email
-                searchResults = khachHangController.searchKhachHang(searchText);
-            }
-
-            customers = searchResults;
-
-            if (searchResults.isEmpty()) {
+            customers = khachHangController.searchKhachHang(searchText);
+            if (customers.isEmpty()) {
                 comboBoxModel.removeAllElements();
                 customerComboBox.hidePopup();
                 clearCustomerInfo();
-                ValidationUtils.showError(searchErrorLabel, "Không tìm thấy khách hàng");
+                SnackbarUtil.showSnackbar(this, "Không tìm thấy khách hàng", false);
                 return;
             }
 
-            updateComboBoxModel(searchResults);
+            updateComboBoxModel(customers);
             updateCustomerNameList();
 
-            boolean exactMatch = searchResults.stream()
-                .anyMatch(kh -> kh.getHoTen().equalsIgnoreCase(searchText) ||
-                              kh.getSoDienThoai().equals(searchText) ||
-                              (kh.getEmail() != null && kh.getEmail().equalsIgnoreCase(searchText)));
+            boolean exactMatch = customers.stream()
+                    .anyMatch(kh -> kh.getHoTen().equalsIgnoreCase(searchText) ||
+                            kh.getSoDienThoai().equals(searchText) ||
+                            (kh.getEmail() != null && kh.getEmail().equalsIgnoreCase(searchText)));
 
             if (exactMatch) {
                 customerComboBox.setSelectedItem(searchText);
                 customerComboBox.hidePopup();
                 updateCustomerInfo();
-            } else if (searchText.length() >= 2) {
+            } else {
                 customerComboBox.setSelectedItem(null);
                 customerComboBox.showPopup();
-            } else {
-                customerComboBox.hidePopup();
-                clearCustomerInfo();
             }
-
         } catch (SQLException ex) {
-            ValidationUtils.showError(searchErrorLabel, messages.getString("dbError") + ex.getMessage());
             comboBoxModel.removeAllElements();
             customerComboBox.hidePopup();
             clearCustomerInfo();
+            SnackbarUtil.showSnackbar(this, messages.getString("dbError") + ex.getMessage(), false);
         }
     }
 
@@ -530,7 +404,6 @@ public class SellTicketView extends JPanel implements com.cinema.views.common.Re
             for (KhachHang kh : customerList) {
                 comboBoxModel.addElement(kh.getHoTen());
             }
-            // Keep selected item if it matches
             if (!currentText.isEmpty() && customerList.stream().anyMatch(kh -> kh.getHoTen().equalsIgnoreCase(currentText))) {
                 customerComboBox.setSelectedItem(currentText);
             } else {
@@ -559,12 +432,12 @@ public class SellTicketView extends JPanel implements com.cinema.views.common.Re
         }
 
         boolean found = customers.stream()
-            .anyMatch(kh -> kh.getHoTen().equalsIgnoreCase(currentText) ||
-                          kh.getSoDienThoai().equals(currentText) ||
-                          (kh.getEmail() != null && kh.getEmail().equalsIgnoreCase(currentText)));
+                .anyMatch(kh -> kh.getHoTen().equalsIgnoreCase(currentText) ||
+                        kh.getSoDienThoai().equals(currentText) ||
+                        (kh.getEmail() != null && kh.getEmail().equalsIgnoreCase(currentText)));
 
         if (!found) {
-            ValidationUtils.showError(searchErrorLabel, "Khách hàng không tồn tại");
+            SnackbarUtil.showSnackbar(this, "Khách hàng không tồn tại", false);
             ((JTextField) customerComboBox.getEditor().getEditorComponent()).setText("");
             customerComboBox.setSelectedItem(null);
             clearCustomerInfo();
@@ -584,15 +457,15 @@ public class SellTicketView extends JPanel implements com.cinema.views.common.Re
         }
 
         KhachHang selectedCustomer = customers.stream()
-            .filter(kh -> kh.getHoTen().equalsIgnoreCase(selectedName))
-            .findFirst()
-            .orElse(null);
+                .filter(kh -> kh.getHoTen().equalsIgnoreCase(selectedName))
+                .findFirst()
+                .orElse(null);
 
         if (selectedCustomer != null) {
             nameLabel.setText(selectedCustomer.getHoTen());
-            idRow.setValue(String.valueOf(selectedCustomer.getMaNguoiDung()));
-            phoneRow.setValue(selectedCustomer.getSoDienThoai());
-            emailRow.setValue(selectedCustomer.getEmail() != null ? selectedCustomer.getEmail() : "");
+            phoneLabel.setText(selectedCustomer.getSoDienThoai());
+            emailLabel.setText(selectedCustomer.getEmail() != null ? selectedCustomer.getEmail() : "");
+            idLabel.setText(String.valueOf(selectedCustomer.getMaNguoiDung()));
         } else {
             clearCustomerInfo();
         }
@@ -600,9 +473,9 @@ public class SellTicketView extends JPanel implements com.cinema.views.common.Re
 
     private void clearCustomerInfo() {
         nameLabel.setText("Chưa chọn khách hàng");
-        idRow.setValue("");
-        phoneRow.setValue("");
-        emailRow.setValue("");
+        phoneLabel.setText("");
+        emailLabel.setText("");
+        idLabel.setText("");
     }
 
     private void loadCustomers() {
@@ -611,30 +484,28 @@ public class SellTicketView extends JPanel implements com.cinema.views.common.Re
             updateComboBoxModel(customers);
             updateCustomerNameList();
             if (customers.isEmpty()) {
-                SnackbarUtil.showSnackbar(this, "Không tìm thấy khách hàng nào trong hệ thống!", false);
+                SnackbarUtil.showSnackbar(this, "Không tìm thấy khách hàng nào", false);
             }
         } catch (SQLException e) {
             SnackbarUtil.showSnackbar(this, messages.getString("dbError") + e.getMessage(), false);
-            e.printStackTrace();
         }
     }
 
     private void loadMovies() {
         try {
-            // Chỉ lấy phim đang chiếu thay vì tất cả phim
             movies = phimController.getPhimDangChieu();
             tableModel.setRowCount(0);
             if (movies.isEmpty()) {
-                SnackbarUtil.showSnackbar(this, "Không có phim nào đang chiếu!", false);
+                SnackbarUtil.showSnackbar(this, "Không có phim nào đang chiếu", false);
             }
             for (Phim phim : movies) {
                 tableModel.addRow(new Object[]{
-                    phim.getMaPhim(),
-                    phim.getTenPhim(),
-                    phim.getTenTheLoai(),
-                    phim.getThoiLuong() + " phút",
-                    phim.getNgayKhoiChieu() != null ? phim.getNgayKhoiChieu().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "",
-                    phim.getNuocSanXuat()
+                        phim.getMaPhim(),
+                        phim.getTenPhim(),
+                        phim.getTenTheLoai(),
+                        phim.getThoiLuong() + " phút",
+                        phim.getNgayKhoiChieu() != null ? phim.getNgayKhoiChieu().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "",
+                        phim.getNuocSanXuat()
                 });
             }
         } catch (SQLException e) {
@@ -644,33 +515,21 @@ public class SellTicketView extends JPanel implements com.cinema.views.common.Re
 
     private void bookTicket() {
         int selectedRow = movieTable.getSelectedRow();
-        String selectedName = (String) customerComboBox.getSelectedItem();
-
         if (selectedRow == -1) {
-            SnackbarUtil.showSnackbar(this, "Vui lòng chọn một phim để đặt vé!", false);
+            SnackbarUtil.showSnackbar(this, "Vui lòng chọn một phim", false);
             return;
         }
 
-        if (selectedName == null || selectedName.trim().isEmpty()) {
-            SnackbarUtil.showSnackbar(this, "Vui lòng chọn hoặc nhập thông tin khách hàng!", false);
-            return;
-        }
-
+        String selectedName = (String) customerComboBox.getSelectedItem();
         KhachHang selectedCustomer = customers.stream()
-            .filter(kh -> kh.getHoTen().equalsIgnoreCase(selectedName))
-            .findFirst()
-            .orElse(null);
+                .filter(kh -> selectedName != null && kh.getHoTen().equalsIgnoreCase(selectedName))
+                .findFirst()
+                .orElse(null);
 
-        if (selectedCustomer == null) {
-            SnackbarUtil.showSnackbar(this, "Khách hàng không tồn tại! Vui lòng kiểm tra lại.", false);
-            return;
-        }          int maPhim = (int) tableModel.getValueAt(selectedRow, 0);
-        int maKhachHang = selectedCustomer.getMaNguoiDung();
-        // Không cho phép đặt null cho mã nhân viên, sử dụng mã khách hàng khi tự đặt vé
-        int maNhanVien = (currentNhanVien != null && currentNhanVien.getMaNguoiDung() > 0) 
-                        ? currentNhanVien.getMaNguoiDung() 
-                        : maKhachHang; // Sử dụng chính mã của khách hàng khi họ tự đặt vé
-        
+        int maPhim = (int) tableModel.getValueAt(selectedRow, 0);
+        int maKhachHang = selectedCustomer != null ? selectedCustomer.getMaNguoiDung() : 0;
+        int maNhanVien = currentNhanVien.getMaNguoiDung();
+
         try {
             BookingView bookingView = new BookingView(
                 (JFrame) SwingUtilities.getWindowAncestor(this),
@@ -679,16 +538,235 @@ public class SellTicketView extends JPanel implements com.cinema.views.common.Re
                 maPhim,
                 maKhachHang,
                 maNhanVien,
-                _ -> {
-                    loadMovies();
-                    SnackbarUtil.showSnackbar(this, messages.getString("success"), true);
+                bookingResult -> {
+                    if (bookingResult instanceof BookingResultDTO) {
+                        selectedTickets.clear();
+
+                        BookingResultDTO bookingDTO = (BookingResultDTO) bookingResult;
+                        Ve ve = new Ve();
+                        ve.setSuatChieu(bookingDTO.suatChieu());
+                        ve.setGhe(bookingDTO.ghe());
+                        ve.setGiaVeSauGiam(bookingDTO.giaVe());
+                        ve.setTenPhim(
+                            movies.stream()
+                                  .filter(p -> p.getMaPhim() == maPhim)
+                                  .findFirst()
+                                  .map(Phim::getTenPhim)
+                                  .orElse("Unknown")
+                        );
+                        ve.setNgayGioChieu(bookingDTO.suatChieu().getNgayGioChieu());
+                        ve.setMaGhe(bookingDTO.ghe().getMaGhe());
+                        ve.setTrangThai(TrangThaiVe.PENDING);
+
+                        selectedTickets.add(ve);
+                        loadMovies();
+                        SnackbarUtil.showSnackbar(this, "Đặt vé thành công", true);
+                    }
                 }
             );
             bookingView.setVisible(true);
+
         } catch (Exception e) {
             SnackbarUtil.showSnackbar(this, messages.getString("dbError") + e.getMessage(), false);
-            e.printStackTrace();
+        }
+    }
+
+    private void buyTicket() {
+        if (selectedTickets.isEmpty()) {
+            SnackbarUtil.showSnackbar(this, "Vui lòng đặt vé trước khi thanh toán", false);
+            return;
+        }
+
+        JDialog paymentDialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(this), "Thanh Toán", true);
+        paymentDialog.setLayout(new GridBagLayout());
+        paymentDialog.setSize(400, 300);
+        paymentDialog.setLocationRelativeTo(this);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        BigDecimal total = calculateTotal();
+        JLabel totalLabel = new JLabel("Tổng tiền: " + total.toString() + " VNĐ");
+        totalLabel.setFont(UIConstants.BODY_FONT);
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
+        paymentDialog.add(totalLabel, gbc);
+
+        JLabel paymentMethodLabel = new JLabel("Phương thức thanh toán:");
+        paymentMethodLabel.setFont(UIConstants.BODY_FONT);
+        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 1;
+        paymentDialog.add(paymentMethodLabel, gbc);
+
+        JComboBox<String> paymentMethodCombo = new JComboBox<>(new String[]{"Tiền mặt", "Chuyển khoản"});
+        paymentMethodCombo.setFont(UIConstants.BODY_FONT);
+        gbc.gridx = 1; gbc.gridy = 1;
+        paymentDialog.add(paymentMethodCombo, gbc);
+
+        JLabel cashLabel = new JLabel("Tiền khách đưa:");
+        cashLabel.setFont(UIConstants.BODY_FONT);
+        gbc.gridx = 0; gbc.gridy = 2;
+        paymentDialog.add(cashLabel, gbc);
+
+        cashField = new JTextField(10);
+        cashField.setFont(UIConstants.BODY_FONT);
+        cashField.setEnabled(true);
+        gbc.gridx = 1; gbc.gridy = 2;
+        paymentDialog.add(cashField, gbc);
+
+        JLabel changeLabel = new JLabel("Tiền thối lại: 0 VNĐ");
+        changeLabel.setFont(UIConstants.BODY_FONT);
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
+        paymentDialog.add(changeLabel, gbc);
+
+        JButton confirmButton = ModernUIApplier.createModernButton("Xác nhận", UIConstants.PRIMARY_COLOR, Color.WHITE);
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
+        paymentDialog.add(confirmButton, gbc);
+
+        paymentMethodCombo.addActionListener(e -> {
+            boolean isCash = paymentMethodCombo.getSelectedItem().equals("Tiền mặt");
+            cashField.setEnabled(isCash);
+            cashField.setText("");
+            changeLabel.setText("Tiền thối lại: 0 VNĐ");
+        });
+
+        cashField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { updateChange(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { updateChange(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { updateChange(); }
+
+            private void updateChange() {
+                if (!cashField.isEnabled()) {
+                    changeLabel.setText("Tiền thối lại: 0 VNĐ");
+                    return;
+                }
+                try {
+                    BigDecimal cash = new BigDecimal(cashField.getText().trim());
+                    BigDecimal change = cash.subtract(total);
+                    changeLabel.setText("Tiền thối lại: " + (change.compareTo(BigDecimal.ZERO) >= 0 ? change.toString() : "0") + " VNĐ");
+                } catch (NumberFormatException ex) {
+                    changeLabel.setText("Tiền thối lại: 0 VNĐ");
+                }
+            }
+        });
+
+        confirmButton.addActionListener(e -> {
+            String method = (String) paymentMethodCombo.getSelectedItem();
+            BigDecimal cash = null, change = null;
+
+            if (method.equals("Tiền mặt")) {
+                try {
+                    cash = new BigDecimal(cashField.getText().trim());
+                    if (cash.compareTo(total) < 0) {
+                        JOptionPane.showMessageDialog(paymentDialog, "Tiền khách đưa không đủ", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    change = cash.subtract(total);
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(paymentDialog, "Vui lòng nhập số tiền hợp lệ", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }
+
+            String selectedName = (String) customerComboBox.getSelectedItem();
+            KhachHang selectedCustomer = customers.stream()
+                    .filter(kh -> selectedName != null && kh.getHoTen().equalsIgnoreCase(selectedName))
+                    .findFirst()
+                    .orElse(null);
+
+            HoaDon hoaDon = new HoaDon();
+            hoaDon.setMaNhanVien(currentNhanVien.getMaNguoiDung());
+            hoaDon.setNgayLap(LocalDateTime.now());
+
+            // QUAN TRỌNG: chỉ truyền null nếu khách vãng lai
+            if (selectedCustomer == null) {
+                hoaDon.setMaKhachHang(null);
+                hoaDon.setTenKhachHang("Khách vãng lai");
+            } else {
+                hoaDon.setMaKhachHang(selectedCustomer.getMaNguoiDung());
+                hoaDon.setTenKhachHang(selectedCustomer.getHoTen());
+            }
+
+            boolean insertSuccess = false;
+            try {
+                insertSuccess = hoaDonRepo.insert(hoaDon);
+            } catch (SQLException e1) {
+                SnackbarUtil.showSnackbar(this, "Lỗi hệ thống: " + e1.getMessage(), false);
+                e1.printStackTrace();	
+                return;
+            }
+            if (!insertSuccess) {
+                SnackbarUtil.showSnackbar(this, "Lưu hóa đơn thất bại!", false);
+                return;
+            }
+            hoaDonThanhToan = new HoaDon();
+            hoaDonThanhToan.setMaHoaDon(hoaDon.getMaHoaDon());
+            hoaDonThanhToan.setMaNhanVien(currentNhanVien.getMaNguoiDung());
+            hoaDonThanhToan.setTenNhanVien(currentNhanVien.getHoTen());
+            hoaDonThanhToan.setMaKhachHang(selectedCustomer != null ? selectedCustomer.getMaNguoiDung() : null);
+            hoaDonThanhToan.setTenKhachHang(selectedCustomer != null ? selectedCustomer.getHoTen() : "Khách vãng lai");
+            hoaDonThanhToan.setNgayLap(hoaDon.getNgayLap());
+            hoaDonThanhToan.setTongTien(total);
+            hoaDonThanhToan.setTienKhachDua(cash);
+            hoaDonThanhToan.setTienThoiLai(change);
+            hoaDonThanhToan.setPhuongThucThanhToan(method);
+            hoaDonThanhToan.setDanhSachVe(new ArrayList<>(selectedTickets));
+
+            try {
+                for (Ve ve : selectedTickets) {
+                    ve.setTrangThai(TrangThaiVe.PAID);
+                    ve.setHoaDon(hoaDonThanhToan);
+                }
+                paymentDialog.dispose();
+                SnackbarUtil.showSnackbar(this, "Thanh toán thành công", true);
+            } catch (Exception ex) {
+                SnackbarUtil.showSnackbar(this, "Lỗi khi xử lý thanh toán: " + ex.getMessage(), false);
+                hoaDonThanhToan = null;
+            }
+        });
+
+        paymentDialog.setVisible(true);
+    }
+
+    private BigDecimal calculateTotal() {
+        return selectedTickets.stream()
+                .map(ve -> {
+                    if (ve.getGiaVeSauGiam() != null) return ve.getGiaVeSauGiam();
+                    if (ve.getGiaVeGoc() != null) return ve.getGiaVeGoc();
+                    if (ve.getGiaVe() != null && ve.getGiaVe().getGiaVe() != null) return ve.getGiaVe().getGiaVe();
+                    return BigDecimal.ZERO;
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private void printInvoiceAndTickets() {
+        if (selectedTickets.isEmpty() || hoaDonThanhToan == null) {
+            SnackbarUtil.showSnackbar(this, "Vui lòng thanh toán vé trước khi in", false);
+            return;
+        }
+
+        try {
+            String hoaDonPath = "HoaDon_" + hoaDonThanhToan.getNgayLap().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".pdf";
+            HoaDonPdfExporter.exportHoaDonToPdf(hoaDonThanhToan, hoaDonPath);
+
+            int idx = 1;
+            for (Ve ve : selectedTickets) {
+                String vePath = "Ve_" + ve.getMaVe() + "_" + idx + ".pdf";
+                VePdfExporter.exportVeToPdf(ve, vePath);
+                idx++;
+            }
+
+            JOptionPane.showMessageDialog(this, "Đã xuất hóa đơn và vé ra PDF!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+
+            selectedTickets.clear();
+            hoaDonThanhToan = null;
+            clearCustomerInfo();
+            customerComboBox.setSelectedItem(null);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Lỗi in PDF: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
-
